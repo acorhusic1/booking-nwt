@@ -1,0 +1,22 @@
+# Root .gitignore for BookingNWT
+
+### IDE ###
+.vscode/
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### OS ###
+.DS_Store
+Thumbs.db
+desktop.ini
+
+### Helper scripts / extraction files ###
+extract_text.py
+extract_text2.py
+Extracted_Docx.md
+Extracted_Pdf.md
+
+### Demo project ###
+demo/
