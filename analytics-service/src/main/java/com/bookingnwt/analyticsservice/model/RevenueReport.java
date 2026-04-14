@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "revenue_report", uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"host_id", "year", "month"})
+        @UniqueConstraint(columnNames = {"host_id", "`year`", "`month`"})
 })
 @Getter
 @Setter
@@ -24,10 +24,10 @@ public class RevenueReport {
     @Column(name = "host_id", nullable = false)
     private Long hostId;
 
-    @Column(nullable = false)
+    @Column(name = "`year`", nullable = false)
     private Integer year;
 
-    @Column(nullable = false)
+    @Column(name = "`month`", nullable = false)
     private Integer month;
 
     @Column(name = "total_revenue", nullable = false, precision = 10, scale = 2)
