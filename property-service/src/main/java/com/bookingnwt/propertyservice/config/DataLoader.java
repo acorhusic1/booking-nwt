@@ -8,6 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Configuration
 public class DataLoader {
@@ -20,7 +21,8 @@ public class DataLoader {
                                         CalendarBlockRepository calendarRepo,
                                         SeasonalRuleRepository seasonalRepo,
                                         WishlistRepository wishlistRepo,
-                                        WishlistItemRepository wishlistItemRepo) {
+                                        WishlistItemRepository wishlistItemRepo,
+                                        ReviewRepository reviewRepo) {
         return args -> {
             // --- Amenities ---
             Amenity wifi = amenityRepo.save(new Amenity("WiFi", AmenityCategory.BASIC));
@@ -29,8 +31,8 @@ public class DataLoader {
             Amenity tv = amenityRepo.save(new Amenity("TV", AmenityCategory.BASIC));
             Amenity kuhinja = amenityRepo.save(new Amenity("Kuhinja", AmenityCategory.BASIC));
             Amenity bazen = amenityRepo.save(new Amenity("Bazen", AmenityCategory.LUXURY));
-            Amenity jacuzzi = amenityRepo.save(new Amenity("Jacuzzi", AmenityCategory.LUXURY));
-            Amenity sauna = amenityRepo.save(new Amenity("Sauna", AmenityCategory.LUXURY));
+            amenityRepo.save(new Amenity("Jacuzzi", AmenityCategory.LUXURY));
+            amenityRepo.save(new Amenity("Sauna", AmenityCategory.LUXURY));
             Amenity vatrogasniAparat = amenityRepo.save(new Amenity("Vatrogasni aparat", AmenityCategory.SAFETY));
             Amenity detektorDima = amenityRepo.save(new Amenity("Detektor dima", AmenityCategory.SAFETY));
 
@@ -113,6 +115,29 @@ public class DataLoader {
             Wishlist wl2 = wishlistRepo.save(new Wishlist(5L, "Vikend getaway"));
             wishlistItemRepo.save(new WishlistItem(wl2, p2.getId()));
 
+            // --- Reviews ---
+            Review r1 = new Review(3L, 6L, p3.getId(), 3L,
+                    new BigDecimal("4.5"), new BigDecimal("4.0"),
+                    new BigDecimal("5.0"), new BigDecimal("4.5"),
+                    new BigDecimal("4.0"), "Odličan hostel, čist i udoban. Osoblje vrlo ljubazno.");
+            r1.setHostReply("Hvala vam na lijepim riječima! Nadamo se ponovnom dolasku.");
+            r1.setRepliedAt(LocalDateTime.now().minusDays(25));
+            reviewRepo.save(r1);
+
+            Review r2 = new Review(10L, 4L, p1.getId(), 2L,
+                    new BigDecimal("5.0"), new BigDecimal("5.0"),
+                    new BigDecimal("4.5"), new BigDecimal("4.0"),
+                    new BigDecimal("5.0"), "Fantastična lokacija, apartman je baš kao na slikama.");
+            reviewRepo.save(r2);
+
+            Review r3 = new Review(11L, 5L, p2.getId(), 2L,
+                    new BigDecimal("5.0"), new BigDecimal("5.0"),
+                    new BigDecimal("5.0"), new BigDecimal("4.5"),
+                    new BigDecimal("5.0"), "Vila je predivna, pogled na Stari most je nezaboravan!");
+            r3.setHostReply("Drago nam je da ste uživali! Dobrodošli ponovo.");
+            r3.setRepliedAt(LocalDateTime.now().minusDays(10));
+            reviewRepo.save(r3);
+
             System.out.println("=== Property Service: Učitano " + propertyRepo.count() + " objekata ===");
             System.out.println("=== Property Service: Učitano " + amenityRepo.count() + " sadržaja ===");
             System.out.println("=== Property Service: Učitano " + imageRepo.count() + " slika ===");
@@ -120,6 +145,7 @@ public class DataLoader {
             System.out.println("=== Property Service: Učitano " + calendarRepo.count() + " blokova kalendara ===");
             System.out.println("=== Property Service: Učitano " + seasonalRepo.count() + " sezonskih pravila ===");
             System.out.println("=== Property Service: Učitano " + wishlistRepo.count() + " lista želja ===");
+            System.out.println("=== Property Service: Učitano " + reviewRepo.count() + " recenzija ===");
         };
     }
 }

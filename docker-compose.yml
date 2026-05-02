@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  # 1. MySQL Baza
+  mysql-db:
+    image: mysql:8.0
+    container_name: booking_mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: reservationdb # Automatski pravi bazu!
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  # 2. Eureka Server (Service Discovery)
+  eureka-server:
+    build:
+      context: ./eureka-server # Pokazuje na eureka-server folder
+      dockerfile: Dockerfile
+    container_name: eureka-server
+    ports:
+      - "8761:8761"
+
+  # 3. API Gateway
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    depends_on:
+      - eureka-server
+
+volumes:
+  db_data:
