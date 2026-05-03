@@ -11,6 +11,13 @@ import java.util.List;
 
 @Entity
 @Table(name = "users")
+@NamedEntityGraph(
+    name = "User.withDetails",
+    attributeNodes = {
+        @NamedAttributeNode("verifications"),
+        @NamedAttributeNode("preference")
+    }
+)
 @Getter
 @Setter
 @NoArgsConstructor
