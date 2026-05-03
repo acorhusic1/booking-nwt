@@ -69,6 +69,8 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_started
+      config-server:
+        condition: service_started
 
   property-service:
     build:
