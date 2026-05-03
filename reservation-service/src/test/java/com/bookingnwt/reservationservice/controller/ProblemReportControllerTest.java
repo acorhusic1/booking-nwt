@@ -5,17 +5,20 @@ import com.bookingnwt.reservationservice.dto.ProblemReportResponseDTO;
 import com.bookingnwt.reservationservice.exception.GlobalExceptionHandler;
 import com.bookingnwt.reservationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.reservationservice.model.ProblemReportStatus;
+import com.bookingnwt.reservationservice.security.JwtAuthenticationFilter;
+import com.bookingnwt.reservationservice.security.JwtTokenProvider;
 import com.bookingnwt.reservationservice.service.ProblemReportService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(ProblemReportController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class ProblemReportControllerTest {
 
@@ -36,6 +40,12 @@ class ProblemReportControllerTest {
 
     @MockitoBean
     private ProblemReportService reportService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     private final ObjectMapper objectMapper = JsonMapper.builder().findAndAddModules().build();
 
