@@ -16,6 +16,7 @@ public class ReviewResponse {
     private Long id;
     private Long reservationId;
     private Long guestId;
+    private String guestName;
     private Long propertyId;
     private Long hostId;
     private BigDecimal ratingCleanliness;

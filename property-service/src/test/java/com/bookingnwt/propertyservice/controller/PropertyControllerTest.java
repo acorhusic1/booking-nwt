@@ -12,9 +12,12 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(PropertyController.class)
 @Import(GlobalExceptionHandler.class)
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
 class PropertyControllerTest {
 
     @Autowired
@@ -56,11 +60,24 @@ class PropertyControllerTest {
 
     @Test
     void getAllProperties_shouldReturn200() throws Exception {
-        when(propertyService.getAllProperties()).thenReturn(List.of(createPropertyResponse()));
+        when(propertyService.getAllProperties(any())).thenReturn(new PageImpl<>(List.of(createPropertyResponse())));
 
         mockMvc.perform(get("/api/properties"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].name").value("Apartman Centar"));
+                .andExpect(jsonPath("$.content[0].name").value("Apartman Centar"));
+    }
+
+    @Test
+    void searchAvailableProperties_shouldReturn200() throws Exception {
+        when(propertyService.getAvailableProperties(eq("Sarajevo"), any(), any()))
+                .thenReturn(List.of(createPropertyResponse()));
+
+        mockMvc.perform(get("/api/properties/search")
+                        .param("city", "Sarajevo")
+                        .param("startDate", "2024-06-01")
+                        .param("endDate", "2024-06-10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].city").value("Sarajevo"));
     }
 
     @Test

@@ -13,6 +13,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -63,14 +67,15 @@ class PropertyServiceImplTest {
     }
 
     @Test
-    void getAllProperties_shouldReturnList() {
-        when(propertyRepository.findAll()).thenReturn(List.of(property));
+    void getAllProperties_shouldReturnPage() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(propertyRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(property)));
         when(propertyMapper.toResponse(property)).thenReturn(response);
 
-        List<PropertyResponse> result = propertyService.getAllProperties();
+        Page<PropertyResponse> result = propertyService.getAllProperties(pageable);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getName()).isEqualTo("Apartman Centar");
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getName()).isEqualTo("Apartman Centar");
     }
 
     @Test

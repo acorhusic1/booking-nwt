@@ -24,6 +24,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.bookingnwt.propertyservice.client.UserClient;
+import com.bookingnwt.propertyservice.dto.UserDTO;
+
 @ExtendWith(MockitoExtension.class)
 class ReviewServiceImplTest {
 
@@ -32,6 +35,9 @@ class ReviewServiceImplTest {
 
     @Mock
     private ReviewMapper reviewMapper;
+
+    @Mock
+    private UserClient userClient;
 
     @InjectMocks
     private ReviewServiceImpl reviewService;
@@ -61,6 +67,7 @@ class ReviewServiceImplTest {
 
         response = new ReviewResponse();
         response.setId(1L);
+        response.setGuestId(1L);
         response.setPropertyId(1L);
         response.setOverallRating(new BigDecimal("4.40"));
         response.setComment("Odličan smještaj!");
@@ -68,13 +75,20 @@ class ReviewServiceImplTest {
     }
 
     @Test
-    void getReviewById_shouldReturnReview_whenExists() {
+    void getReviewById_shouldReturnReview_andEnrichName() {
+        UserDTO user = new UserDTO();
+        user.setFirstName("Ime");
+        user.setLastName("Prezime");
+
         when(reviewRepository.findById(1L)).thenReturn(Optional.of(review));
         when(reviewMapper.toResponse(review)).thenReturn(response);
+        when(userClient.getUserById(1L)).thenReturn(user);
 
         ReviewResponse result = reviewService.getReviewById(1L);
 
         assertThat(result.getId()).isEqualTo(1L);
+        assertThat(result.getGuestName()).isEqualTo("Ime Prezime");
+        verify(userClient).getUserById(1L);
     }
 
     @Test

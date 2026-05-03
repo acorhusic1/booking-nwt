@@ -19,8 +19,8 @@ public class PropertyController {
     private final PropertyService propertyService;
 
     @GetMapping
-    public ResponseEntity<List<PropertyResponse>> getAllProperties() {
-        return ResponseEntity.ok(propertyService.getAllProperties());
+    public ResponseEntity<org.springframework.data.domain.Page<PropertyResponse>> getAllProperties(org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(propertyService.getAllProperties(pageable));
     }
 
     @GetMapping("/{id}")
@@ -38,19 +38,30 @@ public class PropertyController {
         return ResponseEntity.ok(propertyService.getPropertiesByCity(city));
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<List<PropertyResponse>> searchAvailableProperties(
+            @RequestParam String city,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
+        return ResponseEntity.ok(propertyService.getAvailableProperties(city, startDate, endDate));
+    }
+
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<PropertyResponse> createProperty(@Valid @RequestBody PropertyRequest request) {
         PropertyResponse created = propertyService.createProperty(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PutMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<PropertyResponse> updateProperty(@PathVariable Long id,
                                                            @Valid @RequestBody PropertyRequest request) {
         return ResponseEntity.ok(propertyService.updateProperty(id, request));
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteProperty(@PathVariable Long id) {
         propertyService.deleteProperty(id);
         return ResponseEntity.noContent().build();
