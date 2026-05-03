@@ -43,6 +43,9 @@ class UserServiceImplTest {
     @Mock
     private com.bookingnwt.userservice.mapper.UserPreferenceMapper preferenceMapper;
 
+    @Mock
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @InjectMocks
     private UserServiceImpl userService;
 
@@ -124,6 +127,7 @@ class UserServiceImplTest {
     void createUser_shouldSaveAndReturnUser() {
         when(userRepository.existsByEmail("test@email.com")).thenReturn(false);
         when(userMapper.toEntity(userRequest)).thenReturn(user);
+        when(passwordEncoder.encode(anyString())).thenReturn("hashed_pass");
         when(userRepository.save(user)).thenReturn(user);
         when(userMapper.toResponse(user)).thenReturn(userResponse);
 
@@ -388,6 +392,23 @@ class UserServiceImplTest {
         // email & role should remain unchanged
         assertThat(user.getEmail()).isEqualTo("test@email.com");
         assertThat(user.getRole()).isEqualTo(UserRole.GUEST);
+    }
+
+    @Test
+    void patchUser_shouldUpdatePassword_whenProvided() {
+        UserPatchRequest patchRequest = UserPatchRequest.builder()
+                .password("newPassword123")
+                .build();
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("newPassword123")).thenReturn("new_hashed_pass");
+        when(userRepository.save(user)).thenReturn(user);
+        when(userMapper.toResponse(user)).thenReturn(userResponse);
+
+        userService.patchUser(1L, patchRequest);
+
+        assertThat(user.getPasswordHash()).isEqualTo("new_hashed_pass");
+        verify(passwordEncoder).encode("newPassword123");
     }
     @Test
     void getUserDetailsById_shouldReturnUserDetails() {

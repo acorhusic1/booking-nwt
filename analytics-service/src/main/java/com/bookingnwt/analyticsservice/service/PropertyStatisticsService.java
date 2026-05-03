@@ -13,6 +13,10 @@ public interface PropertyStatisticsService {
 
     List<PropertyStatisticsResponseDTO> getAllStatistics();
 
+    org.springframework.data.domain.Page<PropertyStatisticsResponseDTO> getAllStatisticsPaginated(org.springframework.data.domain.Pageable pageable);
+
+    List<PropertyStatisticsResponseDTO> createStatisticsBatch(List<PropertyStatisticsRequestDTO> dtos);
+
     List<PropertyStatisticsResponseDTO> getStatisticsByPropertyId(Long propertyId);
 
     List<PropertyStatisticsResponseDTO> getStatisticsByHostId(Long hostId);

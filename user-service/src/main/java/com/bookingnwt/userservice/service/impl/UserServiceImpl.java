@@ -27,6 +27,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final com.bookingnwt.userservice.mapper.IdentityVerificationMapper verificationMapper;
     private final com.bookingnwt.userservice.mapper.UserPreferenceMapper preferenceMapper;
+    private final org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional(readOnly = true)
@@ -106,6 +107,7 @@ public class UserServiceImpl implements UserService {
             throw new DuplicateResourceException("Korisnik sa emailom " + request.getEmail() + " već postoji");
         }
         User user = userMapper.toEntity(request);
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         User saved = userRepository.save(user);
         return userMapper.toResponse(saved);
     }
@@ -138,7 +140,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (request.getPassword() != null) {
-            user.setPasswordHash(request.getPassword());
+            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         }
 
         if (request.getFirstName() != null) {

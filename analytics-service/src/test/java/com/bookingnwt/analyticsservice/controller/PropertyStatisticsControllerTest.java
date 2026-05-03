@@ -28,7 +28,13 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(PropertyStatisticsController.class)
+@WebMvcTest(controllers = PropertyStatisticsController.class, excludeAutoConfiguration = {
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class
+}, excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+    type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+    classes = {com.bookingnwt.analyticsservice.security.SecurityConfig.class, com.bookingnwt.analyticsservice.security.JwtAuthenticationFilter.class}
+))
 @Import(GlobalExceptionHandler.class)
 class PropertyStatisticsControllerTest {
 
