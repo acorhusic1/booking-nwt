@@ -18,6 +18,9 @@ public class PropertyController {
 
     private final PropertyService propertyService;
 
+    @org.springframework.beans.factory.annotation.Value("${server.port}")
+    private String port;
+
     @GetMapping
     public ResponseEntity<org.springframework.data.domain.Page<PropertyResponse>> getAllProperties(org.springframework.data.domain.Pageable pageable) {
         return ResponseEntity.ok(propertyService.getAllProperties(pageable));
@@ -44,6 +47,18 @@ public class PropertyController {
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate startDate,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) java.time.LocalDate endDate) {
         return ResponseEntity.ok(propertyService.getAvailableProperties(city, startDate, endDate));
+    }
+
+    @GetMapping("/test")
+    @org.springframework.security.access.prepost.PreAuthorize("permitAll()")
+    public ResponseEntity<String> testLoadBalancing() {
+        // Jednostavan endpoint za testiranje load balancinga
+        try {
+            String instanceId = java.net.InetAddress.getLocalHost().getHostName();
+            return ResponseEntity.ok("Property Service Instance: " + instanceId + " (Port: " + port + ") - " + java.time.LocalDateTime.now());
+        } catch (Exception e) {
+            return ResponseEntity.ok("Property Service Instance: unknown (Port: " + port + ") - " + java.time.LocalDateTime.now());
+        }
     }
 
     @PostMapping

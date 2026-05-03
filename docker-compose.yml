@@ -70,13 +70,26 @@ services:
       eureka-server:
         condition: service_started
 
-  property-service:
+  property-service-1:
     build:
       context: ./property-service
       dockerfile: Dockerfile
-    container_name: property-service
-    ports:
-      - "8082:8082"
+    container_name: property-service-1
+    environment:
+      - SERVER_PORT=8082
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+
+  property-service-2:
+    build:
+      context: ./property-service
+      dockerfile: Dockerfile
+    container_name: property-service-2
+    environment:
+      - SERVER_PORT=8083
     depends_on:
       mysql-db:
         condition: service_healthy
