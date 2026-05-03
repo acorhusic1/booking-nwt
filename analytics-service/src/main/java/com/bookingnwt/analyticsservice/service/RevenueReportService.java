@@ -15,6 +15,8 @@ public interface RevenueReportService {
 
     List<RevenueReportResponseDTO> getReportsByHostId(Long hostId);
 
+    com.bookingnwt.analyticsservice.dto.DetailedHostReportDto getDetailedHostReport(Long hostId);
+
     List<RevenueReportResponseDTO> getReportsByHostIdAndYear(Long hostId, Integer year);
 
     List<RevenueReportResponseDTO> getReportsByPeriod(Integer year, Integer month);
