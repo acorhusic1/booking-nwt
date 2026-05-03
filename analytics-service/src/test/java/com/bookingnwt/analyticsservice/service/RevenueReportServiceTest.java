@@ -33,6 +33,9 @@ class RevenueReportServiceTest {
     @Mock
     private RevenueReportMapper mapper;
 
+    @Mock
+    private com.bookingnwt.analyticsservice.client.UserClient userClient;
+
     @InjectMocks
     private RevenueReportServiceImpl service;
 
@@ -176,5 +179,42 @@ class RevenueReportServiceTest {
         when(repository.existsById(99L)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class, () -> service.deleteReport(99L));
+    }
+
+    @Test
+    void getDetailedHostReport_Success() {
+        com.bookingnwt.analyticsservice.dto.UserDto mockUser = com.bookingnwt.analyticsservice.dto.UserDto.builder()
+                .id(2L)
+                .firstName("Test")
+                .lastName("Host")
+                .email("host@test.com")
+                .role("HOST")
+                .build();
+
+        when(repository.findByHostId(2L)).thenReturn(List.of(entity));
+        when(mapper.toDTO(entity)).thenReturn(responseDTO);
+        when(userClient.getUserById(2L)).thenReturn(mockUser);
+
+        com.bookingnwt.analyticsservice.dto.DetailedHostReportDto result = service.getDetailedHostReport(2L);
+
+        assertNotNull(result);
+        assertEquals(2L, result.getHostDetails().getId());
+        assertEquals("Test", result.getHostDetails().getFirstName());
+        assertEquals(1, result.getReports().size());
+    }
+
+    @Test
+    void getDetailedHostReportFallback_Success() {
+        Throwable dummyException = new RuntimeException("Service down");
+        
+        when(repository.findByHostId(2L)).thenReturn(List.of(entity));
+        when(mapper.toDTO(entity)).thenReturn(responseDTO);
+
+        com.bookingnwt.analyticsservice.dto.DetailedHostReportDto result = service.getDetailedHostReportFallback(2L, dummyException);
+
+        assertNotNull(result);
+        assertEquals(2L, result.getHostDetails().getId());
+        assertEquals("Nepoznat (Fallback)", result.getHostDetails().getFirstName());
+        assertEquals(1, result.getReports().size());
     }
 }

@@ -38,6 +38,11 @@ public class RevenueReportController {
         return ResponseEntity.ok(reportService.getReportsByHostId(hostId));
     }
 
+    @GetMapping("/host/{hostId}/detailed")
+    public ResponseEntity<com.bookingnwt.analyticsservice.dto.DetailedHostReportDto> getDetailedHostReport(@PathVariable Long hostId) {
+        return ResponseEntity.ok(reportService.getDetailedHostReport(hostId));
+    }
+
     @GetMapping("/host/{hostId}/year/{year}")
     public ResponseEntity<List<RevenueReportResponseDTO>> getReportsByHostIdAndYear(
             @PathVariable Long hostId, @PathVariable Integer year) {
