@@ -22,7 +22,13 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(IdentityVerificationController.class)
+@WebMvcTest(controllers = IdentityVerificationController.class, excludeAutoConfiguration = {
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class
+}, excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+    type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+    classes = {com.bookingnwt.userservice.security.SecurityConfig.class, com.bookingnwt.userservice.security.JwtAuthenticationFilter.class}
+))
 @Import(GlobalExceptionHandler.class)
 class IdentityVerificationControllerTest {
 

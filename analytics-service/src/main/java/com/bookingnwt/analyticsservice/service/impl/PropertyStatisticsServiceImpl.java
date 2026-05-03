@@ -41,6 +41,17 @@ public class PropertyStatisticsServiceImpl implements PropertyStatisticsService 
     }
 
     @Override
+    public org.springframework.data.domain.Page<PropertyStatisticsResponseDTO> getAllStatisticsPaginated(org.springframework.data.domain.Pageable pageable) {
+        return repository.findAll(pageable).map(mapper::toDTO);
+    }
+
+    @Override
+    public List<PropertyStatisticsResponseDTO> createStatisticsBatch(List<PropertyStatisticsRequestDTO> dtos) {
+        List<PropertyStatistics> entities = dtos.stream().map(mapper::toEntity).collect(Collectors.toList());
+        return repository.saveAll(entities).stream().map(mapper::toDTO).collect(Collectors.toList());
+    }
+
+    @Override
     public List<PropertyStatisticsResponseDTO> getStatisticsByPropertyId(Long propertyId) {
         return repository.findByPropertyId(propertyId).stream()
                 .map(mapper::toDTO)

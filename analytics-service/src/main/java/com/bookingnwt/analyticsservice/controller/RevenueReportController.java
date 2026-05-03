@@ -19,6 +19,7 @@ public class RevenueReportController {
     private final RevenueReportService reportService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('HOST')")
     public ResponseEntity<RevenueReportResponseDTO> createReport(@Valid @RequestBody RevenueReportRequestDTO dto) {
         return new ResponseEntity<>(reportService.createReport(dto), HttpStatus.CREATED);
     }
@@ -56,6 +57,7 @@ public class RevenueReportController {
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteReport(@PathVariable Long id) {
         reportService.deleteReport(id);
         return ResponseEntity.noContent().build();

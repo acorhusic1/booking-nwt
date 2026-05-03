@@ -19,8 +19,15 @@ public class PropertyStatisticsController {
     private final PropertyStatisticsService statisticsService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PropertyStatisticsResponseDTO> createStatistics(@Valid @RequestBody PropertyStatisticsRequestDTO dto) {
         return new ResponseEntity<>(statisticsService.createStatistics(dto), HttpStatus.CREATED);
+    }
+
+    @PostMapping("/batch")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<PropertyStatisticsResponseDTO>> createStatisticsBatch(@Valid @RequestBody List<PropertyStatisticsRequestDTO> dtos) {
+        return new ResponseEntity<>(statisticsService.createStatisticsBatch(dtos), HttpStatus.CREATED);
     }
 
     @GetMapping("/{id}")
@@ -31,6 +38,11 @@ public class PropertyStatisticsController {
     @GetMapping
     public ResponseEntity<List<PropertyStatisticsResponseDTO>> getAllStatistics() {
         return ResponseEntity.ok(statisticsService.getAllStatistics());
+    }
+
+    @GetMapping("/paginated")
+    public ResponseEntity<org.springframework.data.domain.Page<PropertyStatisticsResponseDTO>> getAllStatisticsPaginated(org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(statisticsService.getAllStatisticsPaginated(pageable));
     }
 
     @GetMapping("/property/{propertyId}")
