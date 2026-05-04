@@ -6,8 +6,10 @@ import com.bookingnwt.paymentservice.exception.ResourceNotFoundException;
 import com.bookingnwt.paymentservice.mapper.PaymentMapper;
 import com.bookingnwt.paymentservice.model.Payment;
 import com.bookingnwt.paymentservice.model.PaymentStatus;
+import com.bookingnwt.paymentservice.client.ReservationStatusGateway;
 import com.bookingnwt.paymentservice.repository.PaymentRepository;
 import com.bookingnwt.paymentservice.service.impl.PaymentServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,12 @@ class PaymentServiceTest {
 
     @Mock
     private PaymentMapper paymentMapper;
+
+    @Mock
+    private ObjectMapper objectMapper;
+
+    @Mock
+    private ReservationStatusGateway reservationStatusGateway;
 
     @InjectMocks
     private PaymentServiceImpl paymentService;
