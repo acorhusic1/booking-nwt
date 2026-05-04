@@ -1,6 +1,26 @@
 # Reservation Service - API Dokumentacija
 
-**Base URL:** `http://localhost:8083`
+**Base URL:** `http://localhost:8083` (kroz API Gateway: `http://localhost:8080/api/reservations/...`)
+
+> **Sigurnost (Task 7):** svi endpointi zahtijevaju validan JWT u zaglavlju
+> `Authorization: Bearer <token>`. Role potrebne za pojedinačni endpoint
+> navedene su pored opisa. Greške:
+> - `401 Unauthorized` — token nedostaje ili je nevalidan
+> - `403 Forbidden` — token validan ali rola nije dovoljna
+
+> **Service discovery / healthchecks (Task 4):** servis se registruje na
+> Eureku (`http://eureka-server:8761`). Healthcheck dostupan na
+> `GET /actuator/health`, stanje circuit-breakera na
+> `GET /actuator/circuitbreakers`.
+
+> **Sinhrona komunikacija (Task 5 — Reservation → Property):** kreiranje
+> rezervacije (`POST /api/reservations` i `POST /api/reservations/batch`)
+> sinhrono provjerava preko OpenFeigna i Eureke da li smještaj postoji,
+> nije neaktivan, i nema preklapajući blok u kalendaru. Poziv je zaštićen
+> Resilience4j circuit-breakerom (`property-service`). Politika je
+> **fail-closed** — ako property-service nije dostupan, rezervacija se odbija
+> sa **`409 Conflict`** (ne kreiramo nepotvrđeni booking jer bi to vodilo u
+> dvostruke rezervacije).
 
 ---
 
@@ -71,8 +91,45 @@
 - **Response (200):** Rezervacija sa statusom `CANCELLED`
 
 ### 1.9 Brisanje rezervacije
-- **DELETE** `/api/reservations/{id}`
+- **DELETE** `/api/reservations/{id}` — _Role: ADMIN_
 - **Response (204):** No Content
+
+### 1.10 PATCH (Task 4 — RFC 6902 JSON Patch)
+- **PATCH** `/api/reservations/{id}` — _Role: USER, ADMIN, HOST_
+- **Content-Type:** `application/json-patch+json`
+- **Request Body (primjer — promjena broja gostiju i ukupne cijene):**
+```json
+[
+  { "op": "replace", "path": "/numGuests", "value": 4 },
+  { "op": "replace", "path": "/totalPrice", "value": 600.00 }
+]
+```
+- **Response (200):** Ažurirana rezervacija
+- **Response (400):** Neispravna PATCH operacija
+
+### 1.11 Paginacija + sortiranje rezervacija po gostu (Task 4)
+- **GET** `/api/reservations/guest/{guestId}/paged?page=0&size=10&sort=createdAt,desc`
+- _Role: USER, ADMIN_
+- **Response (200):** Spring `Page<ReservationResponseDTO>` sa `content`, `totalPages`, itd.
+
+### 1.12 Custom JPQL — rezervacije po gostu u opsegu datuma (Task 4)
+- **GET** `/api/reservations/guest/{guestId}/range?from=2026-06-01&to=2026-09-30`
+- _Role: USER, ADMIN_
+- **Response (200):** Lista rezervacija u datom opsegu
+
+### 1.13 Custom @Query — prihod hosta (Task 4)
+- **GET** `/api/reservations/host/{hostId}/revenue`
+- _Role: HOST, ADMIN_
+- **Response (200):** Suma `totalPrice` rezervacija sa statusom `CONFIRMED`/`ACTIVE`/`COMPLETED`
+
+### 1.14 Batch unos (Task 4)
+- **POST** `/api/reservations/batch` — _Role: ADMIN_
+- **Request Body:** Lista `ReservationRequestDTO` objekata
+- **Response (201):** Lista kreiranih rezervacija (`saveAll`)
+
+### 1.15 EntityGraph — rezervacija sa svim detaljima (Task 4)
+- **GET** `/api/reservations/{id}/details` — _Role: USER, ADMIN, HOST_
+- **Response (200):** Rezervacija + `cancellationPolicy` + `promoCode` + `problemReports` u jednom upitu
 
 ---
 

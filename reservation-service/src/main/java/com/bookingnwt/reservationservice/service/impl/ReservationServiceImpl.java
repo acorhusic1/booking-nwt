@@ -1,5 +1,6 @@
 package com.bookingnwt.reservationservice.service.impl;
 
+import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
 import com.bookingnwt.reservationservice.dto.ReservationRequestDTO;
 import com.bookingnwt.reservationservice.dto.ReservationResponseDTO;
 import com.bookingnwt.reservationservice.exception.ResourceNotFoundException;
@@ -37,10 +38,18 @@ public class ReservationServiceImpl implements ReservationService {
     private final PromoCodeRepository promoCodeRepository;
     private final ReservationMapper reservationMapper;
     private final ObjectMapper objectMapper;
+    private final PropertyAvailabilityGateway propertyAvailabilityGateway;
 
     @Override
     @Transactional
     public ReservationResponseDTO createReservation(ReservationRequestDTO dto) {
+        // Task 5 — synchronous availability check against property-service.
+        // Throws PropertyUnavailableException -> 409 Conflict if the property
+        // doesn't exist, is inactive, is blocked on the calendar, or
+        // property-service is unreachable (fail-closed via circuit breaker).
+        propertyAvailabilityGateway.verifyAvailable(
+                dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut());
+
         Reservation reservation = reservationMapper.toEntity(dto);
         reservation.setStatus(ReservationStatus.CREATED);
         reservation.setCreatedAt(LocalDateTime.now());
@@ -190,6 +199,14 @@ public class ReservationServiceImpl implements ReservationService {
         if (dtos == null || dtos.isEmpty()) {
             throw new IllegalArgumentException("Lista rezervacija ne smije biti prazna");
         }
+        // Task 5 — verify availability for every item in the batch BEFORE saving;
+        // any single conflict aborts the whole batch (the @Transactional rollback
+        // ensures partial state never leaks).
+        for (ReservationRequestDTO dto : dtos) {
+            propertyAvailabilityGateway.verifyAvailable(
+                    dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut());
+        }
+
         List<Reservation> entities = dtos.stream().map(dto -> {
             Reservation r = reservationMapper.toEntity(dto);
             r.setStatus(ReservationStatus.CREATED);

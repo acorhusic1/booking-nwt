@@ -8,6 +8,7 @@ import com.bookingnwt.reservationservice.model.Reservation;
 import com.bookingnwt.reservationservice.model.ReservationStatus;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
+import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
 import com.bookingnwt.reservationservice.service.impl.ReservationServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -46,6 +47,8 @@ class ReservationAdvancedServiceTest {
     private PromoCodeRepository promoCodeRepository;
     @Mock
     private ReservationMapper reservationMapper;
+    @Mock
+    private PropertyAvailabilityGateway propertyAvailabilityGateway;
 
     @InjectMocks
     private ReservationServiceImpl service;
@@ -86,7 +89,8 @@ class ReservationAdvancedServiceTest {
         ObjectMapper realMapper = JsonMapper.builder().findAndAddModules().build();
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
-                promoCodeRepository, reservationMapper, realMapper);
+                promoCodeRepository, reservationMapper, realMapper,
+                propertyAvailabilityGateway);
 
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(entity));
         when(reservationMapper.toResponseDTO(any(Reservation.class))).thenReturn(dto);
@@ -104,7 +108,8 @@ class ReservationAdvancedServiceTest {
         ObjectMapper realMapper = JsonMapper.builder().findAndAddModules().build();
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
-                promoCodeRepository, reservationMapper, realMapper);
+                promoCodeRepository, reservationMapper, realMapper,
+                propertyAvailabilityGateway);
 
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(entity));
 
@@ -118,7 +123,8 @@ class ReservationAdvancedServiceTest {
         ObjectMapper realMapper = JsonMapper.builder().findAndAddModules().build();
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
-                promoCodeRepository, reservationMapper, realMapper);
+                promoCodeRepository, reservationMapper, realMapper,
+                propertyAvailabilityGateway);
 
         when(reservationRepository.findById(99L)).thenReturn(Optional.empty());
         var patch = realMapper.readTree("[{\"op\":\"replace\",\"path\":\"/numGuests\",\"value\":4}]");

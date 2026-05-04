@@ -2,8 +2,26 @@
 
 ## Bazni URL
 ```
-http://localhost:8084/api
+http://localhost:8084/api          (direktno)
+http://localhost:8080/api/payments (kroz API Gateway)
 ```
+
+> **Sigurnost (Task 7):** svi endpointi zahtijevaju validan JWT u zaglavlju
+> `Authorization: Bearer <token>`. Role potrebne za pojedinačni endpoint
+> navedene su pored opisa. Greške:
+> - `401 Unauthorized` — token nedostaje ili je nevalidan
+> - `403 Forbidden` — token validan ali rola nije dovoljna
+
+> **Sinhrona komunikacija (Task 5):** kada se status plaćanja promijeni na
+> `COMPLETED` ili `FAILED`, payment-service preko OpenFeign-a poziva
+> reservation-service da podesi status rezervacije (`CONFIRMED` / `CANCELLED`).
+> Poziv je zaštićen Resilience4j circuit-breakerom (`reservation-service`) sa
+> fallbackom — ako je downstream nedostupan, plaćanje i dalje uspijeva.
+
+> **Service discovery / healthchecks (Task 4):** servis se registruje na
+> Eureku (`http://eureka-server:8761`). Healthcheck dostupan na
+> `GET /actuator/health`, stanje circuit-breakera na
+> `GET /actuator/circuitbreakers`.
 
 ## Error Format
 ```json
@@ -150,9 +168,77 @@ Refundiraj plaćanje. Samo plaćanja sa statusom `COMPLETED` mogu biti refundira
 ---
 
 ### DELETE /api/payments/{id}
-Obriši plaćanje.
+Obriši plaćanje. _Role: ADMIN_
 
 **Response:** `204 No Content` | `404 Not Found`
+
+---
+
+### PATCH /api/payments/{id}  *(Task 4 — RFC 6902 JSON Patch)*
+_Role: ADMIN_  ·  Content-Type: `application/json-patch+json`
+
+```json
+[
+  { "op": "replace", "path": "/method", "value": "CARD" }
+]
+```
+
+**Response:** `200 OK` | `400 Bad Request`
+
+---
+
+### GET /api/payments/guest/{guestId}/paged  *(Task 4 — Pageable)*
+_Role: USER, ADMIN_
+
+Query parametri: `?page=0&size=10&sort=processedAt,desc`
+
+**Response:** `200 OK` — Spring `Page<PaymentResponseDTO>`
+
+---
+
+### GET /api/payments/guest/{guestId}/total-spent  *(Task 4 — custom @Query)*
+_Role: USER, ADMIN_
+
+Vraća sumu svih `COMPLETED` plaćanja za gosta.
+
+**Response:** `200 OK`
+```
+"1234.56"
+```
+
+---
+
+### GET /api/payments/status/{status}/min/{minAmount}  *(Task 4 — custom JPQL)*
+_Role: ADMIN_
+
+Plaćanja zadanog statusa sa iznosom ≥ `minAmount`, sortirana opadajuće.
+
+**Response:** `200 OK` — lista plaćanja  ·  `400 Bad Request` ako je `minAmount < 0`
+
+---
+
+### GET /api/payments/status/{status}/count
+_Role: ADMIN_
+
+**Response:** `200 OK` — broj plaćanja datog statusa
+
+---
+
+### POST /api/payments/batch  *(Task 4 — saveAll)*
+_Role: ADMIN_
+
+**Request Body:** Lista `PaymentRequestDTO`
+
+**Response:** `201 Created` — lista kreiranih plaćanja  ·  `400 Bad Request` ako je lista prazna
+
+---
+
+### GET /api/payments/{id}/details  *(Task 4 — @EntityGraph)*
+_Role: USER, ADMIN_
+
+Vraća plaćanje + `relatedPayment` + `walletTransactions` u jednom upitu (bez N+1).
+
+**Response:** `200 OK` | `404 Not Found`
 
 ---
 

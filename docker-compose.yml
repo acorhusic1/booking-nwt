@@ -92,10 +92,15 @@ services:
     container_name: reservation-service
     ports:
       - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   payment-service:
@@ -105,10 +110,15 @@ services:
     container_name: payment-service
     ports:
       - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   notification-service:

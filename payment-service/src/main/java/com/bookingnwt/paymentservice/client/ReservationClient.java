@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  * about payment lifecycle events (e.g. mark a reservation CONFIRMED on successful payment,
  * or back to CREATED on refund). The service name resolves through Eureka — no hardcoded host/port.
  */
-@FeignClient(name = "reservation-service", fallback = ReservationClientFallback.class)
+@FeignClient(name = "reservation-service")
 public interface ReservationClient {
 
     @PutMapping("/api/reservations/{id}/status")
