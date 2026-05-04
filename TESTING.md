@@ -40,5 +40,15 @@ Za testiranje funkcionalnosti review servisa:
 2. **Verifikacija:**
    Provjerite da li API vraća JSON listu recenzija. Ako je lista prazna, provjerite da li u bazi `reviewdb` postoje podaci za taj ID.
 
-## 4. Rješavanje problema (Troubleshooting)
-...
+## 5. Pokretanje testova (Maven u Docker-u)
+Ako nemate instaliran Maven lokalno, možete pokrenuti testove unutar Docker kontejnera koristeći postojeću sliku:
+
+```bash
+# Pokretanje svih testova u property-service
+docker run --rm -v ${PWD}/property-service:/app -w /app maven:3.9-eclipse-temurin-21 ./mvnw test
+
+# Pokretanje specifične klase
+docker run --rm -v ${PWD}/property-service:/app -w /app maven:3.9-eclipse-temurin-21 ./mvnw test -Dtest=PropertyControllerTest
+```
+
+*Napomena: Ako koristite PowerShell, koristite `${PWD}` kao što je prikazano.*
