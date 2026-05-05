@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -26,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @WebMvcTest(ReviewController.class)
 @Import(GlobalExceptionHandler.class)
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc(addFilters = false)
 class ReviewControllerTest {
 
     @Autowired
@@ -53,6 +54,29 @@ class ReviewControllerTest {
         r.setComment("Odličan smještaj!");
         r.setCreatedAt(LocalDateTime.now());
         return r;
+    }
+
+    @Test
+    void createReviews_shouldReturn201() throws Exception {
+        ReviewRequest request = new ReviewRequest();
+        request.setReservationId(100L);
+        request.setGuestId(1L);
+        request.setPropertyId(1L);
+        request.setHostId(1L);
+        request.setRatingCleanliness(new BigDecimal("4.5"));
+        request.setRatingLocation(new BigDecimal("4.0"));
+        request.setRatingCommunication(new BigDecimal("5.0"));
+        request.setRatingValue(new BigDecimal("4.5"));
+        request.setRatingAccuracy(new BigDecimal("4.0"));
+        request.setComment("Odličan smještaj!");
+
+        when(reviewService.createReviews(any())).thenReturn(List.of(createReviewResponse()));
+
+        mockMvc.perform(post("/api/reviews/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(List.of(request))))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$[0].comment").value("Odličan smještaj!"));
     }
 
     @Test

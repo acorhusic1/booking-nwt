@@ -24,6 +24,12 @@ public class DataLoader {
                                         WishlistItemRepository wishlistItemRepo,
                                         ReviewRepository reviewRepo) {
         return args -> {
+            // Check if data already exists
+            if (amenityRepo.count() > 0) {
+                System.out.println("=== Property Service: Data already loaded, skipping initialization ===");
+                return;
+            }
+
             // --- Amenities ---
             Amenity wifi = amenityRepo.save(new Amenity("WiFi", AmenityCategory.BASIC));
             Amenity parking = amenityRepo.save(new Amenity("Parking", AmenityCategory.BASIC));

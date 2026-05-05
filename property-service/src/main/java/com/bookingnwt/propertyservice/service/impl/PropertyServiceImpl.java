@@ -23,11 +23,9 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PropertyResponse> getAllProperties() {
-        return propertyRepository.findAll()
-                .stream()
-                .map(propertyMapper::toResponse)
-                .toList();
+    public org.springframework.data.domain.Page<PropertyResponse> getAllProperties(org.springframework.data.domain.Pageable pageable) {
+        return propertyRepository.findAll(pageable)
+                .map(propertyMapper::toResponse);
     }
 
     @Override
@@ -51,6 +49,15 @@ public class PropertyServiceImpl implements PropertyService {
     @Transactional(readOnly = true)
     public List<PropertyResponse> getPropertiesByCity(String city) {
         return propertyRepository.findByCityAndIsActiveTrue(city)
+                .stream()
+                .map(propertyMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyResponse> getAvailableProperties(String city, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        return propertyRepository.findAvailableProperties(city, startDate, endDate)
                 .stream()
                 .map(propertyMapper::toResponse)
                 .toList();
