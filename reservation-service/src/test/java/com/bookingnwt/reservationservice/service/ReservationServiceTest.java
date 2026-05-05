@@ -8,8 +8,10 @@ import com.bookingnwt.reservationservice.model.Reservation;
 import com.bookingnwt.reservationservice.model.ReservationStatus;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
+import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
 import com.bookingnwt.reservationservice.service.impl.ReservationServiceImpl;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +40,10 @@ class ReservationServiceTest {
     private PromoCodeRepository promoCodeRepository;
     @Mock
     private ReservationMapper reservationMapper;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private PropertyAvailabilityGateway propertyAvailabilityGateway;
 
     @InjectMocks
     private ReservationServiceImpl reservationService;

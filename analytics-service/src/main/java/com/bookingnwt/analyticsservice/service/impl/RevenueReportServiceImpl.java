@@ -19,6 +19,7 @@ public class RevenueReportServiceImpl implements RevenueReportService {
 
     private final RevenueReportRepository repository;
     private final RevenueReportMapper mapper;
+    private final com.bookingnwt.analyticsservice.client.UserClient userClient;
 
     @Override
     public RevenueReportResponseDTO createReport(RevenueReportRequestDTO dto) {
@@ -45,6 +46,38 @@ public class RevenueReportServiceImpl implements RevenueReportService {
         return repository.findByHostId(hostId).stream()
                 .map(mapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker(name = "userService", fallbackMethod = "getDetailedHostReportFallback")
+    public com.bookingnwt.analyticsservice.dto.DetailedHostReportDto getDetailedHostReport(Long hostId) {
+        // Synchronous inter-service call to user-service using Feign
+        com.bookingnwt.analyticsservice.dto.UserDto hostDetails = userClient.getUserById(hostId);
+        
+        List<RevenueReportResponseDTO> reports = getReportsByHostId(hostId);
+        
+        return com.bookingnwt.analyticsservice.dto.DetailedHostReportDto.builder()
+                .hostDetails(hostDetails)
+                .reports(reports)
+                .build();
+    }
+
+    public com.bookingnwt.analyticsservice.dto.DetailedHostReportDto getDetailedHostReportFallback(Long hostId, Throwable throwable) {
+        // Fallback when user-service is down or fails
+        com.bookingnwt.analyticsservice.dto.UserDto fallbackUser = com.bookingnwt.analyticsservice.dto.UserDto.builder()
+                .id(hostId)
+                .firstName("Nepoznat (Fallback)")
+                .lastName("Korisnik")
+                .email("nedostupno@fallback.com")
+                .role("HOST")
+                .build();
+                
+        List<RevenueReportResponseDTO> reports = getReportsByHostId(hostId);
+        
+        return com.bookingnwt.analyticsservice.dto.DetailedHostReportDto.builder()
+                .hostDetails(fallbackUser)
+                .reports(reports)
+                .build();
     }
 
     @Override

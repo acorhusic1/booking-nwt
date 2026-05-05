@@ -12,7 +12,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -22,7 +22,13 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(UserPreferenceController.class)
+@WebMvcTest(controllers = UserPreferenceController.class, excludeAutoConfiguration = {
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class
+}, excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+    type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+    classes = {com.bookingnwt.userservice.security.SecurityConfig.class, com.bookingnwt.userservice.security.JwtAuthenticationFilter.class}
+))
 @Import(GlobalExceptionHandler.class)
 class UserPreferenceControllerTest {
 

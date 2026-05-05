@@ -1,0 +1,33 @@
+# Override file used to spin up a SECOND reservation-service instance
+# for demonstrating Spring Cloud LoadBalancer (Task 4 / Eureka).
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.loadbalancing.yml up -d --build
+#
+# The second instance binds to host port 9083 and registers under the same
+# service name "reservation-service" in Eureka, so any client calling
+# lb://reservation-service through the Gateway / Feign distributes load
+# across both pods.
+
+services:
+
+  reservation-service-2:
+    build:
+      context: ./reservation-service
+      dockerfile: Dockerfile
+    container_name: reservation-service-2
+    ports:
+      - "9083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - SPRING_APPLICATION_NAME=reservation-service
+      - EUREKA_INSTANCE_INSTANCE_ID=reservation-service-2:${RANDOM:-2}
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started

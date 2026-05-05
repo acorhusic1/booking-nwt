@@ -13,8 +13,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -28,7 +28,13 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(RevenueReportController.class)
+@WebMvcTest(controllers = RevenueReportController.class, excludeAutoConfiguration = {
+    org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+    org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class
+}, excludeFilters = @org.springframework.context.annotation.ComponentScan.Filter(
+    type = org.springframework.context.annotation.FilterType.ASSIGNABLE_TYPE,
+    classes = {com.bookingnwt.analyticsservice.security.SecurityConfig.class, com.bookingnwt.analyticsservice.security.JwtAuthenticationFilter.class}
+))
 @Import(GlobalExceptionHandler.class)
 class RevenueReportControllerTest {
 

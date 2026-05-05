@@ -3,10 +3,13 @@ package com.bookingnwt.paymentservice.controller;
 import com.bookingnwt.paymentservice.dto.WalletTransactionResponseDTO;
 import com.bookingnwt.paymentservice.exception.GlobalExceptionHandler;
 import com.bookingnwt.paymentservice.exception.ResourceNotFoundException;
+import com.bookingnwt.paymentservice.security.JwtAuthenticationFilter;
+import com.bookingnwt.paymentservice.security.JwtTokenProvider;
 import com.bookingnwt.paymentservice.service.WalletTransactionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -20,6 +23,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(WalletTransactionController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class WalletTransactionControllerTest {
 
@@ -28,6 +32,12 @@ class WalletTransactionControllerTest {
 
     @MockitoBean
     private WalletTransactionService transactionService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     private WalletTransactionResponseDTO responseDTO;
 

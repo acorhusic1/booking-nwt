@@ -5,17 +5,20 @@ import com.bookingnwt.paymentservice.dto.PaymentResponseDTO;
 import com.bookingnwt.paymentservice.exception.GlobalExceptionHandler;
 import com.bookingnwt.paymentservice.exception.ResourceNotFoundException;
 import com.bookingnwt.paymentservice.model.PaymentStatus;
+import com.bookingnwt.paymentservice.security.JwtAuthenticationFilter;
+import com.bookingnwt.paymentservice.security.JwtTokenProvider;
 import com.bookingnwt.paymentservice.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,6 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PaymentController.class)
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler.class)
 class PaymentControllerTest {
 
@@ -36,6 +40,12 @@ class PaymentControllerTest {
 
     @MockitoBean
     private PaymentService paymentService;
+
+    @MockitoBean
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @MockitoBean
+    private JwtTokenProvider jwtTokenProvider;
 
     private ObjectMapper objectMapper;
     private PaymentResponseDTO responseDTO;

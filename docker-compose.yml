@@ -64,10 +64,14 @@ services:
     container_name: user-service
     ports:
       - "8081:8081"
+    environment:
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   property-service-1:
@@ -103,10 +107,16 @@ services:
     container_name: reservation-service
     ports:
       - "8083:8083"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   payment-service:
@@ -116,10 +126,16 @@ services:
     container_name: payment-service
     ports:
       - "8084:8084"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   notification-service:

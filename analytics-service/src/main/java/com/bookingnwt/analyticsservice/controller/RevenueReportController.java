@@ -19,6 +19,7 @@ public class RevenueReportController {
     private final RevenueReportService reportService;
 
     @PostMapping
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN') or hasRole('HOST')")
     public ResponseEntity<RevenueReportResponseDTO> createReport(@Valid @RequestBody RevenueReportRequestDTO dto) {
         return new ResponseEntity<>(reportService.createReport(dto), HttpStatus.CREATED);
     }
@@ -38,6 +39,11 @@ public class RevenueReportController {
         return ResponseEntity.ok(reportService.getReportsByHostId(hostId));
     }
 
+    @GetMapping("/host/{hostId}/detailed")
+    public ResponseEntity<com.bookingnwt.analyticsservice.dto.DetailedHostReportDto> getDetailedHostReport(@PathVariable Long hostId) {
+        return ResponseEntity.ok(reportService.getDetailedHostReport(hostId));
+    }
+
     @GetMapping("/host/{hostId}/year/{year}")
     public ResponseEntity<List<RevenueReportResponseDTO>> getReportsByHostIdAndYear(
             @PathVariable Long hostId, @PathVariable Integer year) {
@@ -51,6 +57,7 @@ public class RevenueReportController {
     }
 
     @DeleteMapping("/{id}")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteReport(@PathVariable Long id) {
         reportService.deleteReport(id);
         return ResponseEntity.noContent().build();
