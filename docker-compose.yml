@@ -52,8 +52,12 @@ services:
     depends_on:
       eureka-server:
         condition: service_started
+      config-server:
+        condition: service_started
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
 
   # --- Business Microservices ---
 
@@ -145,10 +149,16 @@ services:
     container_name: notification-service
     ports:
       - "8086:8086"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   system-events-service:
@@ -158,10 +168,16 @@ services:
     container_name: system-events-service
     ports:
       - "8087:8087"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   analytics-service:
