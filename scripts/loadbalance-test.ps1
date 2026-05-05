@@ -35,11 +35,10 @@ $sw = [System.Diagnostics.Stopwatch]::StartNew()
 for ($i = 1; $i -le $Requests; $i++) {
     try {
         $resp = Invoke-WebRequest -Uri "$BaseUrl$Path" -Headers $headers -UseBasicParsing -TimeoutSec 10
-        # Spring Boot includes the responding instance in the X-Application-Context
-        # or we can use a custom 'X-Instance-Id' header if added. Fallback to status.
-        $instance = $resp.Headers["X-Instance-Id"]
-        if (-not $instance) { $instance = $resp.Headers["X-Application-Context"] }
-        if (-not $instance) { $instance = "unknown-instance" }
+        # Invoke-WebRequest returns Headers values as String[] — pick first and cast.
+        $idArr = $resp.Headers["X-Instance-Id"]
+        if (-not $idArr) { $idArr = $resp.Headers["X-Application-Context"] }
+        $instance = if ($idArr) { [string]($idArr | Select-Object -First 1) } else { "unknown-instance" }
         if (-not $instanceCounts.ContainsKey($instance)) { $instanceCounts[$instance] = 0 }
         $instanceCounts[$instance]++
     } catch {
