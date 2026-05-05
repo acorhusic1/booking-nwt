@@ -1,5 +1,7 @@
 package com.bookingnwt.propertyservice.service.impl;
 
+import com.bookingnwt.propertyservice.client.UserClient;
+import com.bookingnwt.propertyservice.dto.UserDTO;
 import com.bookingnwt.propertyservice.dto.ReviewRequest;
 import com.bookingnwt.propertyservice.dto.ReviewResponse;
 import com.bookingnwt.propertyservice.exception.ResourceNotFoundException;
@@ -23,13 +25,16 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final ReviewRepository reviewRepository;
     private final ReviewMapper reviewMapper;
+    private final UserClient userClient;
 
     @Override
     @Transactional(readOnly = true)
     public ReviewResponse getReviewById(Long id) {
         Review review = reviewRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Recenzija sa ID " + id + " nije pronađena"));
-        return reviewMapper.toResponse(review);
+        ReviewResponse response = reviewMapper.toResponse(review);
+        enrichWithGuestName(response);
+        return response;
     }
 
     @Override
@@ -38,6 +43,7 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewRepository.findByPropertyId(propertyId)
                 .stream()
                 .map(reviewMapper::toResponse)
+                .peek(this::enrichWithGuestName)
                 .toList();
     }
 
@@ -47,12 +53,43 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewRepository.findByGuestId(guestId)
                 .stream()
                 .map(reviewMapper::toResponse)
+                .peek(this::enrichWithGuestName)
                 .toList();
+    }
+
+    private void enrichWithGuestName(ReviewResponse response) {
+        try {
+            UserDTO user = userClient.getUserById(response.getGuestId());
+            response.setGuestName(user.getFirstName() + " " + user.getLastName());
+        } catch (Exception e) {
+            response.setGuestName("Korisnik Nepoznat");
+        }
     }
 
     @Override
     public ReviewResponse createReview(ReviewRequest request) {
         Review review = reviewMapper.toEntity(request);
+        calculateOverallRating(review, request);
+        Review saved = reviewRepository.save(review);
+        return reviewMapper.toResponse(saved);
+    }
+
+    @Override
+    public List<ReviewResponse> createReviews(List<ReviewRequest> requests) {
+        List<Review> reviews = requests.stream()
+                .map(request -> {
+                    Review review = reviewMapper.toEntity(request);
+                    calculateOverallRating(review, request);
+                    return review;
+                })
+                .toList();
+        List<Review> saved = reviewRepository.saveAll(reviews);
+        return saved.stream()
+                .map(reviewMapper::toResponse)
+                .toList();
+    }
+
+    private void calculateOverallRating(Review review, ReviewRequest request) {
         BigDecimal overall = request.getRatingCleanliness()
                 .add(request.getRatingLocation())
                 .add(request.getRatingCommunication())
@@ -60,8 +97,6 @@ public class ReviewServiceImpl implements ReviewService {
                 .add(request.getRatingAccuracy())
                 .divide(new BigDecimal("5"), 2, RoundingMode.HALF_UP);
         review.setOverallRating(overall);
-        Review saved = reviewRepository.save(review);
-        return reviewMapper.toResponse(saved);
     }
 
     @Override

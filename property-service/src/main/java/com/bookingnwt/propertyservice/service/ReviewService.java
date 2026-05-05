@@ -10,5 +10,6 @@ public interface ReviewService {
     List<ReviewResponse> getReviewsByPropertyId(Long propertyId);
     List<ReviewResponse> getReviewsByGuestId(Long guestId);
     ReviewResponse createReview(ReviewRequest request);
+    List<ReviewResponse> createReviews(List<ReviewRequest> requests);
     ReviewResponse addHostReply(Long reviewId, String reply);
 }

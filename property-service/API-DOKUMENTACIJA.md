@@ -1,5 +1,10 @@
 # Property Service - REST API Dokumentacija
 
+## Security & Authentication
+Servis koristi **JWT (JSON Web Tokens)** za autentifikaciju i autorizaciju.
+- Svi zaštićeni endpointi zahtijevaju `Authorization: Bearer <token>` zaglavlje.
+- Role se čitaju iz tokena (claim `roles`).
+
 ## Bazni URL
 ```
 http://localhost:8082/api
@@ -33,9 +38,26 @@ http://localhost:8082/api
 ## 1. Property Controller (`/api/properties`)
 
 ### GET /api/properties
-Dohvati sve nekretnine.
+Dohvati sve nekretnine uz podršku za **paginaciju i sortiranje**.
 
-**Response:** `200 OK`
+**Query parametri:**
+- `page` (default 0)
+- `size` (default 20)
+- `sort` (npr. `name,asc` ili `createdAt,desc`)
+
+**Response:** `200 OK` (Spring Data Page objekat)
+
+---
+
+### GET /api/properties/search
+Pretraži dostupne nekretnine po gradu i datumu (Custom JPQL Query).
+
+**Query parametri:**
+- `city` (obavezno)
+- `startDate` (ISO Date, npr. 2026-06-01)
+- `endDate` (ISO Date, npr. 2026-06-15)
+
+**Response:** `200 OK` (Lista dostupnih nekretnina)
 
 ---
 
@@ -302,6 +324,10 @@ Dohvati recenzije gosta.
 ---
 
 ### POST /api/reviews
+Kreiraj recenziju.
+**Dozvoljene role:** `ROLE_GUEST`
+
+**Request Body:**
 ```json
 {
     "reservationId": 200,
@@ -317,37 +343,22 @@ Dohvati recenzije gosta.
 }
 ```
 **Response:** `201 Created`
-```json
-{
-    "id": 4,
-    "reservationId": 200,
-    "guestId": 1,
-    "propertyId": 1,
-    "hostId": 1,
-    "ratingCleanliness": 4.5,
-    "ratingLocation": 4.0,
-    "ratingCommunication": 5.0,
-    "ratingValue": 4.5,
-    "ratingAccuracy": 4.0,
-    "overallRating": 4.40,
-    "comment": "Odličan smještaj, preporučujem!",
-    "hostReply": null,
-    "createdAt": "2026-04-14T01:45:00",
-    "repliedAt": null
-}
-```
+
+---
+
+### POST /api/reviews/batch
+Kreiraj više recenzija odjednom (Batch insert).
+**Dozvoljene role:** `ROLE_GUEST`
+
+**Request Body:** Lista objekata kao kod običnog POST-a.
+
+**Response:** `201 Created`
 
 ---
 
 ### PUT /api/reviews/{id}/reply
 Dodaj odgovor domaćina.
-
-```json
-{
-    "reply": "Hvala vam na lijepim riječima!"
-}
-```
-**Response:** `200 OK`
+**Dozvoljene role:** `ROLE_HOST`
 
 ---
 
