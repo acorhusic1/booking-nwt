@@ -23,6 +23,7 @@ services:
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - SPRING_APPLICATION_NAME=reservation-service
       - EUREKA_INSTANCE_INSTANCE_ID=reservation-service-2:${RANDOM:-2}
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy

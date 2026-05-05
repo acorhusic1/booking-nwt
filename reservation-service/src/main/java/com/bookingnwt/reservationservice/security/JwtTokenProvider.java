@@ -20,7 +20,7 @@ public class JwtTokenProvider {
 
     private final SecretKey signingKey;
 
-    public JwtTokenProvider(@Value("${security.jwt.secret:bookingnwt-shared-jwt-secret-key-for-microservices-min-32-bytes}") String secret) {
+    public JwtTokenProvider(@Value("${app.jwt.secret:very-long-secret-key-that-must-be-at-least-32-characters-long}") String secret) {
         byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
     }
