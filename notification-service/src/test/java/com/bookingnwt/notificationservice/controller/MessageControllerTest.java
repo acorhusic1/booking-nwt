@@ -5,16 +5,18 @@ import com.bookingnwt.notificationservice.dto.MessageResponseDTO;
 import com.bookingnwt.notificationservice.exception.GlobalExceptionHandler;
 import com.bookingnwt.notificationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.notificationservice.service.MessageService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -26,7 +28,16 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(MessageController.class)
+@WebMvcTest(controllers = MessageController.class, excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class
+}, excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = {
+                com.bookingnwt.notificationservice.security.SecurityConfig.class,
+                com.bookingnwt.notificationservice.security.JwtAuthenticationFilter.class,
+                com.bookingnwt.notificationservice.security.FeignClientInterceptor.class
+        }))
 @Import(GlobalExceptionHandler.class)
 class MessageControllerTest {
 
@@ -41,7 +52,7 @@ class MessageControllerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = JsonMapper.builder().findAndAddModules().build();
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
         responseDTO = new MessageResponseDTO();
         responseDTO.setId(1L);
@@ -91,7 +102,8 @@ class MessageControllerTest {
 
     @Test
     void getMessageById_NotFound() throws Exception {
-        when(messageService.getMessageById(99L)).thenThrow(new ResourceNotFoundException("Poruka sa ID 99 nije pronađena"));
+        when(messageService.getMessageById(99L))
+                .thenThrow(new ResourceNotFoundException("Poruka sa ID 99 nije pronađena"));
 
         mockMvc.perform(get("/api/messages/99"))
                 .andExpect(status().isNotFound());
