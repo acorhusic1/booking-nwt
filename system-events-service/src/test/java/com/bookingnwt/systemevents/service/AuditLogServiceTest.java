@@ -152,7 +152,7 @@ class AuditLogServiceTest {
     @Test
     void topActionsSince_Success() {
         Object[] row = new Object[]{"CREATE", 42L};
-        when(auditLogRepository.topActionsSince(any())).thenReturn(List.of(row));
+        when(auditLogRepository.topActionsSince(any())).thenReturn(List.<Object[]>of(row));
 
         List<Map<String, Object>> result = auditLogService.topActionsSince(LocalDateTime.now().minusDays(1));
 
