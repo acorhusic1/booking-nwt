@@ -31,6 +31,7 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/api/properties/test", "/api/properties/search", "/api/properties/{id}", "/api/reviews/property/{id}", "/actuator/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // Public GET endpoints — browsing properties
                 .requestMatchers(HttpMethod.GET, "/api/properties", "/api/properties/**").permitAll()
                 .requestMatchers("/api/properties/test", "/api/properties/search").permitAll()

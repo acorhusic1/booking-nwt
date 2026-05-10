@@ -71,8 +71,12 @@ services:
     depends_on:
       eureka-server:
         condition: service_started
+      config-server:
+        condition: service_started
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
 
   # 5. Frontend React App
   booking-app:
@@ -97,6 +101,8 @@ services:
     ports:
       - "8081:8081"
     environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
@@ -130,6 +136,30 @@ services:
     environment:
       - SERVER_PORT=8092
       - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+    container_name: property-service-1
+    environment:
+      - SERVER_PORT=8082
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
+
+  property-service-2:
+    build:
+      context: ./property-service
+      dockerfile: Dockerfile
+    container_name: property-service-2
+    environment:
+      - SERVER_PORT=8085
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -137,6 +167,8 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
+      config-server:
+        condition: service_started
 
   reservation-service:
     build:
@@ -185,10 +217,16 @@ services:
     container_name: notification-service
     ports:
       - "8086:8086"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   system-events-service:
@@ -198,10 +236,16 @@ services:
     container_name: system-events-service
     ports:
       - "8087:8087"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
   analytics-service:
@@ -211,10 +255,16 @@ services:
     container_name: analytics-service
     ports:
       - "8088:8088"
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
+        condition: service_started
+      config-server:
         condition: service_started
 
 volumes:

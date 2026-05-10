@@ -29,6 +29,7 @@ U korijenu projekta pokrenite PowerShell skriptu:
 - Skripta ispisuje odgovor svakog od 100 zahtjeva.
 - Trebali biste vidjeti rotaciju između `(Port: 8082)` i `(Port: 8083)`.
 
+## 3. Pokretanje testova (Maven u Docker-u)
 ## 3. Testiranje Review Servisa
 Za testiranje funkcionalnosti review servisa:
 

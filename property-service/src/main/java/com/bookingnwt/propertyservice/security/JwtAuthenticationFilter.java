@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Value("${app.jwt.secret:very-long-secret-key-that-must-be-at-least-32-characters-long}")
+    @Value("${jwt.secret:bezbedna_tajna_kljuc_za_potpisivanje_jwt_tokena_123456}")
     private String jwtSecret;
 
     @Override
