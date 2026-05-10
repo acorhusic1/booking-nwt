@@ -18,6 +18,25 @@ services:
       timeout: 5s
       retries: 5
 
+  # 1.5 RabbitMQ (Saga Pattern)
+  rabbitmq:
+    image: rabbitmq:3.12-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   # 2. Eureka Server (Service Discovery)
   eureka-server:
     build:
@@ -55,6 +74,19 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
 
+  # 5. Frontend React App
+  booking-app:
+    build:
+      context: ./booking-app
+      dockerfile: Dockerfile
+    container_name: booking-app
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    environment:
+      - VITE_API_URL=http://localhost:8080
+
   # --- Business Microservices ---
 
   user-service:
@@ -81,11 +113,14 @@ services:
     container_name: property-service-1
     environment:
       - SERVER_PORT=8082
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   property-service-2:
     build:
@@ -93,12 +128,15 @@ services:
       dockerfile: Dockerfile
     container_name: property-service-2
     environment:
-      - SERVER_PORT=8083
+      - SERVER_PORT=8092
+      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   reservation-service:
     build:
@@ -118,6 +156,8 @@ services:
         condition: service_started
       config-server:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   payment-service:
     build:
@@ -179,3 +219,4 @@ services:
 
 volumes:
   db_data:
+  rabbitmq_data:

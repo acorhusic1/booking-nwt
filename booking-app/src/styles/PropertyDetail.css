@@ -1,0 +1,123 @@
+.property-detail {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.back-btn {
+  margin-bottom: 20px;
+  background-color: #6c757d;
+}
+
+.back-btn:hover {
+  background-color: #5a6268;
+}
+
+.property-detail-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+}
+
+.property-main h1 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.location {
+  color: #666;
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.property-image {
+  width: 100%;
+  height: 400px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.property-description,
+.property-features {
+  margin-bottom: 25px;
+}
+
+.property-description h3,
+.property-features h3 {
+  font-size: 20px;
+  margin-bottom: 12px;
+  color: #333;
+}
+
+.property-features ul {
+  list-style: none;
+}
+
+.property-features li {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 16px;
+}
+
+/* Booking Sidebar */
+.booking-sidebar {
+  padding: 20px;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.price-box {
+  text-align: center;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 15px;
+}
+
+.price {
+  font-size: 32px;
+  font-weight: bold;
+  color: #007bff;
+}
+
+.per-night {
+  color: #666;
+  font-size: 14px;
+}
+
+.reserve-btn {
+  padding: 12px;
+  background-color: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.reserve-btn:hover {
+  background-color: #218838;
+}
+
+.reserve-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.reservation-info p {
+  font-size: 13px;
+  color: #666;
+  padding: 5px 0;
+}
+
+@media (max-width: 768px) {
+  .property-detail-container {
+    grid-template-columns: 1fr;
+  }
+}
+

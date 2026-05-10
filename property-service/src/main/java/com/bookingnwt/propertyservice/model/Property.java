@@ -51,6 +51,9 @@ public class Property {
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 
+    @Column(name = "available")
+    private Boolean available = true;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

@@ -24,5 +24,6 @@ public class PropertyResponse {
     private BigDecimal longitude;
     private Integer maxGuests;
     private Boolean isActive;
+    private Boolean available;
     private LocalDateTime createdAt;
 }

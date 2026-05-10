@@ -20,6 +20,7 @@ public interface PropertyMapper {
     @Mapping(target = "pricingRule", ignore = true)
     @Mapping(target = "calendarBlocks", ignore = true)
     @Mapping(target = "seasonalRules", ignore = true)
+    @Mapping(target = "available", constant = "true")
     Property toEntity(PropertyRequest request);
 
     @Mapping(target = "id", ignore = true)
@@ -30,5 +31,6 @@ public interface PropertyMapper {
     @Mapping(target = "pricingRule", ignore = true)
     @Mapping(target = "calendarBlocks", ignore = true)
     @Mapping(target = "seasonalRules", ignore = true)
+    @Mapping(target = "available", ignore = true)
     void updateEntity(PropertyRequest request, @MappingTarget Property property);
 }
