@@ -66,10 +66,17 @@ public class PropertyEventListener {
 
                 if ("CONFIRMED".equals(event.getStatus())) {
                     reservation.setStatus(ReservationStatus.CONFIRMED);
+                    reservation.setUpdatedAt(java.time.LocalDateTime.now());
                     reservationRepository.save(reservation);
-                    log.info("✅ Rezervacija {} je POTVRĐENA — SAGA COMPLETED ✅", event.getReservationId());
+                    log.info("✅ ═══════════════════════════════════════════════════════");
+                    log.info("✅ SAGA COMPLETED — Rezervacija {} je POTVRĐENA", event.getReservationId());
+                    log.info("✅ Lokalna transakcija 1 (Reservation): CREATED → CONFIRMED");
+                    log.info("✅ Lokalna transakcija 2 (Property): available = false");
+                    log.info("✅ Obje transakcije uspješne — akcija je FINALNA");
+                    log.info("✅ ═══════════════════════════════════════════════════════");
                 } else {
                     reservation.setStatus(ReservationStatus.CANCELLED);
+                    reservation.setUpdatedAt(java.time.LocalDateTime.now());
                     reservationRepository.save(reservation);
                     log.warn("⚠️ Rezervacija {} je CANCELLED", event.getReservationId());
                 }

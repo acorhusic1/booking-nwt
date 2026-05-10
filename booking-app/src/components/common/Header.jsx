@@ -20,7 +20,16 @@ export default function Header() {
           {isAuthenticated ? (
             <>
               <Link to="/dashboard">Dashboard</Link>
-              <span className="user-info">Korisnik: {user?.email}</span>
+              {user?.role === 'ADMIN' && (
+                <Link to="/admin" className="nav-admin">⚙️ Admin</Link>
+              )}
+              {user?.role === 'HOST' && (
+                <Link to="/host/dashboard" className="nav-host">🏘️ Moji smještaji</Link>
+              )}
+              <Link to="/profile" className="nav-profile">👤 Profil</Link>
+              <span className="user-info">
+                {user?.email} ({user?.role})
+              </span>
               <LogoutButton />
             </>
           ) : (
@@ -34,4 +43,3 @@ export default function Header() {
     </header>
   )
 }
-

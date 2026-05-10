@@ -1,0 +1,74 @@
+.register-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.role-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.role-option input[type="radio"] {
+  display: none;
+}
+
+.role-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.role-option input[type="radio"]:checked + .role-card {
+  border-color: var(--primary);
+  background: rgba(69, 243, 255, 0.08);
+  box-shadow: 0 0 20px rgba(69, 243, 255, 0.15);
+}
+
+.role-card:hover {
+  border-color: rgba(69, 243, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.role-icon {
+  font-size: 32px;
+}
+
+.role-name {
+  font-weight: 600;
+  color: var(--text-main);
+  font-size: 16px;
+}
+
+.role-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.error-message {
+  color: var(--secondary);
+  font-size: 13px;
+  margin-top: -4px;
+}
+
+@media (max-width: 600px) {
+  .form-row,
+  .role-selector {
+    grid-template-columns: 1fr;
+  }
+}
