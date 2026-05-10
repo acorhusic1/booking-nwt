@@ -1,5 +1,6 @@
 package com.bookingnwt.propertyservice.service.impl;
 
+import com.bookingnwt.propertyservice.dto.PropertyPatchRequest;
 import com.bookingnwt.propertyservice.dto.PropertyRequest;
 import com.bookingnwt.propertyservice.dto.PropertyResponse;
 import com.bookingnwt.propertyservice.exception.ResourceNotFoundException;
@@ -66,6 +67,7 @@ public class PropertyServiceImpl implements PropertyService {
     @Override
     public PropertyResponse createProperty(PropertyRequest request) {
         Property property = propertyMapper.toEntity(request);
+        property.setAvailable(true);
         Property saved = propertyRepository.save(property);
         return propertyMapper.toResponse(saved);
     }
@@ -77,6 +79,48 @@ public class PropertyServiceImpl implements PropertyService {
         propertyMapper.updateEntity(request, property);
         Property updated = propertyRepository.save(property);
         return propertyMapper.toResponse(updated);
+    }
+
+    /**
+     * PATCH — parcijalni update. Samo non-null polja se ažuriraju.
+     */
+    @Override
+    public PropertyResponse patchProperty(Long id, PropertyPatchRequest request) {
+        Property property = propertyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Nekretnina sa ID " + id + " nije pronađena"));
+
+        if (request.getName() != null) property.setName(request.getName());
+        if (request.getDescription() != null) property.setDescription(request.getDescription());
+        if (request.getAddress() != null) property.setAddress(request.getAddress());
+        if (request.getCity() != null) property.setCity(request.getCity());
+        if (request.getCountry() != null) property.setCountry(request.getCountry());
+        if (request.getLatitude() != null) property.setLatitude(request.getLatitude());
+        if (request.getLongitude() != null) property.setLongitude(request.getLongitude());
+        if (request.getMaxGuests() != null) property.setMaxGuests(request.getMaxGuests());
+        if (request.getIsActive() != null) property.setIsActive(request.getIsActive());
+        if (request.getAvailable() != null) property.setAvailable(request.getAvailable());
+
+        Property updated = propertyRepository.save(property);
+        return propertyMapper.toResponse(updated);
+    }
+
+    /**
+     * Batch unos — kreira više nekretnina odjednom koristeći saveAll().
+     */
+    @Override
+    public List<PropertyResponse> batchCreateProperties(List<PropertyRequest> requests) {
+        List<Property> properties = requests.stream()
+                .map(req -> {
+                    Property p = propertyMapper.toEntity(req);
+                    p.setAvailable(true);
+                    return p;
+                })
+                .toList();
+
+        List<Property> saved = propertyRepository.saveAll(properties);
+        return saved.stream()
+                .map(propertyMapper::toResponse)
+                .toList();
     }
 
     @Override

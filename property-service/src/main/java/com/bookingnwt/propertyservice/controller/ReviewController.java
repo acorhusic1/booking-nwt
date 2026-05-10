@@ -35,20 +35,20 @@ public class ReviewController {
     }
 
     @PostMapping
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('GUEST')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('GUEST')")
     public ResponseEntity<ReviewResponse> createReview(@Valid @RequestBody ReviewRequest request) {
         ReviewResponse created = reviewService.createReview(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     @PostMapping("/batch")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('GUEST')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('GUEST')")
     public ResponseEntity<List<ReviewResponse>> createReviews(@Valid @RequestBody List<ReviewRequest> requests) {
         return ResponseEntity.status(HttpStatus.CREATED).body(reviewService.createReviews(requests));
     }
 
     @PutMapping("/{id}/reply")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('HOST')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasAuthority('HOST')")
     public ResponseEntity<ReviewResponse> addHostReply(@PathVariable Long id,
                                                        @RequestBody Map<String, String> body) {
         String reply = body.get("reply");

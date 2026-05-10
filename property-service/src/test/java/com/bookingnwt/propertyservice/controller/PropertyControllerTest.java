@@ -168,4 +168,54 @@ class PropertyControllerTest {
         mockMvc.perform(delete("/api/properties/1"))
                 .andExpect(status().isNoContent());
     }
+    @Test
+    void patchProperty_shouldReturn200() throws Exception {
+        com.bookingnwt.propertyservice.dto.PropertyPatchRequest request = new com.bookingnwt.propertyservice.dto.PropertyPatchRequest();
+        request.setName("Patched Name");
+        request.setAvailable(false);
+
+        PropertyResponse response = createPropertyResponse();
+        response.setName("Patched Name");
+        response.setAvailable(false);
+
+        when(propertyService.patchProperty(eq(1L), any())).thenReturn(response);
+
+        mockMvc.perform(patch("/api/properties/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Patched Name"))
+                .andExpect(jsonPath("$.available").value(false));
+    }
+
+    @Test
+    void batchCreateProperties_shouldReturn201() throws Exception {
+        PropertyRequest request1 = new PropertyRequest();
+        request1.setHostId(1L);
+        request1.setName("Prop 1");
+        request1.setCity("Sarajevo");
+        request1.setCountry("BiH");
+        request1.setAddress("A1");
+
+        PropertyRequest request2 = new PropertyRequest();
+        request2.setHostId(1L);
+        request2.setName("Prop 2");
+        request2.setCity("Mostar");
+        request2.setCountry("BiH");
+        request2.setAddress("A2");
+
+        List<PropertyRequest> requests = List.of(request1, request2);
+        List<PropertyResponse> responses = List.of(createPropertyResponse(), createPropertyResponse());
+        responses.get(1).setName("Prop 2");
+        responses.get(1).setCity("Mostar");
+
+        when(propertyService.batchCreateProperties(any())).thenReturn(responses);
+
+        mockMvc.perform(post("/api/properties/batch")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(requests)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[1].name").value("Prop 2"));
+    }
 }

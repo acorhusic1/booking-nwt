@@ -1,0 +1,1007 @@
+{
+  "info": {
+    "_postman_id": "9f7a2c8b-5a1e-4d3f-9b2e-1c4f7e8a9d0f",
+    "name": "Booking NWT - Security & Authorization Testing",
+    "description": "Kompletna kolekcija za testiranje sigurnosti, autentifikacije i autorizacije sa JWT token-ima. Pokriva sve scenarije sa razlicitim rolama i greskim.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. AUTENTIFIKACIJA - LOGIN",
+      "item": [
+        {
+          "name": "1.1 Login - GUEST korisnik",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    let response = pm.response.json();",
+                  "    pm.environment.set('guest_token', response.accessToken);",
+                  "    pm.environment.set('guest_email', response.email);",
+                  "    pm.environment.set('guest_role', response.role);",
+                  "    console.log('✅ GUEST Login uspješan!');",
+                  "    console.log('Token: ' + response.accessToken.substring(0, 20) + '...');",
+                  "    console.log('Role: ' + response.role);",
+                  "} else {",
+                  "    console.log('❌ Login neuspješan');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"guest@example.com\",\n  \"password\": \"guest123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.2 Login - HOST korisnik",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    let response = pm.response.json();",
+                  "    pm.environment.set('host_token', response.accessToken);",
+                  "    pm.environment.set('host_email', response.email);",
+                  "    pm.environment.set('host_role', response.role);",
+                  "    console.log('✅ HOST Login uspješan!');",
+                  "    console.log('Token: ' + response.accessToken.substring(0, 20) + '...');",
+                  "    console.log('Role: ' + response.role);",
+                  "} else {",
+                  "    console.log('❌ Login neuspješan');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"host@example.com\",\n  \"password\": \"host123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.3 Login - ADMIN korisnik",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    let response = pm.response.json();",
+                  "    pm.environment.set('admin_token', response.accessToken);",
+                  "    pm.environment.set('admin_email', response.email);",
+                  "    pm.environment.set('admin_role', response.role);",
+                  "    console.log('✅ ADMIN Login uspješan!');",
+                  "    console.log('Token: ' + response.accessToken.substring(0, 20) + '...');",
+                  "    console.log('Role: ' + response.role);",
+                  "} else {",
+                  "    console.log('❌ Login neuspješan');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.4 Pogrešna autentifikacija - Krivo password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 401 (Unauthorized)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "",
+                  "pm.test('Odgovara greške o neispravnim kredencijalima', function () {",
+                  "    let response = pm.response.json();",
+                  "    pm.expect(response).to.have.property('message');",
+                  "    console.log('❌ Login POGREŠNO odbijen - kao očekivano');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"guest@example.com\",\n  \"password\": \"pogrešna_lozinka\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        },
+        {
+          "name": "1.5 Pogrešna autentifikacija - Nepostojeći email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 401 (Unauthorized)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "",
+                  "console.log('❌ Login sa nepostojećim korisnikom - odbijen kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"nepostoji@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. AUTORIZACIJA - ZAŠTIĆENI RESURSI",
+      "item": [
+        {
+          "name": "2.1 Pristup javnom resursu - BEZ tokena",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 200 (Javni resurs)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "console.log('✅ Javni resurs dostupan - kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/properties/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "test"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.2 Pristup javnom resursu - SA GUEST tokenom",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 200 (Javni resurs sa tokenom)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "console.log('✅ GUEST korisnik može pristupiti javnom resursu');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{guest_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/properties/test",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "test"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.3 Pristup zaštićenom resursu - BEZ tokena (FAIL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 401 (Neautorizovan pristup)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "",
+                  "console.log('❌ Zaštićeni resurs odbijen - kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.4 Pristup zaštićenom resursu - SA GUEST tokenom (SUCCESS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 200 (Autorizovan), ili 403 (ako nije dozvoljeno)', function () {",
+                  "    pm.expect([200, 403]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "if (pm.response.code === 200) {",
+                  "    console.log('✅ GUEST korisnik može pristupiti zaštićenom resursu');",
+                  "} else if (pm.response.code === 403) {",
+                  "    console.log('✅ GUEST korisnik NEMA dozvole - kao očekivano (403 Forbidden)');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{guest_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/properties?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "2.5 Pogrešna autentifikacija - Nevalidan token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 401 sa nevalidnim tokenom', function () {",
+                  "    pm.expect(pm.response.code).to.equal(401);",
+                  "});",
+                  "",
+                  "console.log('❌ Nevalidan token odbijen - kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer invalid.token.here"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. ROLE-BASED AUTORIZACIJA",
+      "item": [
+        {
+          "name": "3.1 Admin resurs - GUEST korisnik (FAIL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 403 (Forbidden)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(403);",
+                  "});",
+                  "",
+                  "console.log('❌ GUEST nema pristupa admin resursu - kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{guest_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.2 Admin resurs - HOST korisnik (FAIL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 403 (Forbidden)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(403);",
+                  "});",
+                  "",
+                  "console.log('❌ HOST nema pristupa admin resursu - kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{host_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.3 Admin resurs - ADMIN korisnik (SUCCESS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 200 (Autorizovan)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "console.log('✅ ADMIN korisnik ima pristup admin resursu');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.4 Delete user - Samo ADMIN (GUEST - FAIL)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 403 (Forbidden)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(403);",
+                  "});",
+                  "",
+                  "console.log('❌ GUEST nema pristupa za brisanje - kao očekivano');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{guest_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "3.5 Delete user - Samo ADMIN (ADMIN - SUCCESS)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 204 (No Content) ili 200', function () {",
+                  "    pm.expect([200, 204]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "console.log('✅ ADMIN ima pristupa za brisanje');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/users/999",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "999"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. PROPERTY SERVICE - AUTORIZACIJA",
+      "item": [
+        {
+          "name": "4.1 Kreiraj property - Authentifikovan korisnik",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 201 ili 200', function () {",
+                  "    pm.expect([200, 201]).to.include(pm.response.code);",
+                  "});",
+                  "",
+                  "let response = pm.response.json();",
+                  "if (response.id) {",
+                  "    pm.environment.set('property_id', response.id);",
+                  "    console.log('✅ Property kreiran sa ID: ' + response.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{host_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Luxury Apartment\",\n  \"city\": \"Sarajevo\",\n  \"address\": \"Obala Kulina Bana 1\",\n  \"description\": \"Beautiful apartment in city center\",\n  \"pricePerNight\": 100.0,\n  \"maxGuests\": 4,\n  \"bedroomCount\": 2,\n  \"bathroomCount\": 1,\n  \"available\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/properties",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.2 Get all properties - BEZ tokena (javno)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status Code je 200 (Javni resurs)', function () {",
+                  "    pm.expect(pm.response.code).to.equal(200);",
+                  "});",
+                  "",
+                  "console.log('✅ Properties dostupne bez autentifikacije');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/properties?page=0&size=10",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.3 Get property by ID - BEZ tokena",
+          "event": [
+            {
+              "listen": "test",
+              "script": [
+                "pm.test('Status Code je 200 (Javni resurs)', function () {",
+                "    pm.expect(pm.response.code).to.equal(200);",
+                "});"
+              ]
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/properties/1",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "1"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.4 Update property - Authentifikovan korisnik",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{host_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Luxury Apartment - Updated\",\n  \"city\": \"Sarajevo\",\n  \"address\": \"Obala Kulina Bana 1\",\n  \"description\": \"Updated description\",\n  \"pricePerNight\": 120.0,\n  \"maxGuests\": 4,\n  \"bedroomCount\": 2,\n  \"bathroomCount\": 1,\n  \"available\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/properties/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "{{property_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.5 PATCH property - Partial update",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{host_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Patched Apartment\",\n  \"available\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/properties/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "{{property_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.6 Batch create properties - ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"name\": \"Batch Apartment 1\",\n    \"city\": \"Sarajevo\",\n    \"address\": \"Address 1\",\n    \"description\": \"Description 1\",\n    \"pricePerNight\": 100.0,\n    \"maxGuests\": 2,\n    \"bedroomCount\": 1,\n    \"bathroomCount\": 1,\n    \"available\": true\n  },\n  {\n    \"name\": \"Batch Apartment 2\",\n    \"city\": \"Mostar\",\n    \"address\": \"Address 2\",\n    \"description\": \"Description 2\",\n    \"pricePerNight\": 120.0,\n    \"maxGuests\": 3,\n    \"bedroomCount\": 2,\n    \"bathroomCount\": 1,\n    \"available\": true\n  }\n]"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/properties/batch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "batch"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.7 PATCH property - GUEST (FAIL)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{guest_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Hacked Name\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/properties/{{property_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "{{property_id}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "4.8 Batch create properties - HOST (FAIL)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{host_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[]"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/properties/batch",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "properties",
+                "batch"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. TOKEN ANALIZA I DECODE",
+      "item": [
+        {
+          "name": "5.1 Dekodiranje JWT token-a (Analiza)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// Ovaj zahtjev vam pomaže da dekoditate JWT",
+                  "// Koristite online alat: https://jwt.io",
+                  "// Paste token iz {{guest_token}} za analizu",
+                  "",
+                  "console.log('🔍 JWT TOKEN ANALYSIS:');",
+                  "console.log('Guest Token: ' + pm.environment.get('guest_token'));",
+                  "console.log('Host Token: ' + pm.environment.get('host_token'));",
+                  "console.log('Admin Token: ' + pm.environment.get('admin_token'));",
+                  "console.log('');",
+                  "console.log('Dekodirajte tokene na https://jwt.io da vidite payload:');",
+                  "console.log('- Email korisnika');",
+                  "console.log('- Role (permissions)');",
+                  "console.log('- issuedAt timestamp');",
+                  "console.log('- expiration timestamp');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://jwt.io",
+              "protocol": "https",
+              "host": [
+                "jwt",
+                "io"
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "guest_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "host_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guest_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "host_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_email",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "guest_role",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "host_role",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "admin_role",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "property_id",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
