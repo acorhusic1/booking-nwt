@@ -25,3 +25,11 @@ docker-compose.override.yml
 
 ### Dokumentacija ###
 *.md
+
+### Node / Frontend ###
+node_modules/
+dist/
+.env
+
+### Java / Maven ###
+target/
