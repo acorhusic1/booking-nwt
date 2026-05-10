@@ -1,5 +1,6 @@
 package com.bookingnwt.propertyservice.service;
 
+import com.bookingnwt.propertyservice.dto.PropertyPatchRequest;
 import com.bookingnwt.propertyservice.dto.PropertyRequest;
 import com.bookingnwt.propertyservice.dto.PropertyResponse;
 
@@ -16,5 +17,7 @@ public interface PropertyService {
     List<PropertyResponse> getAvailableProperties(String city, java.time.LocalDate startDate, java.time.LocalDate endDate);
     PropertyResponse createProperty(PropertyRequest request);
     PropertyResponse updateProperty(Long id, PropertyRequest request);
+    PropertyResponse patchProperty(Long id, PropertyPatchRequest request);
+    List<PropertyResponse> batchCreateProperties(List<PropertyRequest> requests);
     void deleteProperty(Long id);
 }

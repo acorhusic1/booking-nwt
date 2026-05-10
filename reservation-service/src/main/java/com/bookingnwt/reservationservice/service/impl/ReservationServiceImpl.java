@@ -3,12 +3,14 @@ package com.bookingnwt.reservationservice.service.impl;
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
 import com.bookingnwt.reservationservice.dto.ReservationRequestDTO;
 import com.bookingnwt.reservationservice.dto.ReservationResponseDTO;
+import com.bookingnwt.reservationservice.events.ReservationCreatedEvent;
 import com.bookingnwt.reservationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.reservationservice.mapper.ReservationMapper;
 import com.bookingnwt.reservationservice.model.CancellationPolicy;
 import com.bookingnwt.reservationservice.model.PromoCode;
 import com.bookingnwt.reservationservice.model.Reservation;
 import com.bookingnwt.reservationservice.model.ReservationStatus;
+import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
@@ -39,6 +41,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final ReservationMapper reservationMapper;
     private final ObjectMapper objectMapper;
     private final PropertyAvailabilityGateway propertyAvailabilityGateway;
+    private final ReservationEventPublisher reservationEventPublisher;
 
     @Override
     @Transactional
@@ -71,6 +74,26 @@ public class ReservationServiceImpl implements ReservationService {
         }
 
         Reservation saved = reservationRepository.save(reservation);
+
+        // SAGA PATTERN: Emituj ReservationCreatedEvent → Property Service sluša
+        try {
+            ReservationCreatedEvent event = new ReservationCreatedEvent(
+                    saved.getId(),
+                    saved.getPropertyId(),
+                    saved.getGuestId(),
+                    saved.getCheckIn().atStartOfDay(),
+                    saved.getCheckOut().atStartOfDay(),
+                    LocalDateTime.now(),
+                    "RESERVATION_CREATED"
+            );
+            reservationEventPublisher.publishReservationCreated(event);
+        } catch (Exception e) {
+            // Log but don't fail the reservation if event publishing fails
+            // In production, use outbox pattern or transactional messaging
+            org.slf4j.LoggerFactory.getLogger(getClass())
+                    .warn("⚠️ Event publishing failed for reservation {}: {}", saved.getId(), e.getMessage());
+        }
+
         return reservationMapper.toResponseDTO(saved);
     }
 

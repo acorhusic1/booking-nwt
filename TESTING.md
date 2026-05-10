@@ -30,6 +30,18 @@ U korijenu projekta pokrenite PowerShell skriptu:
 - Trebali biste vidjeti rotaciju između `(Port: 8082)` i `(Port: 8083)`.
 
 ## 3. Pokretanje testova (Maven u Docker-u)
+## 3. Testiranje Review Servisa
+Za testiranje funkcionalnosti review servisa:
+
+1. **Dohvatanje recenzija za nekretninu:**
+   Pozovite endpoint za određenu nekretninu (npr. ID 1):
+   ```bash
+   curl http://localhost:8080/api/reviews/property/1
+   ```
+2. **Verifikacija:**
+   Provjerite da li API vraća JSON listu recenzija. Ako je lista prazna, provjerite da li u bazi `reviewdb` postoje podaci za taj ID.
+
+## 5. Pokretanje testova (Maven u Docker-u)
 Ako nemate instaliran Maven lokalno, možete pokrenuti testove unutar Docker kontejnera koristeći postojeću sliku:
 
 ```bash
