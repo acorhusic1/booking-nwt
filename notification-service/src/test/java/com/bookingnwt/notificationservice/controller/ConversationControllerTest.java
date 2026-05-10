@@ -5,16 +5,18 @@ import com.bookingnwt.notificationservice.dto.ConversationResponseDTO;
 import com.bookingnwt.notificationservice.exception.GlobalExceptionHandler;
 import com.bookingnwt.notificationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.notificationservice.service.ConversationService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -27,7 +29,16 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(ConversationController.class)
+@WebMvcTest(controllers = ConversationController.class, excludeAutoConfiguration = {
+        org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration.class,
+        org.springframework.boot.autoconfigure.security.servlet.SecurityFilterAutoConfiguration.class
+}, excludeFilters = @ComponentScan.Filter(
+        type = FilterType.ASSIGNABLE_TYPE,
+        classes = {
+                com.bookingnwt.notificationservice.security.SecurityConfig.class,
+                com.bookingnwt.notificationservice.security.JwtAuthenticationFilter.class,
+                com.bookingnwt.notificationservice.security.FeignClientInterceptor.class
+        }))
 @Import(GlobalExceptionHandler.class)
 class ConversationControllerTest {
 
@@ -42,7 +53,7 @@ class ConversationControllerTest {
 
     @BeforeEach
     void setUp() {
-        objectMapper = JsonMapper.builder().findAndAddModules().build();
+        objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
         responseDTO = new ConversationResponseDTO();
         responseDTO.setId(1L);
@@ -92,7 +103,8 @@ class ConversationControllerTest {
 
     @Test
     void getConversationById_NotFound() throws Exception {
-        when(conversationService.getConversationById(99L)).thenThrow(new ResourceNotFoundException("Konverzacija sa ID 99 nije pronađena"));
+        when(conversationService.getConversationById(99L))
+                .thenThrow(new ResourceNotFoundException("Konverzacija sa ID 99 nije pronađena"));
 
         mockMvc.perform(get("/api/conversations/99"))
                 .andExpect(status().isNotFound());
