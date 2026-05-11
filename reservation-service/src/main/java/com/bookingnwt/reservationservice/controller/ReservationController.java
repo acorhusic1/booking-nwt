@@ -28,13 +28,13 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<ReservationResponseDTO> createReservation(@Valid @RequestBody ReservationRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(reservationService.createReservation(dto));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<ReservationResponseDTO> getReservation(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.getReservationById(id));
     }
@@ -46,7 +46,7 @@ public class ReservationController {
     }
 
     @GetMapping("/guest/{guestId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<List<ReservationResponseDTO>> getByGuest(@PathVariable Long guestId) {
         return ResponseEntity.ok(reservationService.getReservationsByGuest(guestId));
     }
@@ -71,7 +71,7 @@ public class ReservationController {
     }
 
     @PutMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<ReservationResponseDTO> cancelReservation(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
@@ -87,7 +87,7 @@ public class ReservationController {
 
     /** PATCH (RFC 6902 JSON Patch) — partial update of a reservation. */
     @PatchMapping(value = "/{id}", consumes = "application/json-patch+json", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<ReservationResponseDTO> patchReservation(@PathVariable Long id,
                                                                     @RequestBody JsonNode patch) {
         return ResponseEntity.ok(reservationService.patchReservation(id, patch));
@@ -95,7 +95,7 @@ public class ReservationController {
 
     /** Pagination + sorting for guest's reservation history. */
     @GetMapping("/guest/{guestId}/paged")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<Page<ReservationResponseDTO>> getByGuestPaged(@PathVariable Long guestId,
                                                                         Pageable pageable) {
         return ResponseEntity.ok(reservationService.getReservationsByGuestPaged(guestId, pageable));
@@ -103,7 +103,7 @@ public class ReservationController {
 
     /** Custom JPQL query — guest's reservations within a date range. */
     @GetMapping("/guest/{guestId}/range")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<List<ReservationResponseDTO>> getByGuestAndDateRange(
             @PathVariable Long guestId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -128,7 +128,7 @@ public class ReservationController {
 
     /** EntityGraph fetch — reservation + cancellation policy + promo code + reports in one query. */
     @GetMapping("/{id}/details")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<ReservationResponseDTO> getReservationWithDetails(@PathVariable Long id) {
         return ResponseEntity.ok(reservationService.getReservationWithDetails(id));
     }

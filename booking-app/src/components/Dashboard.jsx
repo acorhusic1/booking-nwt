@@ -10,12 +10,13 @@ export default function Dashboard() {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated || !user?.id) return
 
     const fetchReservations = async () => {
       try {
-        const data = await reservationApi.getByUserId(user.id)
-        setReservations(data.content || [])
+        const data = await reservationApi.getByGuestId(user.id)
+        // Backend vraca List<ReservationResponseDTO> (ne Page) za /guest/{id}
+        setReservations(Array.isArray(data) ? data : (data.content || []))
       } catch (err) {
         setError('Greška pri učitavanju rezervacija')
         console.error(err)
@@ -25,7 +26,7 @@ export default function Dashboard() {
     }
 
     fetchReservations()
-  }, [isAuthenticated, user.id])
+  }, [isAuthenticated, user?.id])
 
   if (!isAuthenticated) {
     return <div className="dashboard"><p>Molimo prijavite se</p></div>
@@ -51,9 +52,9 @@ export default function Dashboard() {
             <div key={res.id} className="reservation-card">
               <h3>Rezervacija #{res.id}</h3>
               <p>Smještaj ID: {res.propertyId}</p>
-              <p>Dolazak: {res.checkInDate}</p>
-              <p>Odlazak: {res.checkOutDate}</p>
-              <p>Osobe: {res.numberOfGuests}</p>
+              <p>Dolazak: {res.checkIn}</p>
+              <p>Odlazak: {res.checkOut}</p>
+              <p>Osobe: {res.numGuests}</p>
               <p className="status">Status: <strong>{res.status || 'Aktivna'}</strong></p>
               <p className="price">${res.totalPrice}</p>
             </div>
@@ -63,4 +64,3 @@ export default function Dashboard() {
     </div>
   )
 }
-

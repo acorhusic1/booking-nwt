@@ -2,7 +2,10 @@ package com.bookingnwt.reservationservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,7 +13,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * RabbitMQ Konfiguracija za Reservation Service — Saga Pattern
+ * RabbitMQ Konfiguracija za reservation-service — Saga Pattern (choreography).
+ *
+ * reservation.service.queue prima event-e od:
+ *   - property-service: booking.property.reserved, booking.reservation.compensation
+ *   - payment-service:  booking.payment.completed, booking.payment.failed (Task 3)
  */
 @Configuration
 public class RabbitMQConfig {
@@ -27,6 +34,12 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.routing-key.compensation}")
     private String compensationRoutingKey;
 
+    @Value("${app.rabbitmq.routing-key.payment-completed}")
+    private String paymentCompletedRoutingKey;
+
+    @Value("${app.rabbitmq.routing-key.payment-failed}")
+    private String paymentFailedRoutingKey;
+
     @Bean
     public TopicExchange bookingExchange() {
         return new TopicExchange(exchange, true, false);
@@ -37,24 +50,26 @@ public class RabbitMQConfig {
         return new Queue(reservationQueue, true, false, false);
     }
 
-    /**
-     * Sluša PropertyReserved event od Property Service-a — potvrda rezervacije
-     */
     @Bean
     public Binding bindingPropertyReserved(Queue reservationServiceQueue, TopicExchange bookingExchange) {
-        return BindingBuilder.bind(reservationServiceQueue)
-                .to(bookingExchange)
-                .with(propertyReservedRoutingKey);
+        return BindingBuilder.bind(reservationServiceQueue).to(bookingExchange).with(propertyReservedRoutingKey);
     }
 
-    /**
-     * Sluša Compensation event — rollback rezervacije
-     */
     @Bean
     public Binding bindingCompensation(Queue reservationServiceQueue, TopicExchange bookingExchange) {
-        return BindingBuilder.bind(reservationServiceQueue)
-                .to(bookingExchange)
-                .with(compensationRoutingKey);
+        return BindingBuilder.bind(reservationServiceQueue).to(bookingExchange).with(compensationRoutingKey);
+    }
+
+    /** Task 3 — Saga: payment uspjeh */
+    @Bean
+    public Binding bindingPaymentCompleted(Queue reservationServiceQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(reservationServiceQueue).to(bookingExchange).with(paymentCompletedRoutingKey);
+    }
+
+    /** Task 3 — Saga: payment kompenzacija */
+    @Bean
+    public Binding bindingPaymentFailed(Queue reservationServiceQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(reservationServiceQueue).to(bookingExchange).with(paymentFailedRoutingKey);
     }
 
     @Bean

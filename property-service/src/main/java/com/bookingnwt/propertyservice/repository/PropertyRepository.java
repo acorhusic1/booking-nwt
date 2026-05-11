@@ -23,13 +23,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
                                            @Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate);
 
-    @Query("SELECT p FROM Property p WHERE p.city = :city AND p.isActive = true AND " +
-           "NOT EXISTS (SELECT b FROM CalendarBlock b WHERE b.property = p AND " +
-           "b.startDate < :endDate AND b.endDate > :startDate)")
-    List<Property> findAvailableProperties(@Param("city") String city,
-                                           @Param("startDate") LocalDate startDate,
-                                           @Param("endDate") LocalDate endDate);
-
     /**
      * EntityGraph za optimizaciju N+1 problema.
      * Učitava Property sa svim vezanim entitetima u jednom upitu.

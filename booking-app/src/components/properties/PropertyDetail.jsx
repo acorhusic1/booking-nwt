@@ -31,6 +31,10 @@ export default function PropertyDetail() {
   if (error) return <div className="error">{error}</div>
   if (!property) return <div>Smještaj nije pronađen</div>
 
+  // Backend PropertyResponse trenutno ne vraća sliku ni cijenu po noći.
+  // Slike su zaseban resurs (PropertyImages), cijena je u PricingRule.
+  const imageUrl = 'https://via.placeholder.com/600x400'
+
   return (
     <div className="property-detail">
       <button onClick={() => navigate(-1)} className="back-btn">← Nazad</button>
@@ -40,11 +44,7 @@ export default function PropertyDetail() {
           <h1>{property.name}</h1>
           <p className="location">📍 {property.city}, {property.address}</p>
 
-          <img
-            src={property.image || 'https://via.placeholder.com/600x400'}
-            alt={property.name}
-            className="property-image"
-          />
+          <img src={imageUrl} alt={property.name} className="property-image" />
 
           <div className="property-description">
             <h3>Opis</h3>
@@ -54,20 +54,14 @@ export default function PropertyDetail() {
           <div className="property-features">
             <h3>Karakteristike</h3>
             <ul>
-              <li>🛏️ Spavaće sobe: {property.bedroomCount}</li>
-              <li>🚿 Kupatila: {property.bathroomCount}</li>
               <li>👥 Kapacitet: Do {property.maxGuests} osoba</li>
+              <li>🌍 Država: {property.country}</li>
               <li>📅 Status: {property.available ? '✅ Dostupno' : '❌ Nije dostupno'}</li>
             </ul>
           </div>
         </div>
 
         <div className="booking-sidebar">
-          <div className="price-box">
-            <p className="price">${property.pricePerNight}</p>
-            <p className="per-night">po noći</p>
-          </div>
-
           <button
             className="reserve-btn"
             disabled={!property.available}
@@ -85,4 +79,3 @@ export default function PropertyDetail() {
     </div>
   )
 }
-

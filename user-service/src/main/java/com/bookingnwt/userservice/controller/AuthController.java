@@ -2,9 +2,13 @@ package com.bookingnwt.userservice.controller;
 
 import com.bookingnwt.userservice.dto.LoginRequest;
 import com.bookingnwt.userservice.dto.LoginResponse;
+import com.bookingnwt.userservice.dto.UserRequest;
+import com.bookingnwt.userservice.dto.UserResponse;
 import com.bookingnwt.userservice.service.AuthService;
+import com.bookingnwt.userservice.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -17,9 +21,19 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final UserService userService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         return ResponseEntity.ok(authService.login(loginRequest));
+    }
+
+    /**
+     * Public registration endpoint. Mapped under /api/auth/** koje je vec
+     * dozvoljeno na api-gateway-u i u user-service SecurityConfig-u.
+     */
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody UserRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
     }
 }

@@ -21,19 +21,19 @@ public class WalletController {
     private final WalletService walletService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<WalletResponseDTO> createWallet(@Valid @RequestBody WalletRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(walletService.createWallet(dto));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<WalletResponseDTO> getWalletById(@PathVariable Long id) {
         return ResponseEntity.ok(walletService.getWalletById(id));
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<WalletResponseDTO> getWalletByUserId(@PathVariable Long userId) {
         return ResponseEntity.ok(walletService.getWalletByUserId(userId));
     }
@@ -45,13 +45,13 @@ public class WalletController {
     }
 
     @PostMapping("/{id}/deposit")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<WalletResponseDTO> deposit(@PathVariable Long id, @RequestParam BigDecimal amount) {
         return ResponseEntity.ok(walletService.deposit(id, amount));
     }
 
     @PostMapping("/{id}/withdraw")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<WalletResponseDTO> withdraw(@PathVariable Long id, @RequestParam BigDecimal amount) {
         return ResponseEntity.ok(walletService.withdraw(id, amount));
     }
