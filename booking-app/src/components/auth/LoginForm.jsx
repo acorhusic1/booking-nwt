@@ -27,7 +27,7 @@ export default function LoginForm() {
     try {
       const response = await authApi.login(data.email, data.password)
       setAuth(
-        { email: response.email, role: response.role, id: response.id },
+        { id: response.id, email: response.email, role: response.role },
         response.accessToken
       )
       navigate('/dashboard')

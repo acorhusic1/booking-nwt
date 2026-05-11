@@ -23,7 +23,6 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
                                            @Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate);
 
-
     /**
      * EntityGraph za optimizaciju N+1 problema.
      * Učitava Property sa svim vezanim entitetima u jednom upitu.

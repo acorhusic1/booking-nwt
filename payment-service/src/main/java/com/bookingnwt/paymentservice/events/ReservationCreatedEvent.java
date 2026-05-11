@@ -1,4 +1,4 @@
-package com.bookingnwt.reservationservice.events;
+package com.bookingnwt.paymentservice.events;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -8,11 +8,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Event koji reservation-service emituje kada se kreira nova rezervacija.
+ * Event koji payment-service prima iz reservation-service preko RabbitMQ-a.
+ * Mirror DTO — mora se polje-po-polje poklapati sa
+ * com.bookingnwt.reservationservice.events.ReservationCreatedEvent.
  *
- * SLUŠAJU GA DVA SERVISA (Saga choreography):
- *   - property-service: blokira termine na kalendaru
- *   - payment-service:  pokreće naplatu (Task 3 - reservation+payment Saga)
+ * SAGA PATTERN: payment-service na osnovu ovog event-a pokreće naplatu.
  */
 @Data
 @NoArgsConstructor
@@ -24,8 +24,7 @@ public class ReservationCreatedEvent {
     private LocalDateTime checkInDate;
     private LocalDateTime checkOutDate;
     private LocalDateTime eventTimestamp;
-    private String eventType = "RESERVATION_CREATED";
-    // Task 3 — payment-service koristi ova polja za naplatu
+    private String eventType;
     private BigDecimal totalPrice;
     private String currency;
 }

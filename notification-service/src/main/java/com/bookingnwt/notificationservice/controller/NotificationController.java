@@ -36,7 +36,7 @@ public class NotificationController {
     private final NotificationService notificationService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'HOST', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'HOST', 'ADMIN')")
     public ResponseEntity<NotificationResponseDTO> createNotification(@Valid @RequestBody NotificationRequestDTO dto) {
         return new ResponseEntity<>(notificationService.createNotification(dto), HttpStatus.CREATED);
     }

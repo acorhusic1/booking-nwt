@@ -17,7 +17,7 @@ public class WalletTransactionController {
     private final WalletTransactionService transactionService;
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<WalletTransactionResponseDTO> getTransactionById(@PathVariable Long id) {
         return ResponseEntity.ok(transactionService.getTransactionById(id));
     }
@@ -29,13 +29,13 @@ public class WalletTransactionController {
     }
 
     @GetMapping("/wallet/{walletId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<List<WalletTransactionResponseDTO>> getTransactionsByWalletId(@PathVariable Long walletId) {
         return ResponseEntity.ok(transactionService.getTransactionsByWalletId(walletId));
     }
 
     @GetMapping("/payment/{paymentId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<List<WalletTransactionResponseDTO>> getTransactionsByPaymentId(@PathVariable Long paymentId) {
         return ResponseEntity.ok(transactionService.getTransactionsByPaymentId(paymentId));
     }

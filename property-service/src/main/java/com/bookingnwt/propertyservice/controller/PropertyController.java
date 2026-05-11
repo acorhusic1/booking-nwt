@@ -6,12 +6,23 @@ import com.bookingnwt.propertyservice.dto.PropertyResponse;
 import com.bookingnwt.propertyservice.service.PropertyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.net.InetAddress;
 import java.time.LocalDate;
@@ -63,7 +74,8 @@ public class PropertyController {
     public ResponseEntity<String> testLoadBalancing() {
         try {
             String instanceId = InetAddress.getLocalHost().getHostName();
-            return ResponseEntity.ok("Property Service Instance: " + instanceId + " (Port: " + port + ") - " + LocalDateTime.now());
+            return ResponseEntity.ok("Property Service Instance: " + instanceId
+                    + " (Port: " + port + ") - " + LocalDateTime.now());
         } catch (Exception e) {
             return ResponseEntity.ok("Property Service Instance: unknown (Port: " + port + ") - " + LocalDateTime.now());
         }
@@ -86,9 +98,7 @@ public class PropertyController {
     }
 
     /**
-     * PATCH — parcijalni update nekretnine.
-     * Samo polja koja su poslana (non-null) će biti ažurirana.
-     * Primjer: PATCH /api/properties/1  body: {"name": "Novi naziv"}
+     * PATCH — parcijalni update nekretnine. Samo poslana (non-null) polja se ažuriraju.
      */
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
@@ -99,7 +109,6 @@ public class PropertyController {
 
     /**
      * Batch unos — kreira više nekretnina odjednom.
-     * Primjer: POST /api/properties/batch  body: [{...}, {...}]
      */
     @PostMapping("/batch")
     @PreAuthorize("hasRole('ADMIN')")
