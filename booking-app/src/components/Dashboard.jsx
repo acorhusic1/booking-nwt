@@ -1,16 +1,41 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { reservationApi } from '../api/reservationApi'
 import { walletApi } from '../api/walletApi'
 import { useAuthStore } from '../store/authStore'
+import NotificationsList from './notifications/NotificationsList'
 import '../styles/Dashboard.css'
 
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuthStore()
+  const [searchParams] = useSearchParams()
   const [reservations, setReservations] = useState([])
   const [wallet, setWallet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [walletError, setWalletError] = useState(null)
+  const [activeTab, setActiveTab] = useState(
+    searchParams.get('tab') === 'notifications' ? 'notifications' : 'reservations'
+  )
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [sagaPending, setSagaPending] = useState(searchParams.get('pending') === '1')
+  const [notifKey, setNotifKey] = useState(0)
+  const pollRef = useRef(null)
+
+  // Auto-refresh notifikacija 3 puta (svake 3s) kad se vrati sa rezervacije
+  useEffect(() => {
+    if (!sagaPending) return
+    let count = 0
+    pollRef.current = setInterval(() => {
+      setNotifKey(k => k + 1)
+      count++
+      if (count >= 3) {
+        clearInterval(pollRef.current)
+        setSagaPending(false)
+      }
+    }, 3000)
+    return () => clearInterval(pollRef.current)
+  }, [sagaPending])
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return
@@ -25,7 +50,7 @@ export default function Dashboard() {
         if (resData.status === 'fulfilled') {
           setReservations(Array.isArray(resData.value) ? resData.value : (resData.value.content || []))
         } else {
-          setError('Greška pri učitavanju rezervacija')
+          setReservations([])
         }
 
         if (walletData.status === 'fulfilled') {
@@ -72,32 +97,64 @@ export default function Dashboard() {
         </p>
       </section>
 
-      <section className="reservations-section">
-        <h2>📅 Moje Rezervacije</h2>
+      {/* Tabovi */}
+      <div className="dashboard-tabs">
+        <button
+          className={`tab-btn ${activeTab === 'reservations' ? 'active' : ''}`}
+          onClick={() => setActiveTab('reservations')}
+        >
+          📅 Rezervacije
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
+          onClick={() => setActiveTab('notifications')}
+        >
+          🔔 Notifikacije
+          {unreadCount > 0 && (
+            <span className="tab-badge">{unreadCount}</span>
+          )}
+        </button>
+      </div>
 
-        {loading && <div className="loading">Učitavanje...</div>}
-        {error && <div className="error">{error}</div>}
+      {/* Tab: Rezervacije */}
+      {activeTab === 'reservations' && (
+        <section className="reservations-section">
+          {loading && <div className="loading">Učitavanje...</div>}
+          {error && <div className="error">{error}</div>}
 
-        {!loading && reservations.length === 0 && (
-          <div className="no-data">Nemate rezervacija</div>
-        )}
+          {!loading && reservations.length === 0 && (
+            <div className="no-data">Nemate rezervacija</div>
+          )}
 
-        <div className="reservations-list">
-          {reservations.map((res) => (
-            <div key={res.id} className="reservation-card">
-              <div className="reservation-header">
-                <h3>Rezervacija #{res.id}</h3>
-                <span className={statusClass(res.status)}>{res.status || 'CREATED'}</span>
+          <div className="reservations-list">
+            {reservations.map((res) => (
+              <div key={res.id} className="reservation-card">
+                <div className="reservation-header">
+                  <h3>Rezervacija #{res.id}</h3>
+                  <span className={statusClass(res.status)}>{res.status || 'CREATED'}</span>
+                </div>
+                <p>Smještaj ID: {res.propertyId}</p>
+                <p>Dolazak: {res.checkIn}</p>
+                <p>Odlazak: {res.checkOut}</p>
+                <p>Osobe: {res.numGuests}</p>
+                <p className="price">{Number(res.totalPrice).toFixed(2)} BAM</p>
               </div>
-              <p>Smještaj ID: {res.propertyId}</p>
-              <p>Dolazak: {res.checkIn}</p>
-              <p>Odlazak: {res.checkOut}</p>
-              <p>Osobe: {res.numGuests}</p>
-              <p className="price">{Number(res.totalPrice).toFixed(2)} BAM</p>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Tab: Notifikacije */}
+      {activeTab === 'notifications' && (
+        <section className="notifications-section">
+          {sagaPending && (
+            <div className="saga-pending-banner">
+              ⏳ Rezervacija kreirana — plaćanje se obrađuje. Notifikacija će se pojaviti za nekoliko sekundi...
             </div>
-          ))}
-        </div>
-      </section>
+          )}
+          <NotificationsList key={notifKey} onUnreadChange={setUnreadCount} />
+        </section>
+      )}
     </div>
   )
 }
