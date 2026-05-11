@@ -9,6 +9,7 @@ import com.bookingnwt.reservationservice.model.ReservationStatus;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
+import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
 import com.bookingnwt.reservationservice.service.impl.ReservationServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,6 +50,8 @@ class ReservationAdvancedServiceTest {
     private ReservationMapper reservationMapper;
     @Mock
     private PropertyAvailabilityGateway propertyAvailabilityGateway;
+    @Mock
+    private ReservationEventPublisher reservationEventPublisher;
 
     @InjectMocks
     private ReservationServiceImpl service;
@@ -90,7 +93,7 @@ class ReservationAdvancedServiceTest {
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
                 promoCodeRepository, reservationMapper, realMapper,
-                propertyAvailabilityGateway);
+                propertyAvailabilityGateway, reservationEventPublisher);
 
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(entity));
         when(reservationMapper.toResponseDTO(any(Reservation.class))).thenReturn(dto);
@@ -109,7 +112,7 @@ class ReservationAdvancedServiceTest {
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
                 promoCodeRepository, reservationMapper, realMapper,
-                propertyAvailabilityGateway);
+                propertyAvailabilityGateway, reservationEventPublisher);
 
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(entity));
 
@@ -124,7 +127,7 @@ class ReservationAdvancedServiceTest {
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
                 promoCodeRepository, reservationMapper, realMapper,
-                propertyAvailabilityGateway);
+                propertyAvailabilityGateway, reservationEventPublisher);
 
         when(reservationRepository.findById(99L)).thenReturn(Optional.empty());
         var patch = realMapper.readTree("[{\"op\":\"replace\",\"path\":\"/numGuests\",\"value\":4}]");

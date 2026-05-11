@@ -140,8 +140,17 @@ public class ReservationEventListener {
     private void handlePaymentFailed(String message) {
         try {
             PaymentFailedEvent event = objectMapper.readValue(message, PaymentFailedEvent.class);
-            log.info("📨 ⚠️ PaymentFailedEvent primljen: Reservation={}, Reason={}",
-                    event.getReservationId(), event.getReason());
+            log.info("📨 ⚠️ PaymentFailedEvent primljen: Reservation={}, Property={}, Reason={}",
+                    event.getReservationId(), event.getPropertyId(), event.getReason());
+
+            // Defensive: stari payment-service event-i nemaju propertyId.
+            // Bez ovog guard-a findById(null) baca i poruka ulazi u poison
+            // requeue loop (vidjeli smo 946 poruka/s u RabbitMQ Management UI-ju).
+            if (event.getPropertyId() == null) {
+                log.warn("⚠️ PaymentFailedEvent bez propertyId — preskačem kompenzaciju property-a (Reservation={})",
+                        event.getReservationId());
+                return;
+            }
 
             Optional<Property> propertyOpt = propertyRepository.findById(event.getPropertyId());
 
@@ -154,15 +163,10 @@ public class ReservationEventListener {
                 log.info("✅ KOMPENZACIJA: Nekretnina {} je oslobođena jer je plaćanje neuspješno",
                         event.getPropertyId());
 
-                // Emituj kompenzacioni event za Reservation Service
-                ReservationCompensationEvent compensationEvent = new ReservationCompensationEvent(
-                        event.getReservationId(),
-                        event.getPropertyId(),
-                        "Payment failed - property released: " + event.getReason(),
-                        true
-                );
-                eventPublisher.publishReservationCompensation(compensationEvent);
-
+                // NE emitujemo kompenzaciju za reservation-service: on već sluša
+                // booking.payment.failed direktno (Task 3) i sam markira CANCELLED.
+                // Stari kod je ovdje emitovao ReservationCompensationEvent, ali to
+                // je dovodilo do loop-a u kombinaciji sa novim payment Saga listenerom.
             } else {
                 log.warn("⚠️ Nekretnina sa ID {} nije pronađena za kompenzaciju", event.getPropertyId());
             }

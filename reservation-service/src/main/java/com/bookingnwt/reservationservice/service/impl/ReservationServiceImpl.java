@@ -75,7 +75,9 @@ public class ReservationServiceImpl implements ReservationService {
 
         Reservation saved = reservationRepository.save(reservation);
 
-        // SAGA PATTERN: Emituj ReservationCreatedEvent → Property Service sluša
+        // SAGA PATTERN: Emituj ReservationCreatedEvent.
+        //   - property-service slusa → blokira termin na kalendaru
+        //   - payment-service slusa  → pokrece naplatu (Task 3)
         try {
             ReservationCreatedEvent event = new ReservationCreatedEvent(
                     saved.getId(),
@@ -84,7 +86,9 @@ public class ReservationServiceImpl implements ReservationService {
                     saved.getCheckIn().atStartOfDay(),
                     saved.getCheckOut().atStartOfDay(),
                     LocalDateTime.now(),
-                    "RESERVATION_CREATED"
+                    "RESERVATION_CREATED",
+                    saved.getTotalPrice(),
+                    "BAM"
             );
             reservationEventPublisher.publishReservationCreated(event);
         } catch (Exception e) {
