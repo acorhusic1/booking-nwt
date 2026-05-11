@@ -69,7 +69,7 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/refund")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GUEST')")
     public ResponseEntity<PaymentResponseDTO> refundPayment(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.refundPayment(id));
     }

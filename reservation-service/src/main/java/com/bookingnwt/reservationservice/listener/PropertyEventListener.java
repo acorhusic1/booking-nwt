@@ -128,6 +128,13 @@ public class PropertyEventListener {
      *  Helper
      * ======================================================== */
 
+    /**
+     * Saga state-machine: CANCELLED je TERMINAL. Bilo koji success event
+     * (CONFIRMED) koji stigne nakon kompenzacije se ignoriše. Tako rješavamo
+     * race condition između property-saga i payment-saga — ako bilo koji
+     * od njih kaže "fail", finalni status ostaje CANCELLED bez obzira što
+     * drugi kaže "success".
+     */
     private void updateReservationStatus(Long reservationId, ReservationStatus status,
                                           String logFormat, Object... logArgs) {
         Optional<Reservation> opt = reservationRepository.findById(reservationId);
@@ -136,6 +143,14 @@ public class PropertyEventListener {
             return;
         }
         Reservation reservation = opt.get();
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED
+                && status == ReservationStatus.CONFIRMED) {
+            log.warn("🛑 Ignorišem CONFIRMED za rezervaciju {} — već je CANCELLED (kompenzacija je terminal)",
+                    reservationId);
+            return;
+        }
+
         reservation.setStatus(status);
         reservationRepository.save(reservation);
         log.info(logFormat, logArgs);

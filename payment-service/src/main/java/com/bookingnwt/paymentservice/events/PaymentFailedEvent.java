@@ -18,6 +18,11 @@ import java.time.LocalDateTime;
 public class PaymentFailedEvent {
     private Long paymentId;
     private Long reservationId;
+    // propertyId mora biti uključen jer i property-service prima ovaj event
+    // (booking.payment.failed) — koristi ga da oslobodi kalendar (kompenzacija).
+    // Bez ovog polja property-service findById(null) baca i poruka ulazi u
+    // requeue loop (poison message).
+    private Long propertyId;
     private Long guestId;
     private String reason;
     private LocalDateTime eventTimestamp;

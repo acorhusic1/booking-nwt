@@ -70,7 +70,8 @@ public class ReservationEventListener {
         if (walletOpt.isEmpty()) {
             Payment failed = persistPayment(event, amount, currency, PaymentStatus.FAILED);
             paymentEventPublisher.publishPaymentFailed(new PaymentFailedEvent(
-                    failed.getId(), event.getReservationId(), event.getUserId(),
+                    failed.getId(), event.getReservationId(), event.getPropertyId(),
+                    event.getUserId(),
                     "Wallet ne postoji za korisnika " + event.getUserId(),
                     LocalDateTime.now(), "PAYMENT_FAILED"
             ));
@@ -83,7 +84,8 @@ public class ReservationEventListener {
         if (wallet.getBalance().compareTo(amount) < 0) {
             Payment failed = persistPayment(event, amount, currency, PaymentStatus.FAILED);
             paymentEventPublisher.publishPaymentFailed(new PaymentFailedEvent(
-                    failed.getId(), event.getReservationId(), event.getUserId(),
+                    failed.getId(), event.getReservationId(), event.getPropertyId(),
+                    event.getUserId(),
                     "Nedovoljno sredstava (balance=" + wallet.getBalance() + ", potrebno=" + amount + ")",
                     LocalDateTime.now(), "PAYMENT_FAILED"
             ));

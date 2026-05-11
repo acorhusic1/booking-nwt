@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class PaymentFailedEvent {
     private Long paymentId;
     private Long reservationId;
+    private Long propertyId;
     private Long guestId;
     private String reason;
     private LocalDateTime eventTimestamp;

@@ -2,7 +2,10 @@ package com.bookingnwt.propertyservice.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import org.springframework.amqp.core.*;
+import org.springframework.amqp.core.Binding;
+import org.springframework.amqp.core.BindingBuilder;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.TopicExchange;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +13,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * RabbitMQ Konfiguracija za Saga Pattern
- * Definiše exchange, queue-ove i bindings za event-driven komunikaciju
+ * RabbitMQ konfiguracija za property-service — Saga Pattern (choreography).
+ *
+ * property.service.queue prima samo event-e koje DRUGI servisi emituju:
+ *   - booking.reservation.created  (od reservation-service-a)  → blokiraj kalendar
+ *   - booking.payment.failed       (od payment-service-a)      → oslobodi kalendar (kompenzacija)
+ *
+ * NE smije biti bound na svoje izlazne routing-key-eve
+ * (`booking.property.reserved`, `booking.reservation.compensation`) — to bi
+ * uzrokovalo da property-service prima sopstvene poruke i pravi infinite loop
+ * (vidjeli smo 399 poruka/s u RabbitMQ Management UI-ju).
  */
 @Configuration
 public class RabbitMQConfig {
@@ -22,14 +33,8 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.queue.property}")
     private String propertyQueue;
 
-    @Value("${app.rabbitmq.routing-key.reserved}")
-    private String reservedRoutingKey;
-
     @Value("${app.rabbitmq.routing-key.payment-failed}")
     private String paymentFailedRoutingKey;
-
-    @Value("${app.rabbitmq.routing-key.compensation}")
-    private String compensationRoutingKey;
 
     @Value("${app.rabbitmq.routing-key.reservation-created:booking.reservation.created}")
     private String reservationCreatedRoutingKey;
@@ -47,32 +52,20 @@ public class RabbitMQConfig {
     }
 
     // ============ BINDINGS ============
-    @Bean
-    public Binding bindingReservedEvent(Queue propertyServiceQueue, TopicExchange bookingExchange) {
-        return BindingBuilder.bind(propertyServiceQueue)
-                .to(bookingExchange)
-                .with(reservedRoutingKey);
-    }
-
-    @Bean
-    public Binding bindingPaymentFailed(Queue propertyServiceQueue, TopicExchange bookingExchange) {
-        return BindingBuilder.bind(propertyServiceQueue)
-                .to(bookingExchange)
-                .with(paymentFailedRoutingKey);
-    }
-
-    @Bean
-    public Binding bindingCompensation(Queue propertyServiceQueue, TopicExchange bookingExchange) {
-        return BindingBuilder.bind(propertyServiceQueue)
-                .to(bookingExchange)
-                .with(compensationRoutingKey);
-    }
-
+    /** Glavni ulazni event — okidač Sage. */
     @Bean
     public Binding bindingReservationCreated(Queue propertyServiceQueue, TopicExchange bookingExchange) {
         return BindingBuilder.bind(propertyServiceQueue)
                 .to(bookingExchange)
                 .with(reservationCreatedRoutingKey);
+    }
+
+    /** Kompenzacija — payment je propao, treba osloboditi kalendar. */
+    @Bean
+    public Binding bindingPaymentFailed(Queue propertyServiceQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(propertyServiceQueue)
+                .to(bookingExchange)
+                .with(paymentFailedRoutingKey);
     }
 
     // ============ MESSAGE CONVERTER ============
