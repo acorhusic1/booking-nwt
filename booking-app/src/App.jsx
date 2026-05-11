@@ -2,14 +2,18 @@ import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, Link } from 'react-router-dom'
 import Header from './components/common/Header'
 import LoginForm from './components/auth/LoginForm'
+import RegisterForm from './components/auth/RegisterForm'
 import PropertyList from './components/properties/PropertyList'
 import PropertyDetail from './components/properties/PropertyDetail'
 import Dashboard from './components/Dashboard'
 import ReservationForm from './components/reservations/ReservationForm'
+import UserProfile from './components/profile/UserProfile'
+import AdminDashboard from './components/admin/AdminDashboard'
+import HostDashboard from './components/host/HostDashboard'
 import { useAuthStore } from './store/authStore'
 
 function App() {
-  const { isAuthenticated } = useAuthStore()
+  const { isAuthenticated, user } = useAuthStore()
 
   return (
     <Router>
@@ -18,6 +22,7 @@ function App() {
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
           <Route path="/properties" element={<PropertiesPage />} />
           <Route path="/properties/:id" element={<PropertyDetailPage />} />
           <Route
@@ -27,6 +32,18 @@ function App() {
           <Route
             path="/reserve/:id"
             element={isAuthenticated ? <ReservationPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/profile"
+            element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/admin"
+            element={isAuthenticated && user?.role === 'ADMIN' ? <AdminPage /> : <Navigate to="/dashboard" />}
+          />
+          <Route
+            path="/host/dashboard"
+            element={isAuthenticated && user?.role === 'HOST' ? <HostPage /> : <Navigate to="/dashboard" />}
           />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
@@ -54,6 +71,18 @@ function LoginPage() {
         <h1>Prijava</h1>
         <LoginForm />
         <p>Nemate račun? <Link to="/register">Registrujte se</Link></p>
+      </div>
+    </div>
+  )
+}
+
+function RegisterPage() {
+  return (
+    <div className="login-page">
+      <div className="login-container" style={{ maxWidth: '550px' }}>
+        <h1>Registracija</h1>
+        <RegisterForm />
+        <p>Već imate račun? <Link to="/login">Prijavite se</Link></p>
       </div>
     </div>
   )
@@ -87,6 +116,18 @@ function ReservationPage() {
   )
 }
 
+function ProfilePage() {
+  return <UserProfile />
+}
+
+function AdminPage() {
+  return <AdminDashboard />
+}
+
+function HostPage() {
+  return <HostDashboard />
+}
+
 function NotFoundPage() {
   return (
     <div className="not-found">
@@ -97,4 +138,3 @@ function NotFoundPage() {
 }
 
 export default App
-

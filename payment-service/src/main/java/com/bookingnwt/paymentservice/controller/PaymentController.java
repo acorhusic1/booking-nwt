@@ -26,13 +26,13 @@ public class PaymentController {
     private final PaymentService paymentService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<PaymentResponseDTO> createPayment(@Valid @RequestBody PaymentRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(paymentService.createPayment(dto));
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<PaymentResponseDTO> getPaymentById(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.getPaymentById(id));
     }
@@ -44,13 +44,13 @@ public class PaymentController {
     }
 
     @GetMapping("/reservation/{reservationId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<List<PaymentResponseDTO>> getPaymentsByReservationId(@PathVariable Long reservationId) {
         return ResponseEntity.ok(paymentService.getPaymentsByReservationId(reservationId));
     }
 
     @GetMapping("/guest/{guestId}")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<List<PaymentResponseDTO>> getPaymentsByGuestId(@PathVariable Long guestId) {
         return ResponseEntity.ok(paymentService.getPaymentsByGuestId(guestId));
     }
@@ -69,7 +69,7 @@ public class PaymentController {
     }
 
     @PostMapping("/{id}/refund")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'GUEST')")
     public ResponseEntity<PaymentResponseDTO> refundPayment(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.refundPayment(id));
     }
@@ -93,7 +93,7 @@ public class PaymentController {
 
     /** Pagination + sorting for guest's payment history. */
     @GetMapping("/guest/{guestId}/paged")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<Page<PaymentResponseDTO>> getByGuestPaged(@PathVariable Long guestId,
                                                                     Pageable pageable) {
         return ResponseEntity.ok(paymentService.getPaymentsByGuestPaged(guestId, pageable));
@@ -101,7 +101,7 @@ public class PaymentController {
 
     /** Custom @Query — total successfully completed spend for a guest. */
     @GetMapping("/guest/{guestId}/total-spent")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<BigDecimal> getTotalSpent(@PathVariable Long guestId) {
         return ResponseEntity.ok(paymentService.getTotalSpentByGuest(guestId));
     }
@@ -132,7 +132,7 @@ public class PaymentController {
 
     /** EntityGraph fetch — payment + relatedPayment + walletTransactions in one query. */
     @GetMapping("/{id}/details")
-    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<PaymentResponseDTO> getPaymentWithDetails(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.getPaymentWithDetails(id));
     }

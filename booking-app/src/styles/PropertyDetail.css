@@ -3,6 +3,25 @@
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  color: #222;
+}
+
+.property-detail h1,
+.property-detail h2,
+.property-detail h3,
+.property-detail p,
+.property-detail li,
+.property-detail span {
+  color: #222;
+}
+
+.property-detail .location {
+  color: #555;
+  font-size: 16px;
+}
+
+.property-detail .reservation-info p {
+  color: #555;
 }
 
 .back-btn {

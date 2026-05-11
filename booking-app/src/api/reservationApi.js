@@ -25,13 +25,13 @@ export const reservationApi = {
     await apiClient.delete(`/api/reservations/${id}`)
   },
 
-  getByUserId: async (userId) => {
-    const response = await apiClient.get('/api/reservations', { params: { userId } })
+  getByGuestId: async (guestId) => {
+    const response = await apiClient.get(`/api/reservations/guest/${guestId}`)
     return response.data
   },
 
   getByHostId: async (hostId) => {
-    const response = await apiClient.get('/api/reservations', { params: { hostId } })
+    const response = await apiClient.get(`/api/reservations/host/${hostId}`)
     return response.data
   }
 }

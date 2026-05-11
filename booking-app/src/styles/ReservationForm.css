@@ -5,11 +5,13 @@
   box-shadow: 0 2px 4px rgba(0,0,0,0.1);
   max-width: 500px;
   margin: 20px auto;
+  color: #222;
 }
 
 .reservation-form h3 {
   font-size: 20px;
   margin-bottom: 20px;
+  color: #222;
 }
 
 .reservation-form .form-group {
@@ -24,23 +26,53 @@
   color: #333;
 }
 
-.reservation-form input {
+/* Override globalnih dark-theme input stilova samo unutar reservation-form */
+.reservation-form input,
+.reservation-form select,
+.reservation-form textarea {
   padding: 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  background: #fff;
+  color: #222;
+}
+
+.reservation-form input::placeholder {
+  color: #999;
 }
 
 .reservation-form input:focus {
   outline: none;
   border-color: #007bff;
   box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+  background: #fff;
+}
+
+.reservation-form .summary {
+  background: #f6f8fa;
+  padding: 12px 14px;
+  border-radius: 6px;
+  margin-bottom: 14px;
+  color: #222;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
 }
 
 .reservation-form .error {
   color: #dc3545;
   font-size: 12px;
   margin-top: -6px;
+}
+
+.reservation-form .error-alert {
+  background: #f8d7da;
+  color: #842029;
+  padding: 10px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 14px;
 }
 
 .submit-btn {
@@ -64,4 +96,3 @@
   background-color: #ccc;
   cursor: not-allowed;
 }
-
