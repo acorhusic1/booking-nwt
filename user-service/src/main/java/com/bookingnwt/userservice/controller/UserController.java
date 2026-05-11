@@ -11,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,6 +34,7 @@ public class UserController {
      * Example: GET /api/users/paginated?page=0&size=10&sort=lastName,asc
      */
     @GetMapping("/paginated")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> getAllUsersPaginated(
             @PageableDefault(size = 10, sort = "id") Pageable pageable) {
         return ResponseEntity.ok(userService.getAllUsersPaginated(pageable));
@@ -43,6 +45,7 @@ public class UserController {
      * Example: GET /api/users/search?role=HOST&active=true&page=0&size=5
      */
     @GetMapping("/search")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Page<UserResponse>> searchUsers(
             @RequestParam(required = false) String role,
             @RequestParam(required = false) Boolean active,
@@ -51,6 +54,7 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
@@ -60,11 +64,13 @@ public class UserController {
      * Uses EntityGraph to avoid N+1 queries.
      */
     @GetMapping("/{id}/details")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<com.bookingnwt.userservice.dto.UserDetailsResponse> getUserDetailsById(@PathVariable Long id) {
         return ResponseEntity.ok(userService.getUserDetailsById(id));
     }
 
     @GetMapping("/email/{email}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> getUserByEmail(@PathVariable String email) {
         return ResponseEntity.ok(userService.getUserByEmail(email));
     }
@@ -76,6 +82,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id,
                                                    @Valid @RequestBody UserRequest request) {
         return ResponseEntity.ok(userService.updateUser(id, request));
@@ -87,6 +94,7 @@ public class UserController {
      * Example: PATCH /api/users/1  body: {"firstName": "NewName"}
      */
     @PatchMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> patchUser(@PathVariable Long id,
                                                   @Valid @RequestBody UserPatchRequest request) {
         return ResponseEntity.ok(userService.patchUser(id, request));

@@ -35,6 +35,6 @@ public class AuthServiceImpl implements AuthService {
 
         User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
 
-        return new LoginResponse(jwt, user.getId(), user.getEmail(), user.getRole().name());
+        return new LoginResponse(jwt, user.getEmail(), user.getRole().name(), user.getId());
     }
 }

@@ -1,0 +1,161 @@
+.host-dashboard {
+  animation: fadeIn 0.6s ease-out;
+}
+
+.host-header {
+  margin-bottom: 32px;
+}
+
+.host-header h1 {
+  font-size: 2.2rem;
+  margin-bottom: 8px;
+}
+
+.host-subtitle {
+  color: var(--text-muted);
+  font-size: 16px;
+}
+
+.host-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.host-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.host-section h2 {
+  margin-bottom: 20px;
+}
+
+.no-data {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px;
+}
+
+.host-properties-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.host-property-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.host-property-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(69, 243, 255, 0.3);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.host-property-card h3 {
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.host-property-card p {
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.property-status-bar {
+  margin-bottom: 12px;
+}
+
+.availability {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 12px;
+}
+
+.available { background: rgba(69, 243, 255, 0.12); color: var(--primary); }
+.unavailable { background: rgba(255, 42, 112, 0.12); color: var(--secondary); }
+
+.view-btn {
+  display: inline-block;
+  margin-top: 12px;
+  color: var(--primary);
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.reservations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.reservations-table th {
+  text-align: left;
+  padding: 12px 14px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.reservations-table td {
+  padding: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 14px;
+}
+
+.reservations-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-confirmed { background: rgba(69, 243, 255, 0.15); color: var(--primary); }
+.status-created   { background: rgba(255, 200, 0, 0.15); color: #ffc800; }
+.status-cancelled { background: rgba(255, 42, 112, 0.15); color: var(--secondary); }
+.status-pending   { background: rgba(160, 165, 181, 0.15); color: var(--text-muted); }
+
+/* Reuse stat-card from admin (shared) */
+.stat-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(69, 243, 255, 0.12);
+}
+
+.stat-icon { font-size: 36px; }
+
+.stat-info { display: flex; flex-direction: column; }
+
+.stat-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.stat-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}

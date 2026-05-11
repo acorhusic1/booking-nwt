@@ -94,24 +94,38 @@ public class ReservationEventListener {
             if (propertyOpt.isPresent()) {
                 Property property = propertyOpt.get();
 
-                // LOKALNA TRANSAKCIJA: Markiranje nekretnine kao nedostupne
-                property.setAvailable(false);
-                propertyRepository.save(property);
-                log.info("✅ Nekretnina {} je markirana kao NEDOSTUPNA za rezervaciju {}",
-                        event.getPropertyId(), event.getReservationId());
+                try {
+                    // LOKALNA TRANSAKCIJA: Markiranje nekretnine kao nedostupne
+                    property.setAvailable(false);
+                    propertyRepository.save(property);
+                    log.info("✅ Nekretnina {} je markirana kao NEDOSTUPNA za rezervaciju {}",
+                            event.getPropertyId(), event.getReservationId());
 
-                // Emituj PROPERTY_RESERVED event → Reservation Service sluša
-                PropertyReservedEvent reservedEvent = new PropertyReservedEvent(
-                        event.getPropertyId(),
-                        event.getReservationId(),
-                        event.getUserId(),
-                        1,
-                        event.getCheckInDate(),
-                        event.getCheckOutDate(),
-                        LocalDateTime.now(),
-                        "CONFIRMED"
-                );
-                eventPublisher.publishPropertyReserved(reservedEvent);
+                    // Emituj PROPERTY_RESERVED event → Reservation Service sluša
+                    PropertyReservedEvent reservedEvent = new PropertyReservedEvent(
+                            event.getPropertyId(),
+                            event.getReservationId(),
+                            event.getUserId(),
+                            1,
+                            event.getCheckInDate(),
+                            event.getCheckOutDate(),
+                            LocalDateTime.now(),
+                            "CONFIRMED"
+                    );
+                    eventPublisher.publishPropertyReserved(reservedEvent);
+                } catch (Exception dbException) {
+                    // BIDIREKCIONA ZAVISNOST: Ako DB write padne, emituj kompenzaciju
+                    log.error("❌ DB write za property {} pao — emitujem kompenzaciju za rezervaciju {}",
+                            event.getPropertyId(), event.getReservationId(), dbException);
+
+                    ReservationCompensationEvent compensationEvent = new ReservationCompensationEvent(
+                            event.getReservationId(),
+                            event.getPropertyId(),
+                            "Property DB write failed - reservation must be cancelled: " + dbException.getMessage(),
+                            true
+                    );
+                    eventPublisher.publishReservationCompensation(compensationEvent);
+                }
 
             } else {
                 log.warn("⚠️ Nekretnina sa ID {} nije pronađena — emitujem kompenzaciju", event.getPropertyId());

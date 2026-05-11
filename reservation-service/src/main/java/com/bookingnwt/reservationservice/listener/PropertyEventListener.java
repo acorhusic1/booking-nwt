@@ -54,12 +54,12 @@ public class PropertyEventListener {
                     } else if (node.has("status") && node.has("propertyId")) {
                         handlePropertyReserved(message);
                     } else {
-                        log.warn("⚠️ Neprepoznata poruka na reservation queue: {}", message);
+                        log.warn("Neprepoznata poruka na reservation queue: {}", message);
                     }
                 }
             }
         } catch (Exception e) {
-            log.error("❌ Greška pri obradi poruke: {}", e.getMessage(), e);
+            log.error("Greška pri obradi poruke: {}", e.getMessage(), e);
         }
     }
 
@@ -97,30 +97,50 @@ public class PropertyEventListener {
     private void handlePropertyReserved(String message) {
         try {
             PropertyReservedEvent event = objectMapper.readValue(message, PropertyReservedEvent.class);
-            log.info("📨 PropertyReservedEvent: Reservation={}, Status={}",
+            log.info("PropertyReservedEvent: Reservation={}, Status={}",
                     event.getReservationId(), event.getStatus());
 
-            ReservationStatus newStatus = "CONFIRMED".equals(event.getStatus())
-                    ? ReservationStatus.CONFIRMED : ReservationStatus.CANCELLED;
-            updateReservationStatus(event.getReservationId(), newStatus,
-                    "Property listener — rezervacija {} → {}",
-                    event.getReservationId(), newStatus);
+            Optional<Reservation> reservationOpt = reservationRepository.findById(event.getReservationId());
+
+            if (reservationOpt.isPresent()) {
+                Reservation reservation = reservationOpt.get();
+
+                if ("CONFIRMED".equals(event.getStatus())) {
+                    reservation.setStatus(ReservationStatus.CONFIRMED);
+                    reservation.setUpdatedAt(java.time.LocalDateTime.now());
+                    reservationRepository.save(reservation);
+                    log.info("═══════════════════════════════════════════════════════");
+                    log.info("SAGA COMPLETED — Rezervacija {} je POTVRĐENA", event.getReservationId());
+                    log.info("Lokalna transakcija 1 (Reservation): CREATED → CONFIRMED");
+                    log.info("Lokalna transakcija 2 (Property): available = false");
+                    log.info("Obje transakcije uspješne — akcija je FINALNA");
+                    log.info("═══════════════════════════════════════════════════════");
+                } else {
+                    reservation.setStatus(ReservationStatus.CANCELLED);
+                    reservation.setUpdatedAt(java.time.LocalDateTime.now());
+                    reservationRepository.save(reservation);
+                    log.warn("Rezervacija {} je CANCELLED", event.getReservationId());
+                }
+            } else {
+                log.warn("Rezervacija {} nije pronađena", event.getReservationId());
+            }
+
         } catch (Exception e) {
-            log.error("❌ Greška u handlePropertyReserved: {}", e.getMessage(), e);
+            log.error("Greška u handlePropertyReserved: {}", e.getMessage(), e);
         }
     }
 
     private void handleCompensation(String message) {
         try {
             ReservationCompensationEvent event = objectMapper.readValue(message, ReservationCompensationEvent.class);
-            log.info("📨 ⚠️ ReservationCompensationEvent: Reservation={}, Reason={}",
+            log.info("ReservationCompensationEvent: Reservation={}, Reason={}",
                     event.getReservationId(), event.getReason());
 
             updateReservationStatus(event.getReservationId(), ReservationStatus.CANCELLED,
-                    "🔙 KOMPENZACIJA: Rezervacija {} OTKAZANA (razlog: {})",
+                    "KOMPENZACIJA: Rezervacija {} OTKAZANA (razlog: {})",
                     event.getReservationId(), event.getReason());
         } catch (Exception e) {
-            log.error("❌ Greška u handleCompensation: {}", e.getMessage(), e);
+            log.error("Greška u handleCompensation: {}", e.getMessage(), e);
         }
     }
 
@@ -139,14 +159,14 @@ public class PropertyEventListener {
                                           String logFormat, Object... logArgs) {
         Optional<Reservation> opt = reservationRepository.findById(reservationId);
         if (opt.isEmpty()) {
-            log.warn("⚠️ Rezervacija {} nije pronađena", reservationId);
+            log.warn("Rezervacija {} nije pronađena", reservationId);
             return;
         }
         Reservation reservation = opt.get();
 
         if (reservation.getStatus() == ReservationStatus.CANCELLED
                 && status == ReservationStatus.CONFIRMED) {
-            log.warn("🛑 Ignorišem CONFIRMED za rezervaciju {} — već je CANCELLED (kompenzacija je terminal)",
+            log.warn("Ignorišem CONFIRMED za rezervaciju {} — već je CANCELLED (kompenzacija je terminal)",
                     reservationId);
             return;
         }
