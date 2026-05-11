@@ -1,0 +1,15 @@
+{
+  "images": {
+    "default_property": "https://picsum.photos/800/600?random=1",
+    "apartments": [
+      "https://picsum.photos/800/600?random=2",
+      "https://picsum.photos/800/600?random=3",
+      "https://picsum.photos/800/600?random=4",
+      "https://picsum.photos/800/600?random=5",
+      "https://picsum.photos/800/600?random=6"
+    ]
+  },
+  "imageMapper": {
+    "description": "Mapira property ID na sliku URL. Koristi Picsum Photos za pouzdane slike."
+  }
+}

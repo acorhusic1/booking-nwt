@@ -37,6 +37,11 @@ export const propertyApi = {
   getByHostId: async (hostId) => {
     const response = await apiClient.get(`/api/properties/host/${hostId}`)
     return response.data
+  },
+
+  getImages: async (propertyId) => {
+    const response = await apiClient.get(`/api/properties/${propertyId}/images`)
+    return response.data
   }
 }
 
