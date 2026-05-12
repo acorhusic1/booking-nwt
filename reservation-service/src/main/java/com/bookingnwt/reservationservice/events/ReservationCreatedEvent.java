@@ -4,11 +4,15 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 /**
- * Event koji Reservation Service emituje kada se kreira nova rezervacija.
- * Property Service sluša ovaj event i markira nekretninu kao nedostupnu.
+ * Event koji reservation-service emituje kada se kreira nova rezervacija.
+ *
+ * SLUŠAJU GA DVA SERVISA (Saga choreography):
+ *   - property-service: blokira termine na kalendaru
+ *   - payment-service:  pokreće naplatu (Task 3 - reservation+payment Saga)
  */
 @Data
 @NoArgsConstructor
@@ -21,4 +25,7 @@ public class ReservationCreatedEvent {
     private LocalDateTime checkOutDate;
     private LocalDateTime eventTimestamp;
     private String eventType = "RESERVATION_CREATED";
+    // Task 3 — payment-service koristi ova polja za naplatu
+    private BigDecimal totalPrice;
+    private String currency;
 }
