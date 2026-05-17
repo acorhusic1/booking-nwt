@@ -4,6 +4,8 @@ import com.bookingnwt.userservice.dto.LoginRequest;
 import com.bookingnwt.userservice.dto.LoginResponse;
 import com.bookingnwt.userservice.dto.UserRequest;
 import com.bookingnwt.userservice.dto.UserResponse;
+import com.bookingnwt.userservice.dto.TokenRefreshRequest;
+import com.bookingnwt.userservice.dto.TokenRefreshResponse;
 import com.bookingnwt.userservice.service.AuthService;
 import com.bookingnwt.userservice.service.UserService;
 import jakarta.validation.Valid;
@@ -35,5 +37,16 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<UserResponse> register(@Valid @RequestBody UserRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(request));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<TokenRefreshResponse> refresh(@Valid @RequestBody TokenRefreshRequest request) {
+        return ResponseEntity.ok(authService.refresh(request));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@Valid @RequestBody TokenRefreshRequest request) {
+        authService.logout(request);
+        return ResponseEntity.noContent().build();
     }
 }
