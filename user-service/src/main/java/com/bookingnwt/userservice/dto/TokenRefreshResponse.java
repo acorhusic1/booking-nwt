@@ -7,18 +7,13 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LoginResponse {
+public class TokenRefreshResponse {
     private String accessToken;
     private String refreshToken;
     private String tokenType = "Bearer";
-    private Long id;
-    private String email;
-    private String role;
 
-    public LoginResponse(String accessToken, String refreshToken, String email, String role, Long id) {
+    public TokenRefreshResponse(String accessToken, String refreshToken) {
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;
-        this.email = email;
-        this.role = role;
     }
 }
