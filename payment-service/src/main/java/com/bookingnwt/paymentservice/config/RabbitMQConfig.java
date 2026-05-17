@@ -29,8 +29,14 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.queue.payment}")
     private String paymentQueue;
 
+    @Value("${app.rabbitmq.queue.payment-cancellations}")
+    private String paymentCancellationsQueue;
+
     @Value("${app.rabbitmq.routing-key.reservation-created}")
     private String reservationCreatedRoutingKey;
+
+    @Value("${app.rabbitmq.routing-key.reservation-cancelled}")
+    private String reservationCancelledRoutingKey;
 
     // ============ EXCHANGE ============
     @Bean
@@ -38,21 +44,36 @@ public class RabbitMQConfig {
         return new TopicExchange(exchange, true, false);
     }
 
-    // ============ QUEUE ============
+    // ============ QUEUES ============
     @Bean
     public Queue paymentServiceQueue() {
         return new Queue(paymentQueue, true, false, false);
     }
 
-    // ============ BINDINGS ============
     /**
-     * Sluša ReservationCreated event — naplati rezervaciju.
+     * Odvojeni queue za cancellation event-e da se ne miješaju sa glavnim
+     * payment flow-om i da imaju vlastiti retry/DLQ ako zatreba.
      */
+    @Bean
+    public Queue paymentCancellationsQueue() {
+        return new Queue(paymentCancellationsQueue, true, false, false);
+    }
+
+    // ============ BINDINGS ============
+    /** Sluša ReservationCreated event — naplati rezervaciju. */
     @Bean
     public Binding bindingReservationCreated(Queue paymentServiceQueue, TopicExchange bookingExchange) {
         return BindingBuilder.bind(paymentServiceQueue)
                 .to(bookingExchange)
                 .with(reservationCreatedRoutingKey);
+    }
+
+    /** Sluša ReservationCancelled event — refundira wallet (kompenzacija). */
+    @Bean
+    public Binding bindingReservationCancelled(Queue paymentCancellationsQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(paymentCancellationsQueue)
+                .to(bookingExchange)
+                .with(reservationCancelledRoutingKey);
     }
 
     // ============ MESSAGE CONVERTER ============

@@ -21,8 +21,14 @@ export const reservationApi = {
     return response.data
   },
 
+  /**
+   * Otkaži rezervaciju — backend endpoint /cancel pokreće cancellation
+   * policy provjeru (7-day pravilo) i ako je sve OK, status → CANCELLED.
+   * GUEST/HOST/ADMIN smiju zvati (DELETE endpoint je samo za ADMIN-a).
+   */
   cancel: async (id) => {
-    await apiClient.delete(`/api/reservations/${id}`)
+    const response = await apiClient.put(`/api/reservations/${id}/cancel`)
+    return response.data
   },
 
   getByGuestId: async (guestId) => {
