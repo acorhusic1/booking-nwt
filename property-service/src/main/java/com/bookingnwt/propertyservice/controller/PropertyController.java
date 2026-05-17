@@ -36,7 +36,7 @@ public class PropertyController {
 
     private final PropertyService propertyService;
 
-    @org.springframework.beans.factory.annotation.Value("${server.port}")
+    @Value("${server.port}")
     private String port;
 
     // ===================== PUBLIC GET ENDPOINTS =====================
@@ -64,13 +64,12 @@ public class PropertyController {
     @GetMapping("/search")
     public ResponseEntity<List<PropertyResponse>> searchAvailableProperties(
             @RequestParam String city,
-            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return ResponseEntity.ok(propertyService.getAvailableProperties(city, startDate, endDate));
     }
 
     @GetMapping("/test")
-    @PreAuthorize("permitAll()")
     public ResponseEntity<String> testLoadBalancing() {
         try {
             String instanceId = InetAddress.getLocalHost().getHostName();
