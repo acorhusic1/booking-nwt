@@ -1,54 +1,17 @@
-.login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 15px;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
 .login-form .form-group {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-}
-
-.login-form label {
-  font-weight: bold;
-  color: #333;
-}
-
-.login-form input {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  gap: 6px;
 }
 
 .login-form input.error {
-  border-color: #dc3545;
-  background-color: #fff5f5;
+  border-color: var(--error-border);
+  background: var(--error-bg);
 }
 
 .login-form .error-message {
-  color: #dc3545;
-  font-size: 12px;
+  color: var(--error-text);
+  font-size: 0.8rem;
+  margin-top: 2px;
+  font-family: "Geist", sans-serif;
 }
-
-.login-form button {
-  background-color: #007bff;
-  color: white;
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: bold;
-  transition: all 0.3s ease;
-}
-
-.login-form button:hover {
-  background-color: #0056b3;
-}
-

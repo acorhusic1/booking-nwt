@@ -66,8 +66,7 @@ export default function ReservationForm({ propertyId }) {
         totalPrice: totalPrice
       }
       await reservationApi.create(reservationData)
-      alert('Rezervacija uspješna! Plaćanje se obrađuje u pozadini (Saga).')
-      navigate('/dashboard')
+      navigate('/dashboard?tab=notifications&pending=1')
     } catch (err) {
       const msg = err.response?.data?.message
       setError(typeof msg === 'string' ? msg : 'Greška pri kreiranju rezervacije')

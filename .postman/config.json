@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "id": "9d82fe9c-8ea9-4683-8963-363f373600f6"
+  },
+  "entities": {
+    "environments": [],
+    "flows": [],
+    "globals": [],
+    "mocks": [],
+    "specs": [],
+    "collections": [
+      "..\\POSTMAN_SECURITY_COLLECTION.json"
+    ]
+  }
+}

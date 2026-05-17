@@ -1,28 +1,26 @@
-import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { propertyApi } from "../../api/propertyApi";
 import "../../styles/PropertyCard.css";
 
 export default function PropertyCard({ property }) {
-  const [imageUrl, setImageUrl] = useState(null);
+  // Koristi Picsum Photos sa ID-om svojstva za pouzdane slike
+  // Picsum vraća random sliku baziranu na ID-u
+  const imageUrl = `https://picsum.photos/400/300?random=${property.id || Math.random()}`;
 
-  useEffect(() => {
-    propertyApi.getImages(property.id).then((images) => {
-      if (!images || images.length === 0) return;
-      const primary = images.find((img) => img.isPrimary) || images[0];
-      setImageUrl(primary.url);
-    }).catch(() => {});
-  }, [property.id]);
+  // Fallback slike u slučaju da nešto ne radi
+  const handleImageError = (e) => {
+    e.target.src = `https://via.placeholder.com/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+  };
 
   return (
     <Link to={`/properties/${property.id}`} className="property-card-link">
       <div className="property-card">
         <div className="property-image">
-          {imageUrl ? (
-            <img src={imageUrl} alt={property.name} loading="lazy" />
-          ) : (
-            <div className="property-image-placeholder" />
-          )}
+          <img
+            src={imageUrl}
+            alt={property.name}
+            loading="lazy"
+            onError={handleImageError}
+          />
         </div>
         <div className="property-info">
           <h3>{property.name}</h3>
@@ -31,7 +29,9 @@ export default function PropertyCard({ property }) {
           </p>
           <p className="description">
             {property.description?.substring(0, 100)}
-            {property.description && property.description.length > 100 ? "…" : ""}
+            {property.description && property.description.length > 100
+              ? "…"
+              : ""}
           </p>
           <div className="property-details">
             <span>👥 Do {property.maxGuests} osoba</span>

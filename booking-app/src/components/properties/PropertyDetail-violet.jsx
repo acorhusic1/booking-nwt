@@ -1,43 +1,40 @@
-import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { propertyApi } from "../../api/propertyApi";
+import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/PropertyDetail.css";
+import api from "../../api";
 
 export default function PropertyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [property, setProperty] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    const fetchAll = async () => {
+    const fetchProperty = async () => {
       try {
-        const [data, images] = await Promise.all([
-          propertyApi.getById(id),
-          propertyApi.getImages(id),
-        ]);
-        setProperty(data);
-
-        if (images && images.length > 0) {
-          const primary = images.find((img) => img.isPrimary) || images[0];
-          setImageUrl(primary.url);
-        }
+        const response = await api.get(`/properties/${id}`);
+        setProperty(response.data);
       } catch (err) {
-        setError("Greška pri učitavanju detalja smještaja");
-        console.error(err);
+        setError("Greška pri učitavanju smještaja");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAll();
+    fetchProperty();
   }, [id]);
 
   if (loading) return <div className="loading">Učitavanje...</div>;
   if (error) return <div className="error">{error}</div>;
   if (!property) return <div>Smještaj nije pronađen</div>;
+
+  // Picsum Photos - pouzdana URL za slike
+  const imageUrl = `https://picsum.photos/800/600?random=${property.id || id}`;
+
+  const handleImageError = (e) => {
+    e.target.src = `https://via.placeholder.com/800x600/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+  };
 
   return (
     <div className="property-detail">
@@ -52,14 +49,13 @@ export default function PropertyDetail() {
             📍 {property.city}, {property.address}
           </p>
 
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt={property.name}
-              className="property-image"
-              loading="lazy"
-            />
-          )}
+          <img
+            src={imageUrl}
+            alt={property.name}
+            className="property-image"
+            loading="lazy"
+            onError={handleImageError}
+          />
 
           <div className="property-description">
             <h3>Opis</h3>
@@ -79,20 +75,20 @@ export default function PropertyDetail() {
           </div>
         </div>
 
-        <div className="booking-sidebar">
-          <button
-            className="reserve-btn"
-            disabled={!property.available}
-            onClick={() => navigate(`/reserve/${id}`)}
-          >
-            {property.available ? "Rezerviši sada" : "Nije dostupno"}
-          </button>
-
-          <div className="reservation-info">
-            <p>✅ Besplatna otkazivanja 7 dana prije dolaska</p>
-            <p>✅ Brza potvrda rezervacije</p>
+        <aside className="booking-sidebar">
+          <div className="price-box">
+            <h2>Izvršavanje Rezervacije</h2>
+            <p className="from-price">Razmatranje datuma dostupnosti...</p>
           </div>
-        </div>
+
+          {property.available ? (
+            <button className="reserve-btn">Rezerviraj Sada</button>
+          ) : (
+            <p style={{ textAlign: "center", color: "var(--text-tertiary)" }}>
+              Ovaj smještaj nije trenutno dostupan
+            </p>
+          )}
+        </aside>
       </div>
     </div>
   );

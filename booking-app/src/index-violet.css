@@ -1,0 +1,378 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@400;500&family=Inconsolata:wght@400;600;700&display=swap");
+
+:root {
+  /* Dark Centered Platform - Violet Void Color Palette */
+  --bg-primary: #0d0514;
+  --bg-secondary: #12091d;
+  --bg-tertiary: #1a0f2e;
+
+  /* Violet Void - Primary Colors */
+  --violet-primary: #9d4edd;
+  --violet-secondary: #7209b7;
+  --violet-accent: #5a189a;
+  --violet-light: #c77dff;
+  --violet-bright: #e0aaff;
+
+  /* Text Colors */
+  --text-primary: #ffffff;
+  --text-secondary: #d4c5f9;
+  --text-tertiary: #a89fdb;
+  --text-inverse: #0d0514;
+
+  /* Utility Colors */
+  --border-color: rgba(157, 78, 221, 0.15);
+  --border-highlight: rgba(157, 78, 221, 0.3);
+  --surface-dark: rgba(18, 9, 29, 0.8);
+  --surface-light: rgba(26, 15, 46, 0.5);
+
+  /* Shadows - Sharp Depth */
+  --shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.8);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.9);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.95);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.98);
+  --shadow-sharp:
+    0 0 0 1px rgba(157, 78, 221, 0.2), 0 4px 16px rgba(0, 0, 0, 0.9);
+
+  /* Glow Effects - Neon Streak */
+  --glow-violet: 0 0 12px rgba(157, 78, 221, 0.4);
+  --glow-violet-strong: 0 0 20px rgba(199, 125, 255, 0.6);
+  --glow-neon:
+    0 0 30px rgba(224, 170, 255, 0.3), 0 0 60px rgba(157, 78, 221, 0.15);
+
+  /* Roundness - Basic */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: "Geist", sans-serif;
+  background: linear-gradient(
+    135deg,
+    var(--bg-primary) 0%,
+    var(--bg-secondary) 50%,
+    var(--bg-tertiary) 100%
+  );
+  color: var(--text-primary);
+  line-height: 1.6;
+  min-height: 100vh;
+  margin: 0;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Neon Streak Overlay - Background Effect */
+body::before {
+  content: "";
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(
+      circle at 20% 50%,
+      rgba(157, 78, 221, 0.05) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      circle at 80% 80%,
+      rgba(199, 125, 255, 0.03) 0%,
+      transparent 50%
+    );
+  pointer-events: none;
+  z-index: -1;
+  animation: neonStreak 20s ease-in-out infinite;
+}
+
+@keyframes neonStreak {
+  0%,
+  100% {
+    transform: translate(0, 0);
+  }
+  50% {
+    transform: translate(10px, -10px);
+  }
+}
+
+.app-main {
+  min-height: calc(100vh - 80px);
+  padding: 40px 20px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.glass-panel {
+  background: var(--surface-dark);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
+  border-radius: var(--radius-lg);
+  padding: 24px;
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  border-color: var(--border-highlight);
+  box-shadow: var(--shadow-sharp);
+}
+
+/* Typography */
+h1 {
+  font-family: "Inter", sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--violet-bright);
+  margin-bottom: 1.5rem;
+  letter-spacing: -1px;
+  text-shadow: var(--glow-violet);
+}
+
+h2 {
+  font-family: "Inter", sans-serif;
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--violet-light);
+  margin-bottom: 1rem;
+  letter-spacing: -0.5px;
+}
+
+h3 {
+  font-family: "Inter", sans-serif;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: var(--violet-light);
+}
+
+h4,
+h5,
+h6 {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+p {
+  font-family: "Geist", sans-serif;
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+small,
+.caption {
+  font-family: "Inconsolata", monospace;
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  letter-spacing: 0.5px;
+}
+
+/* Buttons */
+button,
+.cta-button,
+.btn-login,
+.btn-register {
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 32px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  border: 2px solid;
+  transition: all 0.25s ease;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-md);
+}
+
+.cta-button {
+  background: linear-gradient(
+    135deg,
+    var(--violet-primary) 0%,
+    var(--violet-secondary) 100%
+  );
+  color: var(--text-inverse);
+  box-shadow: var(--shadow-lg), var(--glow-violet);
+  border: 2px solid var(--violet-primary);
+}
+
+.cta-button:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    var(--shadow-xl),
+    0 0 30px rgba(199, 125, 255, 0.6);
+  background: linear-gradient(
+    135deg,
+    var(--violet-light) 0%,
+    var(--violet-primary) 100%
+  );
+  border-color: var(--violet-light);
+}
+
+button {
+  background: var(--violet-primary);
+  color: var(--text-inverse);
+  border: 2px solid var(--violet-primary);
+}
+
+button:hover {
+  background: var(--violet-light);
+  transform: translateY(-3px);
+  box-shadow:
+    var(--shadow-lg),
+    0 0 25px rgba(199, 125, 255, 0.5);
+  border-color: var(--violet-light);
+}
+
+/* Links */
+a {
+  color: var(--violet-light);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+a:hover {
+  color: var(--violet-bright);
+  text-shadow: var(--glow-neon);
+}
+
+/* Forms */
+input,
+textarea,
+select {
+  font-family: "Geist", sans-serif;
+  background: rgba(26, 15, 46, 0.6);
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  transition: all 0.25s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--violet-primary);
+  box-shadow:
+    0 0 12px rgba(157, 78, 221, 0.3),
+    inset 0 0 8px rgba(157, 78, 221, 0.1);
+  background: rgba(26, 15, 46, 0.9);
+}
+
+/* Cards */
+.card {
+  background: linear-gradient(
+    135deg,
+    rgba(26, 15, 46, 0.8),
+    rgba(18, 9, 29, 0.8)
+  );
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  border-color: var(--border-highlight);
+  box-shadow: var(--glow-neon), var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+/* Property Cards */
+.property-card {
+  background: var(--surface-dark);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  transition: all 0.35s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.property-card:hover {
+  border-color: var(--border-highlight);
+  box-shadow: var(--glow-neon), var(--shadow-lg);
+  transform: translateY(-4px);
+}
+
+.property-card img {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-bottom: 1px solid var(--border-color);
+  filter: contrast(1.25) brightness(0.92) saturate(1.15);
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.property-card:hover img {
+  filter: contrast(1.4) brightness(0.98) saturate(1.3)
+    drop-shadow(0 0 8px rgba(157, 78, 221, 0.3));
+  transform: scale(1.08);
+}
+
+.property-info {
+  padding: 15px;
+  color: var(--text-primary);
+}
+
+.property-info h3 {
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--violet-light);
+}
+
+/* Alerts */
+.error,
+.error-alert {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+  color: #ff6b7a;
+  padding: 16px;
+  border-radius: var(--radius-md);
+  font-family: "Geist", sans-serif;
+}
+
+.loading {
+  font-size: 1.2rem;
+  color: var(--violet-light);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  h1 {
+    font-size: 2rem;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+  }
+
+  .app-main {
+    padding: 20px 16px;
+  }
+}

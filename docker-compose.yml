@@ -203,6 +203,8 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
       - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -210,6 +212,8 @@ services:
         condition: service_started
       config-server:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
 
   system-events-service:
     build:

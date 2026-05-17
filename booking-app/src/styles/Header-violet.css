@@ -1,0 +1,159 @@
+.header {
+  background: linear-gradient(
+    90deg,
+    rgba(13, 5, 20, 0.95) 0%,
+    rgba(18, 9, 29, 0.95) 100%
+  );
+  border-bottom: 2px solid rgba(157, 78, 221, 0.2);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  padding: 0;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 40px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.logo {
+  font-family: "Inter", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: #e0aaff;
+  text-shadow: 0 0 15px rgba(224, 170, 255, 0.5);
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  color: #c77dff;
+  text-shadow: 0 0 25px rgba(199, 125, 255, 0.7);
+}
+
+.nav-links {
+  display: flex;
+  gap: 30px;
+  list-style: none;
+  flex: 1;
+  justify-content: center;
+}
+
+.nav-links a {
+  color: #d4c5f9;
+  text-decoration: none;
+  font-weight: 500;
+  font-family: "Inter", sans-serif;
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.nav-links a::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #9d4edd, #c77dff);
+  transition: width 0.3s ease;
+}
+
+.nav-links a:hover {
+  color: #c77dff;
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.btn-login,
+.btn-register {
+  color: #c77dff;
+  padding: 12px 28px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  transition: all 0.25s ease;
+  font-size: 0.95rem;
+}
+
+.btn-login {
+  background-color: transparent;
+  border: 2px solid #c77dff;
+}
+
+.btn-login:hover {
+  background-color: rgba(199, 125, 255, 0.15);
+  box-shadow:
+    0 0 20px rgba(199, 125, 255, 0.5),
+    inset 0 0 20px rgba(199, 125, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.btn-register {
+  background-color: #9d4edd;
+  color: #0d0514;
+  border: 2px solid #9d4edd;
+}
+
+.btn-register:hover {
+  background-color: #c77dff;
+  box-shadow:
+    0 0 25px rgba(199, 125, 255, 0.6),
+    inset 0 0 15px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.logout-btn {
+  background-color: transparent;
+  color: #c77dff;
+  border: 2px solid #c77dff;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  font-size: 14px;
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+}
+
+.logout-btn:hover {
+  background-color: #c77dff;
+  color: #0d0514;
+  box-shadow:
+    0 0 20px rgba(199, 125, 255, 0.5),
+    inset 0 0 15px rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    padding: 12px 20px;
+  }
+
+  .nav-links {
+    gap: 15px;
+    font-size: 0.9rem;
+  }
+
+  .btn-login,
+  .btn-register {
+    padding: 10px 16px;
+    font-size: 0.85rem;
+  }
+}
