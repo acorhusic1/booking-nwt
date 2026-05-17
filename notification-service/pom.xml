@@ -18,8 +18,8 @@
     <description>BookingNWT - Notification Service: Push notifikacije, interne poruke</description>
 
     <properties>
-        <java.version>21</java.version>
-        <org.mapstruct.version>1.5.5.Final</org.mapstruct.version>
+        <java.version>24</java.version>
+        <org.mapstruct.version>1.6.3</org.mapstruct.version>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
     </properties>
 
@@ -117,6 +117,12 @@
             <groupId>com.github.java-json-tools</groupId>
             <artifactId>json-patch</artifactId>
             <version>1.13</version>
+        </dependency>
+
+        <!-- RabbitMQ (Saga notifikacije) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
         </dependency>
 
         <!-- Retry/AOP for fail-fast Config Server -->

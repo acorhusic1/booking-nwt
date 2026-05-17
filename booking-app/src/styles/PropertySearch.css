@@ -1,42 +1,99 @@
 .property-search {
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  margin-bottom: 30px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  background: #12091d;
+  padding: 24px 28px;
+  border-radius: var(--radius-lg);
+  margin-bottom: 28px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .property-search h2 {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  color: var(--text-tertiary);
+  font-family: "Geist", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
 }
 
 .search-controls {
   display: flex;
-  gap: 15px;
+  gap: 12px;
   align-items: flex-end;
   flex-wrap: wrap;
 }
 
-.search-controls input[type="text"],
-.search-controls input[type="range"],
-.search-controls button {
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
+.search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.search-field label {
+  font-family: "Geist", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
 .search-controls input[type="text"] {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: #1a0f2e;
+  color: var(--text-primary);
+  font-family: "Geist", sans-serif;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
 }
 
-.search-controls label {
-  font-weight: bold;
-  color: #333;
+.search-controls input[type="text"]::placeholder {
+  color: var(--text-tertiary);
 }
 
-.search-controls span {
-  min-width: 100px;
+.search-controls input[type="text"]:focus {
+  outline: none;
+  border-color: var(--violet-primary);
+  background: rgba(26, 15, 46, 0.95);
+  box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.12);
+}
+
+.search-controls input[type="range"] {
+  accent-color: var(--violet-primary);
+  cursor: pointer;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.search-controls button {
+  padding: 10px 20px;
+  font-size: 0.875rem;
+  background: var(--violet-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.search-controls button:hover {
+  background: var(--violet-light);
+  box-shadow: var(--glow-violet);
+  transform: none;
+}
+
+.search-controls .price-range-label {
+  min-width: 110px;
+  color: var(--text-secondary);
+  font-family: "Geist", sans-serif;
+  font-size: 0.875rem;
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {
@@ -49,4 +106,3 @@
     min-width: auto;
   }
 }
-
