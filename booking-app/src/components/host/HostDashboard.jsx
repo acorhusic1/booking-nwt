@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { propertyApi } from '../../api/propertyApi'
 import { reservationApi } from '../../api/reservationApi'
+import { analyticsApi } from '../../api/analyticsApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate, Link } from 'react-router-dom'
 import '../../styles/HostDashboard.css'
@@ -10,8 +11,16 @@ export default function HostDashboard() {
   const navigate = useNavigate()
   const [properties, setProperties] = useState([])
   const [reservations, setReservations] = useState([])
+
+  const [reports, setReports] = useState([])
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [totalRevenueBackend, setTotalRevenueBackend] = useState(0)
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar']
 
   useEffect(() => {
     if (user?.role !== 'HOST') {
@@ -20,6 +29,10 @@ export default function HostDashboard() {
     }
     fetchData()
   }, [user?.role])
+
+  useEffect(() => {
+    if (user?.id) fetchAnalytics()
+  }, [user?.id, selectedYear, selectedMonth])
 
   const fetchData = async () => {
     setLoading(true)
@@ -43,9 +56,18 @@ export default function HostDashboard() {
     }
   }
 
-  const totalRevenue = reservations
-    .filter(r => r.status === 'CONFIRMED')
-    .reduce((sum, r) => sum + (r.totalPrice || 0), 0)
+  const fetchAnalytics = async () => {
+    try {
+      const data = await analyticsApi.getReportsByPeriod(selectedYear, selectedMonth)
+      const hostReports = data.filter(r => r.hostId === user.id)
+      setReports(hostReports)
+
+      const revenue = hostReports.reduce((sum, r) => sum + (r.totalRevenue || 0), 0)
+      setTotalRevenueBackend(revenue)
+    } catch (err) {
+      console.error('Greška pri učitavanju analitike', err)
+    }
+  }
 
   if (loading) return <div className="loading">Učitavanje domaćin panela...</div>
 
@@ -74,8 +96,8 @@ export default function HostDashboard() {
         <div className="stat-card glass-panel">
           <span className="stat-icon">💰</span>
           <div className="stat-info">
-            <span className="stat-value">${totalRevenue.toFixed(2)}</span>
-            <span className="stat-label">Ukupan prihod</span>
+            <span className="stat-value">${totalRevenueBackend.toFixed(2)}</span>
+            <span className="stat-label">Prihod (Backend)</span>
           </div>
         </div>
         <div className="stat-card glass-panel">
@@ -90,6 +112,23 @@ export default function HostDashboard() {
       </div>
 
       {error && <div className="error-alert">{error}</div>}
+
+      <div className="analytics-controls glass-panel" style={{ padding: '15px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
+        <h3 style={{ margin: 0 }}>📊 Analitika za period:</h3>
+        <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>
+          {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
+            <option key={m} value={m}>{mjeseci[m - 1]}</option>
+          ))}
+        </select>
+        <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
+          {[2024, 2025, 2026].map(y => (
+            <option key={y} value={y}>{y}</option>
+          ))}
+        </select>
+        <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
+          Ukupno u periodu: ${totalRevenueBackend.toFixed(2)}
+        </span>
+      </div>
 
       <div className="host-sections">
         <section className="host-section glass-panel">

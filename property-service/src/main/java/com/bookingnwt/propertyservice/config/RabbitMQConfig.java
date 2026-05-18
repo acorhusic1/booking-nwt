@@ -33,11 +33,17 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.queue.property}")
     private String propertyQueue;
 
+    @Value("${app.rabbitmq.queue.property-cancellations:property.cancellations.queue}")
+    private String propertyCancellationsQueue;
+
     @Value("${app.rabbitmq.routing-key.payment-failed}")
     private String paymentFailedRoutingKey;
 
     @Value("${app.rabbitmq.routing-key.reservation-created:booking.reservation.created}")
     private String reservationCreatedRoutingKey;
+
+    @Value("${app.rabbitmq.routing-key.reservation-cancelled:booking.reservation.cancelled}")
+    private String reservationCancelledRoutingKey;
 
     // ============ EXCHANGE ============
     @Bean
@@ -45,10 +51,15 @@ public class RabbitMQConfig {
         return new TopicExchange(exchange, true, false);
     }
 
-    // ============ QUEUE ============
+    // ============ QUEUES ============
     @Bean
     public Queue propertyServiceQueue() {
         return new Queue(propertyQueue, true, false, false);
+    }
+
+    @Bean
+    public Queue propertyCancellationsQueue() {
+        return new Queue(propertyCancellationsQueue, true, false, false);
     }
 
     // ============ BINDINGS ============
@@ -66,6 +77,14 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(propertyServiceQueue)
                 .to(bookingExchange)
                 .with(paymentFailedRoutingKey);
+    }
+
+    /** Cancel saga — kad guest otkaže, oslobodi property. */
+    @Bean
+    public Binding bindingReservationCancelled(Queue propertyCancellationsQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(propertyCancellationsQueue)
+                .to(bookingExchange)
+                .with(reservationCancelledRoutingKey);
     }
 
     // ============ MESSAGE CONVERTER ============

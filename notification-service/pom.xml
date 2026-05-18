@@ -119,6 +119,12 @@
             <version>1.13</version>
         </dependency>
 
+        <!-- RabbitMQ (Saga notifikacije) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-amqp</artifactId>
+        </dependency>
+
         <!-- Retry/AOP for fail-fast Config Server -->
         <dependency>
             <groupId>org.springframework.retry</groupId>

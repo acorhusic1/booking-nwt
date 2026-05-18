@@ -9,14 +9,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class LoginResponse {
     private String accessToken;
+    private String refreshToken;
     private String tokenType = "Bearer";
     private Long id;
     private String email;
     private String role;
 
-    public LoginResponse(String accessToken, String email, String role, Long id) {
+    public LoginResponse(String accessToken, String refreshToken, String email, String role, Long id) {
         this.accessToken = accessToken;
-        this.id = id;
+        this.refreshToken = refreshToken;
         this.email = email;
         this.role = role;
         this.id = id;

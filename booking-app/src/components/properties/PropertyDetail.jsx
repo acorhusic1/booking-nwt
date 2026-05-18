@@ -1,50 +1,65 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import { propertyApi } from '../../api/propertyApi'
-import '../../styles/PropertyDetail.css'
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { propertyApi } from "../../api/propertyApi";
+import "../../styles/PropertyDetail.css";
 
 export default function PropertyDetail() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const [property, setProperty] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [property, setProperty] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const fetchProperty = async () => {
+    const fetchAll = async () => {
       try {
-        const data = await propertyApi.getById(id)
-        setProperty(data)
-        setError(null)
+        const [data, images] = await Promise.all([
+          propertyApi.getById(id),
+          propertyApi.getImages(id),
+        ]);
+        setProperty(data);
+
+        if (images && images.length > 0) {
+          const primary = images.find((img) => img.isPrimary) || images[0];
+          setImageUrl(primary.url);
+        }
       } catch (err) {
-        setError('Greška pri učitavanju detalja smještaja')
-        console.error(err)
+        setError("Greška pri učitavanju detalja smještaja");
+        console.error(err);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchProperty()
-  }, [id])
+    fetchAll();
+  }, [id]);
 
-  if (loading) return <div className="loading">Učitavanje...</div>
-  if (error) return <div className="error">{error}</div>
-  if (!property) return <div>Smještaj nije pronađen</div>
-
-  // Backend PropertyResponse trenutno ne vraća sliku ni cijenu po noći.
-  // Slike su zaseban resurs (PropertyImages), cijena je u PricingRule.
-  const imageUrl = 'https://via.placeholder.com/600x400'
+  if (loading) return <div className="loading">Učitavanje...</div>;
+  if (error) return <div className="error">{error}</div>;
+  if (!property) return <div>Smještaj nije pronađen</div>;
 
   return (
     <div className="property-detail">
-      <button onClick={() => navigate(-1)} className="back-btn">← Nazad</button>
+      <button onClick={() => navigate(-1)} className="back-btn">
+        ← Nazad
+      </button>
 
       <div className="property-detail-container">
         <div className="property-main">
           <h1>{property.name}</h1>
-          <p className="location">📍 {property.city}, {property.address}</p>
+          <p className="location">
+            📍 {property.city}, {property.address}
+          </p>
 
-          <img src={imageUrl} alt={property.name} className="property-image" />
+          {imageUrl && (
+            <img
+              src={imageUrl}
+              alt={property.name}
+              className="property-image"
+              loading="lazy"
+            />
+          )}
 
           <div className="property-description">
             <h3>Opis</h3>
@@ -56,7 +71,10 @@ export default function PropertyDetail() {
             <ul>
               <li>👥 Kapacitet: Do {property.maxGuests} osoba</li>
               <li>🌍 Država: {property.country}</li>
-              <li>📅 Status: {property.available ? '✅ Dostupno' : '❌ Nije dostupno'}</li>
+              <li>
+                📅 Status:{" "}
+                {property.available ? "✅ Dostupno" : "❌ Nije dostupno"}
+              </li>
             </ul>
           </div>
         </div>
@@ -67,7 +85,7 @@ export default function PropertyDetail() {
             disabled={!property.available}
             onClick={() => navigate(`/reserve/${id}`)}
           >
-            {property.available ? 'Rezerviši sada' : 'Nije dostupno'}
+            {property.available ? "Rezerviši sada" : "Nije dostupno"}
           </button>
 
           <div className="reservation-info">
@@ -77,5 +95,5 @@ export default function PropertyDetail() {
         </div>
       </div>
     </div>
-  )
+  );
 }
