@@ -3,6 +3,7 @@ package com.bookingnwt.reservationservice.service.impl;
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
 import com.bookingnwt.reservationservice.dto.ReservationRequestDTO;
 import com.bookingnwt.reservationservice.dto.ReservationResponseDTO;
+import com.bookingnwt.reservationservice.events.ReservationCancelledEvent;
 import com.bookingnwt.reservationservice.events.ReservationCreatedEvent;
 import com.bookingnwt.reservationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.reservationservice.mapper.ReservationMapper;
@@ -155,7 +156,42 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional
     public ReservationResponseDTO cancelReservation(Long id) {
-        return updateStatus(id, ReservationStatus.CANCELLED);
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Rezervacija nije pronađena sa ID: " + id));
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            // Vec otkazana — idempotent, ne emituj event ponovo
+            return reservationMapper.toResponseDTO(reservation);
+        }
+
+        boolean wasConfirmed = reservation.getStatus() == ReservationStatus.CONFIRMED;
+        reservation.setStatus(ReservationStatus.CANCELLED);
+        reservation.setUpdatedAt(LocalDateTime.now());
+        Reservation saved = reservationRepository.save(reservation);
+
+        // SAGA kompenzacija — payment-service refundira wallet (ako je payment bio
+        // COMPLETED), property-service oslobađa kalendar. Bez ovoga, cancel ostavlja
+        // korisnika bez para i smjestaj ostaje "nedostupno".
+        try {
+            ReservationCancelledEvent event = new ReservationCancelledEvent(
+                    saved.getId(),
+                    saved.getPropertyId(),
+                    saved.getGuestId(),
+                    saved.getTotalPrice(),
+                    "BAM",
+                    wasConfirmed ? "Korisnik je otkazao potvrđenu rezervaciju" : "Korisnik je otkazao rezervaciju",
+                    LocalDateTime.now(),
+                    "RESERVATION_CANCELLED"
+            );
+            reservationEventPublisher.publishReservationCancelled(event);
+        } catch (Exception e) {
+            org.slf4j.LoggerFactory.getLogger(getClass())
+                    .warn("⚠️ Cancel event publish nije uspio za rezervaciju {}: {}",
+                            saved.getId(), e.getMessage());
+        }
+
+        return reservationMapper.toResponseDTO(saved);
     }
 
     @Override
