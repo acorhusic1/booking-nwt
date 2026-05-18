@@ -20,5 +20,6 @@ public class LoginResponse {
         this.refreshToken = refreshToken;
         this.email = email;
         this.role = role;
+        this.id = id;
     }
 }

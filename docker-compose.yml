@@ -59,6 +59,11 @@ services:
         condition: service_started
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8888/application/default || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 4. API Gateway
   api-gateway:
@@ -72,7 +77,7 @@ services:
       eureka-server:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
@@ -110,7 +115,7 @@ services:
       eureka-server:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
 
   property-service-1:
     build:
@@ -130,7 +135,7 @@ services:
       rabbitmq:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
 
   property-service-2:
     build:
@@ -150,7 +155,7 @@ services:
       rabbitmq:
         condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
 
   reservation-service:
     build:
@@ -169,7 +174,7 @@ services:
       eureka-server:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
@@ -190,7 +195,7 @@ services:
       eureka-server:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
 
   notification-service:
     build:
@@ -211,7 +216,7 @@ services:
       eureka-server:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
 
@@ -232,7 +237,7 @@ services:
       eureka-server:
         condition: service_started
       config-server:
-        condition: service_started
+        condition: service_healthy
 
   analytics-service:
     build:
