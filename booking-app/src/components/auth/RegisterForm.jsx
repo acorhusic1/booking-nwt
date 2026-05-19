@@ -40,7 +40,8 @@ export default function RegisterForm() {
       const loginResponse = await authApi.login(data.email, data.password)
       setAuth(
         { email: loginResponse.email, role: loginResponse.role, id: loginResponse.id },
-        loginResponse.accessToken
+        loginResponse.accessToken,
+        loginResponse.refreshToken
       )
       navigate('/dashboard')
     } catch (err) {
