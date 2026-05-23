@@ -2,7 +2,6 @@ package com.bookingnwt.apigateway.filter;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
@@ -19,8 +18,11 @@ import org.springframework.util.AntPathMatcher;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
-import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -43,8 +45,8 @@ public class JwtAuthenticationGatewayFilter implements GlobalFilter, Ordered {
 
     private static final AntPathMatcher PATH_MATCHER = new AntPathMatcher();
 
-    @Value("${app.jwt.secret:very-long-secret-key-that-must-be-at-least-32-characters-long}")
-    private String jwtSecret;
+    @Value("${app.jwt.public-key}")
+    private String publicKeyBase64;
 
     @Value("${gateway.security.public-paths:/api/auth/**,/api/users/register,/v3/api-docs/**,/swagger-ui/**,/swagger-ui.html,/actuator/**}")
     private List<String> publicPaths;
@@ -65,9 +67,10 @@ public class JwtAuthenticationGatewayFilter implements GlobalFilter, Ordered {
 
         String token = authHeader.substring(7);
         try {
-            SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+            byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64);
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
             Claims claims = Jwts.parser()
-                    .verifyWith(key)
+                    .verifyWith(publicKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();

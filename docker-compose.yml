@@ -1,4 +1,4 @@
-version: '3.8'
+﻿version: '3.8'
 
 services:
   # 1. MySQL Database
@@ -81,7 +81,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
 
   # 5. Frontend React App
   booking-app:
@@ -108,7 +108,8 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PRIVATE_KEY=MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC6BFKYI6Kko2aX7TgJCtgfYlxRPbgdyBptPfukcNloF4Lj2mSsZWbY19mRdntAmbdNby4U0+d8F2tnIyBcsln1Sg2yBeDtAs7sq80KWUNdOeHrdi3xIVzmG3sPoAJdtrdZVOUgkdh6HWnYlWPqHQtRjWPFGI8yjg2p9Nx9vddYHwHHCKHkz7DN/LBvcFZxo46TqoDxeH9mH9X8GRO7Y1a4ZFEyq2tQOoNM8LRbvYTkfXjASWAU/Pgimu74K0mcbrPag6ySC7KDaBaldPBEFBHVhoxoj4qe2jpbGuCrUcT2JvP0fyYNxPejOJDRcsPOgB9nwrPNAefNl6EzvlEvq7u7AgMBAAECggEAGQDFvU9k6C5Sdu9azdRYUnedIwphuhcQfkiLj4Hfpx8p58iOKaIDnff9dZDwZjGDMvRTxFbrUYGwXQ+apPsQHmlSx/AEWLc86xD4oYB4DoreNBERgczTONbOxr3iM4iAwpAnsCYKa/eSJ5uE743x3IddtrtjXA8+BO81x+0BigV+HzEVaHZj/B+YrFRml2NRKrZkwjMxiQaL1kfSWuWwZiJsRL2R/9Na8Jh5iX2mv2VKyUnRQ2657jxr5mDcNLfjRbw5pnPAOFgpqQcmy7kvvgxtv9rEM5nITyeJVy1rVHUBke/lbAqY9rByFLHAYmMxQqgb9fH6SY+cklNEJl4sAQKBgQDqL8FXvk444IeMWWOkKGsB0cNIiONPr9L3WVCnt7apCDLtzr8pTlSb3oP9Zf3g1oUl81xkqeG0mQh6DbonfFw7d/Qh6O1aEsDsNZ2MqNeRFGuuiyRFltOrf5PkyyJyGKbAN8l9l6k5pr+oZMjUTfrrSQw92LcpnWAHLt0mq89eAQKBgQDLV/K7tKZc+RCurlts7FCgHH/sVpDzfa/MRjQw/87f+B/htu0jIgeI3h+y3QMVvZXqvpwtDDFl3Bh7on5PYsPNSJ+oznNUdLXe30vmh9pg+823D1w23i2Pjox2Si2Qtgaja8K5o2oIZ1GB814Gg7NGm3YwQ5Kav0JhJe1FUfQRuwKBgQDPNEW7XtRTGsaT9Ztl6aUUTQaeLRACt6zP0aS9YJ0rXefB5YXaBEZ0SyM5l35T6zqP441CO9VKN4T6iR7GRRBORcoqHq+zXJh55s5pYBKreQf1vYLwV40dVpoCe4EUtp8Dv9h1WTUPn2xAkDvpLL3wZAeCyTb2iRooAN0HlEi8AQKBgCKbm1JbEp1sPmycfC7zoV0+vH7q1My8LXlk0WktgHYZ8sMlsQJzvjiLJXX5q5a9p5BGVKpOEvI1HW2dYEX+lziPDa1bRcGwA2wlMPPRV1d+Q6rOUHF+Kt7t8fYH9e1VLZgOtRuHNnqrqvGlC/Gr5I011E2uknsH5jJGlDViF1oVAoGAaPrtkUUvUDk0LYK3Yfipa+6kN/0puq2K/JBTCtwYQlbvlGz995KhDQ1YnVCHMJjgFPAm3gsguyum82UH3TP4VWocGRUC2euLxZZWioRTOBQkuCD6XTY+HapSQci3GiDZqlhlB3ApQy3ffvvQ/h/kJV97nzdYIlhv+AguM5SXldQ=
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -126,7 +127,7 @@ services:
       - SERVER_PORT=8082
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -146,7 +147,7 @@ services:
       - SERVER_PORT=8085
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -167,7 +168,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -188,7 +189,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -207,7 +208,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
     depends_on:
@@ -230,7 +231,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy
@@ -249,7 +250,7 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_SECRET=ThisIsAReallyLongAndSecureSecretKeyForHS512JwtSignaturesBookingNWT2026MinimumSixtyFourBytesPlease
+      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
     depends_on:
       mysql-db:
         condition: service_healthy

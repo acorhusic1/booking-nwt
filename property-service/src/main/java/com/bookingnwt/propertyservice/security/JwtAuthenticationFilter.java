@@ -2,7 +2,6 @@ package com.bookingnwt.propertyservice.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -15,15 +14,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
-    @Value("${jwt.secret:bezbedna_tajna_kljuc_za_potpisivanje_jwt_tokena_123456}")
-    private String jwtSecret;
+    @Value("${app.jwt.public-key}")
+    private String publicKeyBase64;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -39,8 +41,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = header.substring(7);
 
         try {
+            byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64);
+            PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
             Claims claims = Jwts.parser()
-                    .verifyWith(Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8)))
+                    .verifyWith(publicKey)
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();

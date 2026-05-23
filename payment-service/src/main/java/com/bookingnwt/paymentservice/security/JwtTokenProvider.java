@@ -3,14 +3,15 @@ package com.bookingnwt.paymentservice.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
+import java.security.PublicKey;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -18,16 +19,20 @@ import java.util.List;
 @Component
 public class JwtTokenProvider {
 
-    private final SecretKey signingKey;
+    private final PublicKey verifyingKey;
 
-    public JwtTokenProvider(@Value("${app.jwt.secret:very-long-secret-key-that-must-be-at-least-32-characters-long}") String secret) {
-        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
-        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
+    public JwtTokenProvider(@Value("${app.jwt.public-key}") String publicKeyBase64) {
+        try {
+            byte[] keyBytes = Base64.getDecoder().decode(publicKeyBase64);
+            this.verifyingKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(keyBytes));
+        } catch (Exception ex) {
+            throw new RuntimeException("Greška pri učitavanju RSA javnog ključa", ex);
+        }
     }
 
     public Jws<Claims> parse(String token) {
         return Jwts.parser()
-                .verifyWith(signingKey)
+                .verifyWith(verifyingKey)
                 .build()
                 .parseSignedClaims(token);
     }
