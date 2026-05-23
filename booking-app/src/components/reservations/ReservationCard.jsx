@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { reservationApi } from '../../api/reservationApi'
 import { paymentApi } from '../../api/paymentApi'
+import ConfirmModal from '../common/ConfirmModal'
 
 /**
  * Reservation kartica sa expand-on-click ponašanjem.
@@ -15,6 +16,7 @@ export default function ReservationCard({ reservation, onChanged }) {
   const [loading, setLoading] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const statusClass = (() => {
     const s = (reservation.status || '').toUpperCase()
@@ -41,17 +43,22 @@ export default function ReservationCard({ reservation, onChanged }) {
     }
   }
 
-  const cancel = async (e) => {
+  const openCancelDialog = (e) => {
     e.stopPropagation()
-    if (!confirm(`Otkazati rezervaciju #${reservation.id}?`)) return
-    setCancelling(true)
     setError(null)
+    setConfirmOpen(true)
+  }
+
+  const performCancel = async () => {
+    setCancelling(true)
     try {
       await reservationApi.cancel(reservation.id)
+      setConfirmOpen(false)
       onChanged?.()
     } catch (err) {
       const msg = err.response?.data?.message
       setError(typeof msg === 'string' ? msg : 'Otkazivanje nije uspjelo (možda je već CANCELLED ili je prošao rok)')
+      setConfirmOpen(false)
     } finally {
       setCancelling(false)
     }
@@ -87,12 +94,24 @@ export default function ReservationCard({ reservation, onChanged }) {
           {error && <div className="card-error">{error}</div>}
 
           {canCancel && (
-            <button onClick={cancel} disabled={cancelling} className="cancel-btn">
+            <button onClick={openCancelDialog} disabled={cancelling} className="cancel-btn">
               {cancelling ? 'Otkazujem...' : '✕ Otkaži rezervaciju'}
             </button>
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={performCancel}
+        title="Otkazivanje rezervacije"
+        message={`Otkazati rezervaciju #${reservation.id}?`}
+        detail="Iznos će biti refundiran na wallet (ako je rezervacija već plaćena)."
+        confirmText="Da, otkaži"
+        cancelText="Odustani"
+        danger
+      />
     </div>
   )
 }

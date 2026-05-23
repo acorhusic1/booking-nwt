@@ -4,8 +4,10 @@ import com.bookingnwt.reservationservice.dto.ReservationRequestDTO;
 import com.bookingnwt.reservationservice.dto.ReservationResponseDTO;
 import com.bookingnwt.reservationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.reservationservice.mapper.ReservationMapper;
+import com.bookingnwt.reservationservice.model.CancellationPolicy;
 import com.bookingnwt.reservationservice.model.Reservation;
 import com.bookingnwt.reservationservice.model.ReservationStatus;
+import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
@@ -44,6 +46,8 @@ class ReservationServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private PropertyAvailabilityGateway propertyAvailabilityGateway;
+    @Mock
+    private ReservationEventPublisher reservationEventPublisher;
 
     @InjectMocks
     private ReservationServiceImpl reservationService;
@@ -54,13 +58,18 @@ class ReservationServiceTest {
 
     @BeforeEach
     void setUp() {
+        // Datumi u budućnosti — bez ovoga BUG-004 fix bi rušio sve postojeće
+        // testove jer cancel sad blokira proteklu check-in.
+        LocalDate futureCheckIn = LocalDate.now().plusDays(30);
+        LocalDate futureCheckOut = LocalDate.now().plusDays(34);
+
         reservation = new Reservation();
         reservation.setId(1L);
         reservation.setGuestId(10L);
         reservation.setHostId(20L);
         reservation.setPropertyId(30L);
-        reservation.setCheckIn(LocalDate.of(2025, 8, 1));
-        reservation.setCheckOut(LocalDate.of(2025, 8, 5));
+        reservation.setCheckIn(futureCheckIn);
+        reservation.setCheckOut(futureCheckOut);
         reservation.setNumGuests(2);
         reservation.setTotalPrice(new BigDecimal("500.00"));
         reservation.setStatus(ReservationStatus.CREATED);
@@ -70,8 +79,8 @@ class ReservationServiceTest {
         requestDTO.setGuestId(10L);
         requestDTO.setHostId(20L);
         requestDTO.setPropertyId(30L);
-        requestDTO.setCheckIn(LocalDate.of(2025, 8, 1));
-        requestDTO.setCheckOut(LocalDate.of(2025, 8, 5));
+        requestDTO.setCheckIn(futureCheckIn);
+        requestDTO.setCheckOut(futureCheckOut);
         requestDTO.setNumGuests(2);
         requestDTO.setTotalPrice(new BigDecimal("500.00"));
 
@@ -80,8 +89,8 @@ class ReservationServiceTest {
         responseDTO.setGuestId(10L);
         responseDTO.setHostId(20L);
         responseDTO.setPropertyId(30L);
-        responseDTO.setCheckIn(LocalDate.of(2025, 8, 1));
-        responseDTO.setCheckOut(LocalDate.of(2025, 8, 5));
+        responseDTO.setCheckIn(futureCheckIn);
+        responseDTO.setCheckOut(futureCheckOut);
         responseDTO.setNumGuests(2);
         responseDTO.setTotalPrice(new BigDecimal("500.00"));
         responseDTO.setStatus(ReservationStatus.CREATED);
@@ -89,6 +98,7 @@ class ReservationServiceTest {
 
     @Test
     void createReservation_Success() {
+        when(reservationRepository.existsOverlap(any(), any(), any())).thenReturn(false);
         when(reservationMapper.toEntity(requestDTO)).thenReturn(reservation);
         when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
         when(reservationMapper.toResponseDTO(reservation)).thenReturn(responseDTO);
@@ -99,6 +109,17 @@ class ReservationServiceTest {
         assertEquals(10L, result.getGuestId());
         assertEquals(ReservationStatus.CREATED, result.getStatus());
         verify(reservationRepository).save(any(Reservation.class));
+    }
+
+    @Test
+    void createReservation_BlockedWhenOverlapExists() {
+        // BUG-001: double-submit kroz Back dugme — local overlap check mora hvatati
+        when(reservationRepository.existsOverlap(any(), any(), any())).thenReturn(true);
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> reservationService.createReservation(requestDTO));
+        assertTrue(ex.getMessage().toLowerCase().contains("rezervacija"));
+        verify(reservationRepository, never()).save(any());
     }
 
     @Test
@@ -184,6 +205,84 @@ class ReservationServiceTest {
         ReservationResponseDTO result = reservationService.cancelReservation(1L);
 
         assertEquals(ReservationStatus.CANCELLED, result.getStatus());
+    }
+
+    @Test
+    void cancelReservation_BlockedWhenCompleted() {
+        reservation.setStatus(ReservationStatus.COMPLETED);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> reservationService.cancelReservation(1L));
+        assertTrue(ex.getMessage().toLowerCase().contains("završena"));
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelReservation_BlockedWhenActive() {
+        reservation.setStatus(ReservationStatus.ACTIVE);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> reservationService.cancelReservation(1L));
+        assertTrue(ex.getMessage().toLowerCase().contains("support"));
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelReservation_BlockedWhenCheckInAlreadyPassed() {
+        reservation.setCheckIn(LocalDate.now().minusDays(1));
+        reservation.setStatus(ReservationStatus.CONFIRMED);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> reservationService.cancelReservation(1L));
+        assertTrue(ex.getMessage().toLowerCase().contains("prošao"));
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelReservation_BlockedWhenConfirmedAndLessThanFreeCancelDaysAway() {
+        // CONFIRMED + 3 dana do check-in (manje od defaultne politike 7)
+        reservation.setCheckIn(LocalDate.now().plusDays(3));
+        reservation.setStatus(ReservationStatus.CONFIRMED);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> reservationService.cancelReservation(1L));
+        assertTrue(ex.getMessage().toLowerCase().contains("kontaktirajte"));
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelReservation_AllowsCreatedEvenInsideFreeCancelWindow() {
+        // CREATED status (Saga još nije završila) sa samo 2 dana do check-in
+        // — abort je siguran bez obzira na cancellation window jer payment
+        // možda još nije ni prošao.
+        reservation.setCheckIn(LocalDate.now().plusDays(2));
+        reservation.setStatus(ReservationStatus.CREATED);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
+        responseDTO.setStatus(ReservationStatus.CANCELLED);
+        when(reservationMapper.toResponseDTO(reservation)).thenReturn(responseDTO);
+
+        ReservationResponseDTO result = reservationService.cancelReservation(1L);
+        assertEquals(ReservationStatus.CANCELLED, result.getStatus());
+    }
+
+    @Test
+    void cancelReservation_HonorsPerPropertyCancellationPolicy() {
+        // Property ima policy sa freeCancelDays=14 — cancel 10 dana prije
+        // mora pasti iako default (7) bi prošao.
+        CancellationPolicy policy = new CancellationPolicy(30L, "Strict", 14, 0, false);
+        reservation.setCancellationPolicy(policy);
+        reservation.setCheckIn(LocalDate.now().plusDays(10));
+        reservation.setStatus(ReservationStatus.CONFIRMED);
+        when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+
+        IllegalStateException ex = assertThrows(IllegalStateException.class,
+                () -> reservationService.cancelReservation(1L));
+        assertTrue(ex.getMessage().contains("14"));
     }
 
     @Test
