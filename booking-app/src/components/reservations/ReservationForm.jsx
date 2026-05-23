@@ -65,11 +65,8 @@ export default function ReservationForm({ propertyId }) {
         numGuests: Number(data.numGuests),
         totalPrice: totalPrice
       }
-      const created = await reservationApi.create(reservationData)
-      // Dashboard očekuje dva flag-a:
-      //   pendingId=N → poll-uj listu rezervacija dok status ne promijeni (moja Saga grana)
-      //   pending=1   → poll-uj listu notifikacija (Kenan-ova grana)
-      navigate(`/dashboard?pendingId=${created.id}&pending=1`)
+      await reservationApi.create(reservationData)
+      navigate('/dashboard?tab=notifications&pending=1')
     } catch (err) {
       const msg = err.response?.data?.message
       setError(typeof msg === 'string' ? msg : 'Greška pri kreiranju rezervacije')
