@@ -15,3 +15,19 @@
   margin-top: 2px;
   font-family: "Geist", sans-serif;
 }
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .login-form {
+    padding: 0 4px;
+  }
+
+  .login-form input {
+    font-size: 16px; /* sprječava iOS zoom prilikom focus */
+  }
+
+  .login-form .error-message {
+    font-size: 0.75rem;
+  }
+}

@@ -6,6 +6,7 @@ import { useAuthStore } from '../store/authStore'
 import ReservationCard from './reservations/ReservationCard'
 import WalletTopUpModal from './WalletTopUpModal'
 import NotificationsList from './notifications/NotificationsList'
+import Toast from './common/Toast'
 import '../styles/Dashboard.css'
 
 /**
@@ -47,6 +48,9 @@ export default function Dashboard() {
   const [walletError, setWalletError] = useState(null)
   const [showTopUp, setShowTopUp] = useState(false)
   const [sagaPolling, setSagaPolling] = useState(false)
+  const [creatingWallet, setCreatingWallet] = useState(false)
+  const [toast, setToast] = useState(null)
+  const lastSeenStatusRef = useRef({})
   const resPollRef = useRef(null)
 
   // Notification auto-poll (Kenan grana) — refresh NotificationsList 3× kad
@@ -74,7 +78,25 @@ export default function Dashboard() {
         walletApi.getByUserId(user.id)
       ])
       if (resData.status === 'fulfilled') {
-        setReservations(Array.isArray(resData.value) ? resData.value : (resData.value.content || []))
+        const newList = Array.isArray(resData.value) ? resData.value : (resData.value.content || [])
+
+        // Detektuj promjene Saga statusa — pokaži toast odmah
+        newList.forEach(r => {
+          const prev = lastSeenStatusRef.current[r.id]
+          const curr = (r.status || '').toUpperCase()
+          if (prev && prev !== curr) {
+            if (curr === 'CONFIRMED') {
+              setToast({ type: 'success', title: 'Rezervacija potvrđena',
+                message: `Rezervacija #${r.id} je uspješno plaćena (${Number(r.totalPrice).toFixed(2)} BAM).` })
+            } else if (curr === 'CANCELLED' && prev === 'CREATED') {
+              setToast({ type: 'error', title: 'Plaćanje nije uspjelo',
+                message: `Rezervacija #${r.id} je poništena — vjerovatno nema dovoljno sredstava u wallet-u.` })
+            }
+          }
+          lastSeenStatusRef.current[r.id] = curr
+        })
+
+        setReservations(newList)
         setError(null)
       } else {
         setError('Greška pri učitavanju rezervacija')
@@ -83,12 +105,40 @@ export default function Dashboard() {
         setWallet(walletData.value)
         setWalletError(null)
       } else {
-        setWalletError('Wallet ne postoji za ovog korisnika')
+        // BUG-006: auto-create wallet pri prvom login-u ako ne postoji
+        // (umjesto da gost mora rucno kliknuti "Kreiraj wallet" dugme)
+        try {
+          const created = await walletApi.create(user.id, 'BAM', 0)
+          setWallet(created)
+          setWalletError(null)
+          setToast({ type: 'info', title: 'Wallet automatski kreiran',
+            message: 'Dosipajte sredstva karticom prije rezervacije smjestaja.' })
+        } catch {
+          setWallet(null)
+          setWalletError('Wallet ne postoji — kliknite "+ Kreiraj wallet" da ga kreirate.')
+        }
       }
     } finally {
       setLoading(false)
     }
   }, [isAuthenticated, user?.id])
+
+  const handleCreateWallet = async () => {
+    setCreatingWallet(true)
+    try {
+      const created = await walletApi.create(user.id, 'BAM', 0)
+      setWallet(created)
+      setWalletError(null)
+      setToast({ type: 'success', title: 'Wallet kreiran',
+        message: 'Sad možete dosipati sredstva karticom.' })
+    } catch (err) {
+      const msg = err.response?.data?.message
+      setToast({ type: 'error', title: 'Kreiranje nije uspjelo',
+        message: typeof msg === 'string' ? msg : 'Greška pri kreiranju wallet-a.' })
+    } finally {
+      setCreatingWallet(false)
+    }
+  }
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
@@ -127,7 +177,16 @@ export default function Dashboard() {
           <h2>💳 Vaš novčanik</h2>
           {wallet && (
             <button onClick={() => setShowTopUp(true)} className="topup-btn">
-              + Dosipaj
+              + Dosipaj karticom
+            </button>
+          )}
+          {!wallet && !loading && (
+            <button
+              onClick={handleCreateWallet}
+              disabled={creatingWallet}
+              className="topup-btn"
+            >
+              {creatingWallet ? 'Kreiram...' : '+ Kreiraj wallet'}
             </button>
           )}
         </div>
@@ -211,9 +270,21 @@ export default function Dashboard() {
         <WalletTopUpModal
           wallet={wallet}
           onClose={() => setShowTopUp(false)}
-          onUpdated={setWallet}
+          onUpdated={(updated) => {
+            setWallet(updated)
+            setToast({ type: 'success', title: 'Uplata uspješna',
+              message: `Wallet ažuriran — novi balance: ${Number(updated.balance).toFixed(2)} ${updated.currency}.` })
+          }}
         />
       )}
+
+      <Toast
+        open={!!toast}
+        onClose={() => setToast(null)}
+        type={toast?.type}
+        title={toast?.title}
+        message={toast?.message}
+      />
     </div>
   )
 }

@@ -1,0 +1,426 @@
+/* ── Overlay (backdrop) ─────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(7, 2, 18, 0.75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: modal-fade 0.18s ease-out;
+}
+
+@keyframes modal-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal box ──────────────────────────────────────── */
+
+.modal {
+  background: #12091d;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6), var(--glow-violet);
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  color: var(--text-primary);
+  animation: modal-slide 0.22s cubic-bezier(0.22, 0.94, 0.36, 1);
+}
+
+.modal-sm { max-width: 360px; }
+.modal-md { max-width: 460px; }
+.modal-lg { max-width: 560px; }
+
+@keyframes modal-slide {
+  from { opacity: 0; transform: translateY(12px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ─────────────────────────────────────────── */
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-family: "Inter", sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+/* ── Body ───────────────────────────────────────────── */
+
+.modal-body {
+  padding: 20px 24px 24px;
+}
+
+.modal-hint {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  font-family: "Geist", sans-serif;
+  margin: 0 0 16px;
+}
+
+.modal-error {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-top: 12px;
+  font-size: 0.85rem;
+  font-family: "Geist", sans-serif;
+}
+
+/* ── Actions row ────────────────────────────────────── */
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.modal-actions .btn-primary,
+.modal-actions .btn-secondary,
+.modal-actions .btn-danger {
+  padding: 10px 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  font-family: "Inter", sans-serif;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.modal-actions .btn-primary {
+  background: var(--violet-primary);
+  color: #fff;
+  border-color: var(--violet-primary);
+}
+
+.modal-actions .btn-primary:hover:not(:disabled) {
+  background: var(--violet-light);
+  border-color: var(--violet-light);
+  box-shadow: var(--glow-violet);
+}
+
+.modal-actions .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-actions .btn-secondary {
+  background: transparent;
+  color: var(--text-tertiary);
+  border-color: var(--border-color);
+}
+
+.modal-actions .btn-secondary:hover:not(:disabled) {
+  border-color: var(--border-highlight);
+  color: var(--text-secondary);
+  background: rgba(157, 78, 221, 0.05);
+}
+
+.modal-actions .btn-danger {
+  background: var(--error-text);
+  color: #fff;
+  border-color: var(--error-text);
+}
+
+.modal-actions .btn-danger:hover:not(:disabled) {
+  opacity: 0.9;
+  box-shadow: 0 4px 12px rgba(248, 113, 113, 0.3);
+}
+
+/* ── Standalone form inputs inside modal ────────────── */
+
+.modal form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.modal form input,
+.modal form select {
+  padding: 11px 14px;
+  background: #1a0f2e;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Geist", sans-serif;
+  transition: all 0.15s ease;
+}
+
+.modal form input:focus,
+.modal form select:focus {
+  outline: none;
+  border-color: var(--violet-primary);
+  box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.15);
+}
+
+/* ── Confirm dialog message ─────────────────────────── */
+
+.confirm-message {
+  font-family: "Geist", sans-serif;
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  margin: 0 0 8px;
+}
+
+.confirm-detail {
+  font-family: "Geist", sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-tertiary);
+  margin: 0;
+}
+
+/* ── Payment card modal ─────────────────────────────── */
+
+.payment-card-preview {
+  background: linear-gradient(135deg, var(--violet-primary) 0%, #5b2c8a 100%);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  color: #fff;
+  font-family: "Geist", sans-serif;
+  margin-bottom: 20px;
+  box-shadow: 0 8px 24px rgba(157, 78, 221, 0.25);
+  position: relative;
+  overflow: hidden;
+}
+
+.payment-card-preview::after {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 140px;
+  height: 140px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+}
+
+.payment-card-chip {
+  width: 36px;
+  height: 28px;
+  background: linear-gradient(135deg, #d4af37, #f0d676);
+  border-radius: 5px;
+  margin-bottom: 18px;
+  box-shadow: inset 0 -2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.payment-card-number {
+  font-size: 1.15rem;
+  letter-spacing: 2.5px;
+  margin-bottom: 18px;
+  font-family: "Geist", monospace;
+  font-weight: 500;
+  min-height: 1.4em;
+  position: relative;
+  z-index: 1;
+}
+
+.payment-card-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  position: relative;
+  z-index: 1;
+}
+
+.payment-card-row .label {
+  opacity: 0.7;
+  font-size: 0.62rem;
+  margin-bottom: 2px;
+}
+
+.payment-card-row .value {
+  font-weight: 600;
+  font-size: 0.85rem;
+  min-height: 1em;
+}
+
+.payment-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.payment-form-grid .full {
+  grid-column: 1 / -1;
+}
+
+.payment-form-grid label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-tertiary);
+  font-family: "Inter", sans-serif;
+  margin-bottom: 6px;
+}
+
+.payment-form-grid input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.payment-amount-display {
+  text-align: center;
+  padding: 14px;
+  background: rgba(157, 78, 221, 0.08);
+  border: 1px solid rgba(157, 78, 221, 0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+  font-family: "Inter", sans-serif;
+}
+
+.payment-amount-display .label {
+  display: block;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.payment-amount-display .amount {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.amount-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.amount-input {
+  background: transparent !important;
+  border: none !important;
+  text-align: center;
+  font-size: 1.6rem !important;
+  font-weight: 700 !important;
+  color: var(--text-primary) !important;
+  width: 140px;
+  padding: 4px 0 !important;
+  outline: none !important;
+  box-shadow: none !important;
+  -moz-appearance: textfield;
+}
+
+.amount-input::-webkit-outer-spin-button,
+.amount-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.amount-input:focus {
+  border-bottom: 1px solid var(--violet-primary) !important;
+}
+
+.amount-currency {
+  font-size: 1.1rem;
+  color: var(--text-tertiary);
+  font-weight: 600;
+}
+
+.payment-secure-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-tertiary);
+  font-family: "Geist", sans-serif;
+  margin-top: 12px;
+}
+
+.field-error {
+  color: var(--error-text);
+  font-size: 0.75rem;
+  margin-top: 4px;
+  font-family: "Geist", sans-serif;
+}
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .modal {
+    max-height: calc(100vh - 16px);
+    border-radius: var(--radius-md);
+  }
+
+  .modal-header {
+    padding: 16px 18px 12px;
+  }
+
+  .modal-header h3 {
+    font-size: 1rem;
+  }
+
+  .modal-body {
+    padding: 16px 18px 20px;
+  }
+
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-actions .btn-primary,
+  .modal-actions .btn-secondary,
+  .modal-actions .btn-danger {
+    width: 100%;
+    padding: 12px 20px;
+  }
+
+  .payment-card-preview {
+    padding: 16px;
+  }
+
+  .payment-card-number {
+    font-size: 1rem;
+    letter-spacing: 1.5px;
+  }
+
+  .modal form input,
+  .modal form select {
+    font-size: 16px; /* sprječava iOS zoom */
+  }
+}

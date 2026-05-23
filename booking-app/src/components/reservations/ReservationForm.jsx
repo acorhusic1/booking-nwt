@@ -65,8 +65,10 @@ export default function ReservationForm({ propertyId }) {
         numGuests: Number(data.numGuests),
         totalPrice: totalPrice
       }
-      await reservationApi.create(reservationData)
-      navigate('/dashboard?tab=notifications&pending=1')
+      const created = await reservationApi.create(reservationData)
+      // BUG-001: replace:true sprjecava da Back dugme vrati korisnika
+      // nazad na rezervacionu formu (pa da je submit-uje ponovo)
+      navigate(`/dashboard?tab=reservations&pendingId=${created.id}&pending=1`, { replace: true })
     } catch (err) {
       const msg = err.response?.data?.message
       setError(typeof msg === 'string' ? msg : 'Greška pri kreiranju rezervacije')
