@@ -147,22 +147,6 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, user?.id, isGuest])
 
-  const handleCreateWallet = async () => {
-    setCreatingWallet(true)
-    try {
-      const created = await walletApi.create(user.id, 'BAM', 0)
-      setWallet(created)
-      setWalletError(null)
-      showToast({ type: 'success', title: 'Wallet kreiran',
-        message: 'Sad možete dosipati sredstva karticom.' })
-    } catch (err) {
-      const msg = err.response?.data?.message
-      showToast({ type: 'error', title: 'Kreiranje nije uspjelo',
-        message: typeof msg === 'string' ? msg : 'Greška pri kreiranju wallet-a.' })
-    } finally {
-      setCreatingWallet(false)
-    }
-  }
 
   const handleCreateWallet = async () => {
     setCreatingWallet(true)
@@ -339,14 +323,6 @@ export default function Dashboard() {
           }}
         />
       )}
-
-      <Toast
-        open={!!toast}
-        onClose={() => setToast(null)}
-        type={toast?.type}
-        title={toast?.title}
-        message={toast?.message}
-      />
     </div>
   )
 }
