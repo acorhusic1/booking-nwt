@@ -1,27 +1,54 @@
-﻿version: '3.8'
+# Booking-NWT — orchestration za 7 microservisa, 2 infrastrukturna,
+# MySQL, RabbitMQ i SPA frontend.
+#
+# Redoslijed (osigurana kroz depends_on + healthchecks):
+#   1. mysql-db + rabbitmq (paralelno)         — infrastruktura
+#   2. eureka-server                            — service discovery
+#   3. config-server (čeka eureka)              — centralna konfiguracija
+#   4. business servisi (čekaju config-server)  — paralelno
+#   5. api-gateway (čeka business servise)      — javni ulaz
+#   6. booking-app (čeka api-gateway)           — SPA frontend
+#
+# Memory budgets (mem_limit) cijenjeni tako da staju u ~5GB total —
+# Java servisi koriste -XX:MaxRAMPercentage=75 (iz Dockerfile-a) pa
+# garbage collector ima rezerve. Smanji ako ti pada na slabijoj masini.
 
 services:
-  # 1. MySQL Database
+
+  # ═════════════════════════════════════════════════════════════════════
+  # INFRASTRUKTURA
+  # ═════════════════════════════════════════════════════════════════════
+
   mysql-db:
     image: mysql:8.0
     container_name: booking_mysql
+    restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
+      # Smanji innodb buffer pool (default 128MB) — manje memory za dev
+      MYSQL_INITDB_SKIP_TZINFO: "1"
+    command:
+      - --innodb-buffer-pool-size=128M
+      - --max-connections=200
+      - --performance-schema=OFF
     ports:
       - "3306:3306"
     volumes:
       - db_data:/var/lib/mysql
       - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost", "-u", "root", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 20s
+    mem_limit: 512m
+    networks: [booking-net]
 
-  # 1.5 RabbitMQ (Saga Pattern)
   rabbitmq:
-    image: rabbitmq:3.12-management
+    image: rabbitmq:3.12-management-alpine
     container_name: rabbitmq
+    restart: unless-stopped
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -31,234 +58,349 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmqctl", "status"]
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 10s
-      timeout: 5s
+      timeout: 10s
       retries: 5
-    restart: unless-stopped
+      start_period: 30s
+    mem_limit: 384m
+    networks: [booking-net]
 
-  # 2. Eureka Server (Service Discovery)
+  # ═════════════════════════════════════════════════════════════════════
+  # SLOJ 1 — Service Discovery
+  # ═════════════════════════════════════════════════════════════════════
+
   eureka-server:
     build:
       context: ./eureka-server
-      dockerfile: Dockerfile
     container_name: eureka-server
+    restart: unless-stopped
     ports:
       - "8761:8761"
+    healthcheck:
+      # Eureka nema actuator — koristimo root path koji servisira dashboard HTML
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8761/ || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    mem_limit: 384m
+    networks: [booking-net]
 
-  # 3. Config Server
+  # ═════════════════════════════════════════════════════════════════════
+  # SLOJ 2 — Centralna konfiguracija
+  # ═════════════════════════════════════════════════════════════════════
+
   config-server:
     build:
       context: ./config-server
-      dockerfile: Dockerfile
     container_name: config-server
+    restart: unless-stopped
     ports:
       - "8888:8888"
     depends_on:
       eureka-server:
-        condition: service_started
-    environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8888/application/default || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # 4. API Gateway
-  api-gateway:
-    build:
-      context: ./api-gateway
-      dockerfile: Dockerfile
-    container_name: api-gateway
-    ports:
-      - "8080:8080"
-    depends_on:
-      eureka-server:
-        condition: service_started
-      config-server:
         condition: service_healthy
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8888/application/default || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    mem_limit: 384m
+    networks: [booking-net]
 
-  # 5. Frontend React App
-  booking-app:
-    build:
-      context: ./booking-app
-      dockerfile: Dockerfile
-    container_name: booking-app
-    ports:
-      - "3000:80"
-    depends_on:
-      - api-gateway
-    environment:
-      - VITE_API_URL=http://localhost:8080
-
-  # --- Business Microservices ---
+  # ═════════════════════════════════════════════════════════════════════
+  # SLOJ 3 — Business mikroservisi
+  # JWT ključeve cita iz config-server-a (config/application.properties)
+  # pa ovdje ne ponavljamo APP_JWT_PUBLIC_KEY env-var.
+  # ═════════════════════════════════════════════════════════════════════
 
   user-service:
     build:
       context: ./user-service
-      dockerfile: Dockerfile
     container_name: user-service
+    restart: unless-stopped
     ports:
       - "8081:8081"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PRIVATE_KEY=MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQC6BFKYI6Kko2aX7TgJCtgfYlxRPbgdyBptPfukcNloF4Lj2mSsZWbY19mRdntAmbdNby4U0+d8F2tnIyBcsln1Sg2yBeDtAs7sq80KWUNdOeHrdi3xIVzmG3sPoAJdtrdZVOUgkdh6HWnYlWPqHQtRjWPFGI8yjg2p9Nx9vddYHwHHCKHkz7DN/LBvcFZxo46TqoDxeH9mH9X8GRO7Y1a4ZFEyq2tQOoNM8LRbvYTkfXjASWAU/Pgimu74K0mcbrPag6ySC7KDaBaldPBEFBHVhoxoj4qe2jpbGuCrUcT2JvP0fyYNxPejOJDRcsPOgB9nwrPNAefNl6EzvlEvq7u7AgMBAAECggEAGQDFvU9k6C5Sdu9azdRYUnedIwphuhcQfkiLj4Hfpx8p58iOKaIDnff9dZDwZjGDMvRTxFbrUYGwXQ+apPsQHmlSx/AEWLc86xD4oYB4DoreNBERgczTONbOxr3iM4iAwpAnsCYKa/eSJ5uE743x3IddtrtjXA8+BO81x+0BigV+HzEVaHZj/B+YrFRml2NRKrZkwjMxiQaL1kfSWuWwZiJsRL2R/9Na8Jh5iX2mv2VKyUnRQ2657jxr5mDcNLfjRbw5pnPAOFgpqQcmy7kvvgxtv9rEM5nITyeJVy1rVHUBke/lbAqY9rByFLHAYmMxQqgb9fH6SY+cklNEJl4sAQKBgQDqL8FXvk444IeMWWOkKGsB0cNIiONPr9L3WVCnt7apCDLtzr8pTlSb3oP9Zf3g1oUl81xkqeG0mQh6DbonfFw7d/Qh6O1aEsDsNZ2MqNeRFGuuiyRFltOrf5PkyyJyGKbAN8l9l6k5pr+oZMjUTfrrSQw92LcpnWAHLt0mq89eAQKBgQDLV/K7tKZc+RCurlts7FCgHH/sVpDzfa/MRjQw/87f+B/htu0jIgeI3h+y3QMVvZXqvpwtDDFl3Bh7on5PYsPNSJ+oznNUdLXe30vmh9pg+823D1w23i2Pjox2Si2Qtgaja8K5o2oIZ1GB814Gg7NGm3YwQ5Kav0JhJe1FUfQRuwKBgQDPNEW7XtRTGsaT9Ztl6aUUTQaeLRACt6zP0aS9YJ0rXefB5YXaBEZ0SyM5l35T6zqP441CO9VKN4T6iR7GRRBORcoqHq+zXJh55s5pYBKreQf1vYLwV40dVpoCe4EUtp8Dv9h1WTUPn2xAkDvpLL3wZAeCyTb2iRooAN0HlEi8AQKBgCKbm1JbEp1sPmycfC7zoV0+vH7q1My8LXlk0WktgHYZ8sMlsQJzvjiLJXX5q5a9p5BGVKpOEvI1HW2dYEX+lziPDa1bRcGwA2wlMPPRV1d+Q6rOUHF+Kt7t8fYH9e1VLZgOtRuHNnqrqvGlC/Gr5I011E2uknsH5jJGlDViF1oVAoGAaPrtkUUvUDk0LYK3Yfipa+6kN/0puq2K/JBTCtwYQlbvlGz995KhDQ1YnVCHMJjgFPAm3gsguyum82UH3TP4VWocGRUC2euLxZZWioRTOBQkuCD6XTY+HapSQci3GiDZqlhlB3ApQy3ffvvQ/h/kJV97nzdYIlhv+AguM5SXldQ=
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8081/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 512m
+    networks: [booking-net]
 
   property-service-1:
     build:
       context: ./property-service
-      dockerfile: Dockerfile
     container_name: property-service-1
+    restart: unless-stopped
     environment:
       - SERVER_PORT=8082
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       config-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8082/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 512m
+    networks: [booking-net]
 
   property-service-2:
     build:
       context: ./property-service
-      dockerfile: Dockerfile
     container_name: property-service-2
+    restart: unless-stopped
     environment:
       - SERVER_PORT=8085
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
       config-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8085/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 512m
+    networks: [booking-net]
 
   reservation-service:
     build:
       context: ./reservation-service
-      dockerfile: Dockerfile
     container_name: reservation-service
+    restart: unless-stopped
     ports:
       - "8083:8083"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8083/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 512m
+    networks: [booking-net]
 
   payment-service:
     build:
       context: ./payment-service
-      dockerfile: Dockerfile
     container_name: payment-service
+    restart: unless-stopped
     ports:
       - "8084:8084"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8084/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 512m
+    networks: [booking-net]
 
   notification-service:
     build:
       context: ./notification-service
-      dockerfile: Dockerfile
     container_name: notification-service
+    restart: unless-stopped
     ports:
       - "8086:8086"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
       - SPRING_RABBITMQ_HOST=rabbitmq
       - SPRING_RABBITMQ_PORT=5672
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
         condition: service_healthy
       rabbitmq:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8086/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 512m
+    networks: [booking-net]
 
   system-events-service:
     build:
       context: ./system-events-service
-      dockerfile: Dockerfile
     container_name: system-events-service
+    restart: unless-stopped
     ports:
       - "8087:8087"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8087/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 384m
+    networks: [booking-net]
 
   analytics-service:
     build:
       context: ./analytics-service
-      dockerfile: Dockerfile
     container_name: analytics-service
+    restart: unless-stopped
     ports:
       - "8088:8088"
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
-      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-server:8888
-      - APP_JWT_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAugRSmCOipKNml+04CQrYH2JcUT24HcgabT37pHDZaBeC49pkrGVm2NfZkXZ7QJm3TW8uFNPnfBdrZyMgXLJZ9UoNsgXg7QLO7KvNCllDXTnh63Yt8SFc5ht7D6ACXba3WVTlIJHYeh1p2JVj6h0LUY1jxRiPMo4NqfTcfb3XWB8Bxwih5M+wzfywb3BWcaOOk6qA8Xh/Zh/V/BkTu2NWuGRRMqtrUDqDTPC0W72E5H14wElgFPz4Ipru+CtJnG6z2oOskguyg2gWpXTwRBQR1YaMaI+Knto6Wxrgq1HE9ibz9H8mDcT3oziQ0XLDzoAfZ8KzzQHnzZehM75RL6u7uwIDAQAB
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
     depends_on:
       mysql-db:
         condition: service_healthy
       eureka-server:
-        condition: service_started
+        condition: service_healthy
       config-server:
-        condition: service_started
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8088/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    mem_limit: 384m
+    networks: [booking-net]
 
+  # ═════════════════════════════════════════════════════════════════════
+  # SLOJ 4 — API Gateway (čeka business servise zbog Eureka routing-a)
+  # ═════════════════════════════════════════════════════════════════════
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+      reservation-service:
+        condition: service_healthy
+      payment-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      property-service-1:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
+      - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
+    healthcheck:
+      test: ["CMD-SHELL", "wget --quiet --tries=1 --spider http://localhost:8080/actuator/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    mem_limit: 384m
+    networks: [booking-net]
+
+  # ═════════════════════════════════════════════════════════════════════
+  # SLOJ 5 — SPA frontend (čeka api-gateway)
+  # ═════════════════════════════════════════════════════════════════════
+
+  booking-app:
+    build:
+      context: ./booking-app
+      args:
+        # VITE varijabla mora biti dostupna u build time-u (inline-uje se u JS bundle).
+        # Browser zove localhost:8080 (host machine), ne api-gateway:8080 (Docker DNS).
+        VITE_API_URL: http://localhost:8080
+    container_name: booking-app
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      api-gateway:
+        condition: service_healthy
+    mem_limit: 128m
+    networks: [booking-net]
+
+# ─── Volumes ────────────────────────────────────────────────────────────
 volumes:
   db_data:
   rabbitmq_data:
+
+# ─── Networks ───────────────────────────────────────────────────────────
+networks:
+  booking-net:
+    driver: bridge

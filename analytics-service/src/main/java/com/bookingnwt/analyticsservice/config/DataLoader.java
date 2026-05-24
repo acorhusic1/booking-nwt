@@ -17,6 +17,11 @@ public class DataLoader {
     CommandLineRunner initAnalyticsData(PropertyStatisticsRepository propStatsRepo,
                                         RevenueReportRepository revenueRepo) {
         return args -> {
+            // Idempotent — preskoci ako podaci vec postoje (ddl-auto=update zadrzava)
+            if (propStatsRepo.count() > 0) {
+                System.out.println("=== Analytics Service: DB vec ima podatke, preskacem seed ===");
+                return;
+            }
 
             // ===== PropertyStatistics: Apartman "Sunce" (property 1, host 2) =====
 

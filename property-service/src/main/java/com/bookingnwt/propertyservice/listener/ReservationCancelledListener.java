@@ -1,16 +1,12 @@
 package com.bookingnwt.propertyservice.listener;
 
 import com.bookingnwt.propertyservice.events.ReservationCancelledEvent;
-import com.bookingnwt.propertyservice.model.Property;
-import com.bookingnwt.propertyservice.repository.PropertyRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Optional;
 
 /**
  * SAGA KOMPENZACIJA — kad guest otkaže rezervaciju, property-service oslobađa
@@ -28,7 +24,6 @@ import java.util.Optional;
 @Slf4j
 public class ReservationCancelledListener {
 
-    private final PropertyRepository propertyRepository;
     private final ObjectMapper objectMapper;
 
     @RabbitListener(queues = "${app.rabbitmq.queue.property-cancellations}")
@@ -39,26 +34,10 @@ public class ReservationCancelledListener {
             log.info("📨 ReservationCancelledEvent primljen za rezervaciju {} (property={})",
                     event.getReservationId(), event.getPropertyId());
 
-            if (event.getPropertyId() == null) {
-                log.warn("⚠️ Cancel event bez propertyId — preskačem");
-                return;
-            }
-
-            Optional<Property> opt = propertyRepository.findById(event.getPropertyId());
-            if (opt.isEmpty()) {
-                log.warn("⚠️ Property {} nije pronađen za oslobađanje", event.getPropertyId());
-                return;
-            }
-
-            Property property = opt.get();
-            if (Boolean.TRUE.equals(property.getAvailable())) {
-                log.info("ℹ️ Property {} je već dostupan — preskačem", property.getId());
-                return;
-            }
-            property.setAvailable(true);
-            propertyRepository.save(property);
-            log.info("✅ KOMPENZACIJA: Property {} oslobođen (available=true) nakon cancel rezervacije {}",
-                    property.getId(), event.getReservationId());
+            // Posto handleReservationCreated VISE NE flippa available=false (race fix),
+            // nema sta kompenzovati na property-u. Calendar overlap se vec proverava
+            // u PropertyAvailabilityGateway.existsOverlap() pri kreiranju nove rezervacije.
+            log.info("ℹ️ Saga link logiran (property.available ostaje host-kontrolisan)");
 
         } catch (Exception e) {
             log.error("❌ Greška u ReservationCancelledListener: {}", e.getMessage(), e);

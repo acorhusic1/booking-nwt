@@ -16,6 +16,12 @@ public class DataLoader {
                                             ConversationRepository convRepo,
                                             MessageRepository msgRepo) {
         return args -> {
+            // Idempotent — preskoci ako podaci vec postoje (ddl-auto=update zadrzava)
+            if (notifRepo.count() > 0) {
+                System.out.println("=== Notification Service: DB vec ima podatke, preskacem seed ===");
+                return;
+            }
+
             // --- Notifikacije ---
             notifRepo.save(new Notification(2L, "NOVA_REZERVACIJA",
                     "Nova rezervacija", "Gost Benjamin je kreirao rezervaciju za Apartman Baščaršija (10-15. maj 2026)", 1L));

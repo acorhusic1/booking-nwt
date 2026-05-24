@@ -1,6 +1,8 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { propertyApi } from "../../api/propertyApi";
+import Spinner from "../common/Spinner";
+import ErrorState from "../common/ErrorState";
 import "../../styles/PropertyDetail.css";
 
 export default function PropertyDetail() {
@@ -11,32 +13,31 @@ export default function PropertyDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const fetchAll = async () => {
-      try {
-        const [data, images] = await Promise.all([
-          propertyApi.getById(id),
-          propertyApi.getImages(id),
-        ]);
-        setProperty(data);
+  const fetchAll = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [data, images] = await Promise.all([
+        propertyApi.getById(id),
+        propertyApi.getImages(id),
+      ]);
+      setProperty(data);
 
-        if (images && images.length > 0) {
-          const primary = images.find((img) => img.isPrimary) || images[0];
-          setImageUrl(primary.url);
-        }
-      } catch (err) {
-        setError("Greška pri učitavanju detalja smještaja");
-        console.error(err);
-      } finally {
-        setLoading(false);
+      if (images && images.length > 0) {
+        const primary = images.find((img) => img.isPrimary) || images[0];
+        setImageUrl(primary.url);
       }
-    };
+    } catch {
+      setError("Greška pri učitavanju detalja smještaja");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchAll();
-  }, [id]);
+  useEffect(() => { fetchAll(); }, [id]);
 
-  if (loading) return <div className="loading">Učitavanje...</div>;
-  if (error) return <div className="error">{error}</div>;
+  if (loading) return <Spinner label="Učitavanje smještaja..." size="lg" />;
+  if (error) return <ErrorState message={error} onRetry={fetchAll} />;
   if (!property) return <div>Smještaj nije pronađen</div>;
 
   return (

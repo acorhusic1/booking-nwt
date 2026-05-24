@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, Link } from 'react-router-dom'
 import { reservationApi } from '../api/reservationApi'
 import { walletApi } from '../api/walletApi'
 import { useAuthStore } from '../store/authStore'
 import ReservationCard from './reservations/ReservationCard'
 import WalletTopUpModal from './WalletTopUpModal'
 import NotificationsList from './notifications/NotificationsList'
-import Toast from './common/Toast'
+import { useToast } from './common/ToastProvider'
+import Spinner from './common/Spinner'
+import ErrorState from './common/ErrorState'
 import '../styles/Dashboard.css'
 
 /**
@@ -28,13 +30,21 @@ import '../styles/Dashboard.css'
  */
 export default function Dashboard() {
   const { user, isAuthenticated } = useAuthStore()
+  const { showToast } = useToast()
   const [searchParams, setSearchParams] = useSearchParams()
   const pendingId = searchParams.get('pendingId')
 
+  // GUEST ima wallet i pravi rezervacije; HOST/ADMIN nemaju wallet i imaju
+  // svoje vlastite panele (HostDashboard, AdminDashboard). Na /dashboard
+  // pokazuju samo notifikacije + link na svoj panel.
+  const role = (user?.role || '').toUpperCase()
+  const isGuest = role === 'GUEST'
+  // Default tab: HOST/ADMIN su iskljucivo na notifikacijama (nemaju rezervacije tab)
+  const defaultTab = !isGuest || searchParams.get('tab') === 'notifications'
+    ? 'notifications' : 'reservations'
+
   // Tabovi (Kenan)
-  const [activeTab, setActiveTab] = useState(
-    searchParams.get('tab') === 'notifications' ? 'notifications' : 'reservations'
-  )
+  const [activeTab, setActiveTab] = useState(defaultTab)
   const [unreadCount, setUnreadCount] = useState(0)
   const [sagaPending, setSagaPending] = useState(searchParams.get('pending') === '1')
   const [notifKey, setNotifKey] = useState(0)
@@ -49,7 +59,6 @@ export default function Dashboard() {
   const [showTopUp, setShowTopUp] = useState(false)
   const [sagaPolling, setSagaPolling] = useState(false)
   const [creatingWallet, setCreatingWallet] = useState(false)
-  const [toast, setToast] = useState(null)
   const lastSeenStatusRef = useRef({})
   const resPollRef = useRef(null)
 
@@ -72,11 +81,21 @@ export default function Dashboard() {
   // Glavni fetch (rezervacije + wallet) — Benjamin grana
   const fetchAll = useCallback(async () => {
     if (!isAuthenticated || !user?.id) return
+    // HOST/ADMIN ne treba dohvatati guest rezervacije ni wallet —
+    // backend ih i odbija sa 403. Skip umjesto da prikazujemo grešku.
+    if (!isGuest) {
+      setLoading(false)
+      return
+    }
     try {
       const [resData, walletData] = await Promise.allSettled([
         reservationApi.getByGuestId(user.id),
         walletApi.getByUserId(user.id)
       ])
+      // Koristi tek dohvaceni wallet (ne stale wallet state) za toast logic.
+      // Bez ovog fix-a polling closure zadrzi staro `wallet` (null pri prvom poll-u)
+      // pa toast pogresno kaze "nemate wallet" iako wallet zapravo postoji.
+      const liveWallet = walletData.status === 'fulfilled' ? walletData.value : null
       if (resData.status === 'fulfilled') {
         const newList = Array.isArray(resData.value) ? resData.value : (resData.value.content || [])
 
@@ -86,11 +105,16 @@ export default function Dashboard() {
           const curr = (r.status || '').toUpperCase()
           if (prev && prev !== curr) {
             if (curr === 'CONFIRMED') {
-              setToast({ type: 'success', title: 'Rezervacija potvrđena',
+              showToast({ type: 'success', title: 'Rezervacija potvrđena',
                 message: `Rezervacija #${r.id} je uspješno plaćena (${Number(r.totalPrice).toFixed(2)} BAM).` })
             } else if (curr === 'CANCELLED' && prev === 'CREATED') {
-              setToast({ type: 'error', title: 'Plaćanje nije uspjelo',
-                message: `Rezervacija #${r.id} je poništena — vjerovatno nema dovoljno sredstava u wallet-u.` })
+              const reason = !liveWallet
+                ? 'nemate kreiran wallet'
+                : Number(liveWallet.balance) < Number(r.totalPrice)
+                  ? `nemate dovoljno sredstava (${Number(liveWallet.balance).toFixed(2)} BAM od potrebnih ${Number(r.totalPrice).toFixed(2)} BAM)`
+                  : 'plaćanje je odbijeno'
+              showToast({ type: 'error', title: 'Plaćanje nije uspjelo',
+                message: `Rezervacija #${r.id} je poništena — ${reason}.`, duration: 8000 })
             }
           }
           lastSeenStatusRef.current[r.id] = curr
@@ -111,7 +135,7 @@ export default function Dashboard() {
           const created = await walletApi.create(user.id, 'BAM', 0)
           setWallet(created)
           setWalletError(null)
-          setToast({ type: 'info', title: 'Wallet automatski kreiran',
+          showToast({ type: 'info', title: 'Wallet automatski kreiran',
             message: 'Dosipajte sredstva karticom prije rezervacije smjestaja.' })
         } catch {
           setWallet(null)
@@ -121,7 +145,24 @@ export default function Dashboard() {
     } finally {
       setLoading(false)
     }
-  }, [isAuthenticated, user?.id])
+  }, [isAuthenticated, user?.id, isGuest])
+
+  const handleCreateWallet = async () => {
+    setCreatingWallet(true)
+    try {
+      const created = await walletApi.create(user.id, 'BAM', 0)
+      setWallet(created)
+      setWalletError(null)
+      showToast({ type: 'success', title: 'Wallet kreiran',
+        message: 'Sad možete dosipati sredstva karticom.' })
+    } catch (err) {
+      const msg = err.response?.data?.message
+      showToast({ type: 'error', title: 'Kreiranje nije uspjelo',
+        message: typeof msg === 'string' ? msg : 'Greška pri kreiranju wallet-a.' })
+    } finally {
+      setCreatingWallet(false)
+    }
+  }
 
   const handleCreateWallet = async () => {
     setCreatingWallet(true)
@@ -171,7 +212,25 @@ export default function Dashboard() {
       <h1>Dobrodošli, {user.email}!</h1>
       <p>Vaša uloga: <strong>{user.role}</strong></p>
 
-      {/* Wallet kartica */}
+      {/* HOST/ADMIN imaju vlastite panele — ne treba im wallet ni guest rezervacije */}
+      {!isGuest && (
+        <section className="role-info-banner">
+          <p>
+            {role === 'HOST' ? '🏘️ ' : '⚙️ '}
+            Vaš primarni panel:{' '}
+            <Link to={role === 'HOST' ? '/host/dashboard' : '/admin'} className="role-link">
+              {role === 'HOST' ? 'Moji smještaji' : 'Admin panel'}
+            </Link>
+          </p>
+          <p className="role-info-hint">
+            Ovdje vidite samo notifikacije. Rezervacije i wallet su dostupni
+            samo gostima.
+          </p>
+        </section>
+      )}
+
+      {/* Wallet kartica — samo za GUEST */}
+      {isGuest && (
       <section className="wallet-card">
         <div className="wallet-card-header">
           <h2>💳 Vaš novčanik</h2>
@@ -201,15 +260,18 @@ export default function Dashboard() {
           Naplata se vrši automatski kada potvrdite rezervaciju (Saga choreography).
         </p>
       </section>
+      )}
 
-      {/* Tabovi (Kenan) */}
+      {/* Tabovi (Kenan) — Rezervacije tab samo za GUEST */}
       <div className="dashboard-tabs">
+        {isGuest && (
         <button
           className={`tab-btn ${activeTab === 'reservations' ? 'active' : ''}`}
           onClick={() => setActiveTab('reservations')}
         >
           📅 Rezervacije
         </button>
+        )}
         <button
           className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
           onClick={() => setActiveTab('notifications')}
@@ -221,8 +283,8 @@ export default function Dashboard() {
         </button>
       </div>
 
-      {/* Tab: Rezervacije */}
-      {activeTab === 'reservations' && (
+      {/* Tab: Rezervacije — samo za GUEST */}
+      {isGuest && activeTab === 'reservations' && (
         <section className="reservations-section">
           <div className="reservations-header">
             <h2>📅 Moje Rezervacije</h2>
@@ -235,8 +297,8 @@ export default function Dashboard() {
             </div>
           )}
 
-          {loading && <div className="loading">Učitavanje...</div>}
-          {error && <div className="error">{error}</div>}
+          {loading && <Spinner label="Učitavanje rezervacija..." />}
+          <ErrorState message={error} onRetry={fetchAll} />
 
           {!loading && reservations.length === 0 && (
             <div className="no-data">Nemate rezervacija</div>
@@ -272,7 +334,7 @@ export default function Dashboard() {
           onClose={() => setShowTopUp(false)}
           onUpdated={(updated) => {
             setWallet(updated)
-            setToast({ type: 'success', title: 'Uplata uspješna',
+            showToast({ type: 'success', title: 'Uplata uspješna',
               message: `Wallet ažuriran — novi balance: ${Number(updated.balance).toFixed(2)} ${updated.currency}.` })
           }}
         />

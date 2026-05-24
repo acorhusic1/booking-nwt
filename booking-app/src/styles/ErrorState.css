@@ -1,0 +1,75 @@
+.error-state {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px 18px;
+  background: var(--error-bg, rgba(248, 113, 113, 0.08));
+  border: 1px solid var(--error-border, rgba(248, 113, 113, 0.25));
+  border-left: 3px solid var(--error-text, #f87171);
+  border-radius: var(--radius-md, 8px);
+  color: var(--error-text, #f87171);
+  font-family: "Geist", sans-serif;
+  margin: 12px 0;
+}
+
+.error-state-inline {
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  margin: 8px 0;
+}
+
+.error-state-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(248, 113, 113, 0.15);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.error-state-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.error-state-message {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.error-state-retry {
+  background: transparent;
+  border: 1px solid var(--error-text, #f87171);
+  color: var(--error-text, #f87171);
+  padding: 6px 14px;
+  border-radius: var(--radius-sm, 6px);
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.error-state-retry:hover {
+  background: var(--error-text, #f87171);
+  color: #fff;
+}
+
+.error-state-inline .error-state-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 0.75rem;
+}
+
+.error-state-inline .error-state-retry {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}

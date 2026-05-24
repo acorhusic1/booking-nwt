@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { notificationApi } from '../../api/notificationApi'
 import { useAuthStore } from '../../store/authStore'
+import Spinner from '../common/Spinner'
+import ErrorState from '../common/ErrorState'
 
 const TYPE_META = {
   POTVRDA_REZERVACIJE: { icon: '✅', label: 'Potvrđeno' },
@@ -26,8 +28,10 @@ export default function NotificationsList({ onUnreadChange }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  useEffect(() => {
+  const load = () => {
     if (!user?.id) return
+    setLoading(true)
+    setError(null)
     notificationApi.getByUserId(user.id)
       .then(data => {
         const list = Array.isArray(data) ? data : (data.content || [])
@@ -37,7 +41,9 @@ export default function NotificationsList({ onUnreadChange }) {
       })
       .catch(() => setError('Greška pri učitavanju notifikacija'))
       .finally(() => setLoading(false))
-  }, [user?.id])
+  }
+
+  useEffect(() => { load() }, [user?.id])
 
   const handleMarkRead = async (id) => {
     try {
@@ -53,8 +59,8 @@ export default function NotificationsList({ onUnreadChange }) {
     }
   }
 
-  if (loading) return <div className="loading">Učitavanje notifikacija...</div>
-  if (error)   return <div className="error">{error}</div>
+  if (loading) return <Spinner label="Učitavanje notifikacija..." />
+  if (error)   return <ErrorState message={error} onRetry={load} />
 
   if (notifications.length === 0) {
     return (

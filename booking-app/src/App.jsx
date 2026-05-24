@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useParams, Link } from 'react-router-dom'
 import Header from './components/common/Header'
+import ToastProvider from './components/common/ToastProvider'
 import LoginForm from './components/auth/LoginForm'
 import RegisterForm from './components/auth/RegisterForm'
 import PropertyList from './components/properties/PropertyList'
@@ -17,6 +18,7 @@ function App() {
 
   return (
     <Router>
+      <ToastProvider>
       <Header />
       <main className="app-main">
         <Routes>
@@ -48,6 +50,7 @@ function App() {
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </main>
+      </ToastProvider>
     </Router>
   )
 }
