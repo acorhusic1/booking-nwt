@@ -27,8 +27,16 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public WalletResponseDTO createWallet(WalletRequestDTO dto) {
-        Wallet wallet = walletMapper.toEntity(dto);
-        return walletMapper.toDTO(walletRepository.save(wallet));
+        // Idempotent — ako user vec ima wallet, vrati postojeci.
+        // Bez ovog check-a, Dashboard auto-create i manualni Create wallet
+        // mogu napraviti DUPLIKATE; findByUserId vraca jedan random,
+        // payment-service skida pare sa pogresnog wallet-a.
+        return walletRepository.findByUserId(dto.getUserId())
+                .map(walletMapper::toDTO)
+                .orElseGet(() -> {
+                    Wallet wallet = walletMapper.toEntity(dto);
+                    return walletMapper.toDTO(walletRepository.save(wallet));
+                });
     }
 
     @Override
@@ -54,6 +62,14 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public WalletResponseDTO deposit(Long walletId, BigDecimal amount) {
+        // BUG-007: validacija da amount nije null/negativan/preveliki
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Iznos uplate mora biti pozitivan");
+        }
+        if (amount.compareTo(new BigDecimal("100000")) > 0) {
+            throw new IllegalArgumentException("Iznos uplate ne smije prelaziti 100,000");
+        }
+
         Wallet wallet = walletRepository.findById(walletId)
                 .orElseThrow(() -> new ResourceNotFoundException("Novčanik sa ID " + walletId + " nije pronađen"));
         wallet.setBalance(wallet.getBalance().add(amount));
@@ -67,6 +83,14 @@ public class WalletServiceImpl implements WalletService {
 
     @Override
     public WalletResponseDTO withdraw(Long walletId, BigDecimal amount) {
+        // BUG-007: validacija
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Iznos isplate mora biti pozitivan");
+        }
+        if (amount.compareTo(new BigDecimal("100000")) > 0) {
+            throw new IllegalArgumentException("Iznos isplate ne smije prelaziti 100,000");
+        }
+
         Wallet wallet = walletRepository.findById(walletId)
                 .orElseThrow(() -> new ResourceNotFoundException("Novčanik sa ID " + walletId + " nije pronađen"));
 

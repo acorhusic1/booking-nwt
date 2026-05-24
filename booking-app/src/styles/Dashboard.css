@@ -22,6 +22,43 @@
   font-family: "Geist", sans-serif;
 }
 
+/* ── Role info banner (HOST/ADMIN) ───────────────────── */
+
+.role-info-banner {
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.12) 0%, rgba(114, 9, 183, 0.06) 100%);
+  border: 1px solid rgba(157, 78, 221, 0.25);
+  border-radius: var(--radius-lg);
+  padding: 22px 26px;
+  margin-bottom: 28px;
+  font-family: "Inter", sans-serif;
+}
+
+.role-info-banner p {
+  margin: 0 0 6px;
+  color: var(--text-primary);
+  font-size: 1.02rem;
+}
+
+.role-info-banner .role-info-hint {
+  color: var(--text-tertiary);
+  font-size: 0.85rem;
+  font-family: "Geist", sans-serif;
+  margin-bottom: 0;
+}
+
+.role-link {
+  color: var(--violet-light);
+  font-weight: 600;
+  text-decoration: none;
+  border-bottom: 1px dashed rgba(157, 78, 221, 0.45);
+  transition: all 0.15s ease;
+}
+
+.role-link:hover {
+  color: var(--violet-bright);
+  border-bottom-color: var(--violet-bright);
+}
+
 /* ── Wallet ──────────────────────────────────────────── */
 
 .wallet-card {

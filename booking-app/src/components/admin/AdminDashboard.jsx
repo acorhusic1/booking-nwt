@@ -3,6 +3,7 @@ import { userApi } from '../../api/userApi'
 import { analyticsApi } from '../../api/analyticsApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
+import Spinner from '../common/Spinner'
 import '../../styles/AdminDashboard.css'
 
 export default function AdminDashboard() {
@@ -56,9 +57,8 @@ export default function AdminDashboard() {
       setTotalPages(data.totalPages || 1)
       setTotalUsers(data.totalElements || 0)
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Greška pri učitavanju korisnika')
-      console.error(err)
     } finally {
       setLoadingUsers(false)
     }
@@ -71,9 +71,8 @@ export default function AdminDashboard() {
       setStats(data.content || [])
       setStatsTotalPages(data.totalPages || 1)
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Greška pri učitavanju sistemske analitike')
-      console.error(err)
     } finally {
       setLoadingStats(false)
     }
@@ -164,7 +163,7 @@ export default function AdminDashboard() {
             </div>
             
             {loadingUsers ? (
-              <div className="loading">Učitavanje...</div>
+              <Spinner />
             ) : (
               <>
                 <table className="users-table" id="admin-users-table">
@@ -232,7 +231,7 @@ export default function AdminDashboard() {
         <div className="analytics-table-container glass-panel">
           <h2>Platformska Statistika</h2>
           {loadingStats ? (
-            <div className="loading">Učitavanje analitike...</div>
+            <Spinner label="Učitavanje analitike..." />
           ) : (
             <>
               <table className="users-table">

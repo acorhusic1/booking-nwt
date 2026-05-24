@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { userApi } from '../../api/userApi'
+import Spinner from '../common/Spinner'
 import '../../styles/UserProfile.css'
 
 export default function UserProfile() {
@@ -27,9 +28,8 @@ export default function UserProfile() {
           lastName: data.lastName || '',
           phone: data.phone || ''
         })
-      } catch (err) {
+      } catch {
         setError('Greška pri učitavanju profila')
-        console.error(err)
       } finally {
         setLoading(false)
       }
@@ -55,7 +55,7 @@ export default function UserProfile() {
     }
   }
 
-  if (loading) return <div className="loading">Učitavanje profila...</div>
+  if (loading) return <Spinner label="Učitavanje profila..." size="lg" />
 
   return (
     <div className="profile-page">

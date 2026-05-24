@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { reservationApi } from '../../api/reservationApi'
 import { paymentApi } from '../../api/paymentApi'
 import ConfirmModal from '../common/ConfirmModal'
+import Spinner from '../common/Spinner'
+import { useToast } from '../common/ToastProvider'
 
 /**
  * Reservation kartica sa expand-on-click ponašanjem.
@@ -11,6 +13,7 @@ import ConfirmModal from '../common/ConfirmModal'
  * PUT /api/reservations/{id}/cancel i ažurira state lokalno.
  */
 export default function ReservationCard({ reservation, onChanged }) {
+  const { showToast } = useToast()
   const [expanded, setExpanded] = useState(false)
   const [payments, setPayments] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -54,11 +57,18 @@ export default function ReservationCard({ reservation, onChanged }) {
     try {
       await reservationApi.cancel(reservation.id)
       setConfirmOpen(false)
+      showToast({ type: 'success', title: 'Rezervacija otkazana',
+        message: `Rezervacija #${reservation.id} je otkazana. Iznos će biti refundiran u nekoliko sekundi.` })
       onChanged?.()
     } catch (err) {
       const msg = err.response?.data?.message
-      setError(typeof msg === 'string' ? msg : 'Otkazivanje nije uspjelo (možda je već CANCELLED ili je prošao rok)')
+      const text = typeof msg === 'string'
+        ? msg
+        : 'Otkazivanje nije uspjelo (možda je već CANCELLED ili je prošao rok).'
+      setError(text)
       setConfirmOpen(false)
+      // Toast je najbolje vidljiv — inline error u kartici je previse sakriven
+      showToast({ type: 'error', title: 'Otkazivanje blokirano', message: text, duration: 7000 })
     } finally {
       setCancelling(false)
     }
@@ -79,7 +89,7 @@ export default function ReservationCard({ reservation, onChanged }) {
       {expanded && (
         <div className="reservation-expand" onClick={(e) => e.stopPropagation()}>
           <h4>💳 Plaćanja</h4>
-          {loading && <p className="loading-inline">Učitavanje plaćanja...</p>}
+          {loading && <Spinner size="sm" inline label="Učitavanje plaćanja..." />}
           {!loading && payments?.length === 0 && (
             <p className="loading-inline">Nema upisanih plaćanja za ovu rezervaciju.</p>
           )}

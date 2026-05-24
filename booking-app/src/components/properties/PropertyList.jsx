@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo } from 'react'
 import { propertyApi } from '../../api/propertyApi'
 import PropertyCard from './PropertyCard'
+import Spinner from '../common/Spinner'
+import ErrorState from '../common/ErrorState'
 import '../../styles/PropertyList.css'
 
 /**
@@ -17,24 +19,21 @@ export default function PropertyList({ filters }) {
   const [search, setSearch] = useState(filters?.city || '')
   const [onlyAvailable, setOnlyAvailable] = useState(true)
 
-  useEffect(() => {
-    const fetchProperties = async () => {
-      setLoading(true)
-      try {
-        const data = await propertyApi.getAll(page, 10, '')
-        setProperties(data.content || [])
-        setTotalPages(Math.ceil((data.totalElements || 0) / 10))
-        setError(null)
-      } catch (err) {
-        setError('Greška pri učitavanju smještaja')
-        console.error(err)
-      } finally {
-        setLoading(false)
-      }
+  const fetchProperties = async () => {
+    setLoading(true)
+    try {
+      const data = await propertyApi.getAll(page, 10, '')
+      setProperties(data.content || [])
+      setTotalPages(Math.ceil((data.totalElements || 0) / 10))
+      setError(null)
+    } catch {
+      setError('Greška pri učitavanju smještaja')
+    } finally {
+      setLoading(false)
     }
+  }
 
-    fetchProperties()
-  }, [page])
+  useEffect(() => { fetchProperties() }, [page])
 
   // Filtriranje + sortiranje u memoriji
   const visible = useMemo(() => {
@@ -82,8 +81,8 @@ export default function PropertyList({ filters }) {
         </label>
       </div>
 
-      {loading && <div className="loading">Učitavanje smještaja...</div>}
-      {error && <div className="error">{error}</div>}
+      {loading && <Spinner label="Učitavanje smještaja..." />}
+      <ErrorState message={error} onRetry={fetchProperties} />
 
       {!loading && !error && (
         <>
