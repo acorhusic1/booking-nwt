@@ -164,6 +164,23 @@ export default function Dashboard() {
     }
   }
 
+  const handleCreateWallet = async () => {
+    setCreatingWallet(true)
+    try {
+      const created = await walletApi.create(user.id, 'BAM', 0)
+      setWallet(created)
+      setWalletError(null)
+      setToast({ type: 'success', title: 'Wallet kreiran',
+        message: 'Sad možete dosipati sredstva karticom.' })
+    } catch (err) {
+      const msg = err.response?.data?.message
+      setToast({ type: 'error', title: 'Kreiranje nije uspjelo',
+        message: typeof msg === 'string' ? msg : 'Greška pri kreiranju wallet-a.' })
+    } finally {
+      setCreatingWallet(false)
+    }
+  }
+
   useEffect(() => { fetchAll() }, [fetchAll])
 
   // Reservation auto-poll (Benjamin grana) — uhvati Saga rezultat bez F5
@@ -322,6 +339,14 @@ export default function Dashboard() {
           }}
         />
       )}
+
+      <Toast
+        open={!!toast}
+        onClose={() => setToast(null)}
+        type={toast?.type}
+        title={toast?.title}
+        message={toast?.message}
+      />
     </div>
   )
 }
