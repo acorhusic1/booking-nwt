@@ -38,6 +38,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
     }
 
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
+    }
+
     @ExceptionHandler(PropertyUnavailableException.class)
     public ResponseEntity<Map<String, Object>> handlePropertyUnavailable(PropertyUnavailableException ex) {
         return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage());

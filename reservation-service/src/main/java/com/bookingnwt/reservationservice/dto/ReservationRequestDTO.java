@@ -1,5 +1,7 @@
 package com.bookingnwt.reservationservice.dto;
 
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -39,7 +41,8 @@ public class ReservationRequestDTO {
     private Integer numGuests;
 
     @NotNull(message = "Ukupna cijena je obavezna")
-    @Min(value = 0, message = "Cijena ne može biti negativna")
+    @DecimalMin(value = "0.01", message = "Cijena mora biti veća od 0")
+    @DecimalMax(value = "100000.00", message = "Cijena ne smije prelaziti 100,000 BAM")
     private BigDecimal totalPrice;
 
     private Long cancellationPolicyId;

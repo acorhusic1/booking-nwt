@@ -4,6 +4,7 @@ import { reservationApi } from '../../api/reservationApi'
 import { propertyApi } from '../../api/propertyApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '../common/ToastProvider'
 import '../../styles/ReservationForm.css'
 
 // Privremeno: backend Property model nema cijenu po noći u javnom DTO-u.
@@ -14,12 +15,17 @@ export default function ReservationForm({ propertyId }) {
   const { register, handleSubmit, control, formState: { errors } } = useForm()
   const { user, isAuthenticated } = useAuthStore()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [property, setProperty] = useState(null)
 
   const checkIn = useWatch({ control, name: 'checkIn' })
   const checkOut = useWatch({ control, name: 'checkOut' })
+
+  // BUG-009: minimum date u input-u — sprjecava odabir proslog datuma
+  const today = new Date().toISOString().split('T')[0]
+  const minCheckOut = checkIn || today
 
   // hostId trebamo backendu — uzimamo ga iz property-a
   useEffect(() => {
@@ -65,11 +71,15 @@ export default function ReservationForm({ propertyId }) {
         numGuests: Number(data.numGuests),
         totalPrice: totalPrice
       }
-      await reservationApi.create(reservationData)
-      navigate('/dashboard?tab=notifications&pending=1')
+      const created = await reservationApi.create(reservationData)
+      // BUG-001: replace:true sprjecava da Back dugme vrati korisnika
+      // nazad na rezervacionu formu (pa da je submit-uje ponovo)
+      navigate(`/dashboard?tab=reservations&pendingId=${created.id}&pending=1`, { replace: true })
     } catch (err) {
       const msg = err.response?.data?.message
-      setError(typeof msg === 'string' ? msg : 'Greška pri kreiranju rezervacije')
+      const text = typeof msg === 'string' ? msg : 'Greška pri kreiranju rezervacije'
+      setError(text)
+      showToast({ type: 'error', title: 'Rezervacija nije kreirana', message: text, duration: 7000 })
     } finally {
       setLoading(false)
     }
@@ -84,6 +94,7 @@ export default function ReservationForm({ propertyId }) {
         <input
           {...register('checkIn', { required: 'Obavezno polje' })}
           type="date"
+          min={today}
         />
         {errors.checkIn && <span className="error">{errors.checkIn.message}</span>}
       </div>
@@ -93,6 +104,7 @@ export default function ReservationForm({ propertyId }) {
         <input
           {...register('checkOut', { required: 'Obavezno polje' })}
           type="date"
+          min={minCheckOut}
         />
         {errors.checkOut && <span className="error">{errors.checkOut.message}</span>}
       </div>

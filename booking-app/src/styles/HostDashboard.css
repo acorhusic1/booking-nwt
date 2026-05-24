@@ -216,3 +216,70 @@
   color: var(--text-tertiary);
   border: 1px solid rgba(168, 159, 219, 0.2);
 }
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .host-header {
+    margin-bottom: 24px;
+  }
+
+  .host-header h1 {
+    font-size: 1.5rem;
+  }
+
+  .host-stats {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .host-sections {
+    gap: 24px;
+  }
+
+  .host-properties-grid {
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+
+  .host-property-card {
+    padding: 16px;
+  }
+
+  .reservations-table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+
+  .reservations-table th,
+  .reservations-table td {
+    padding: 10px 12px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .host-header h1 {
+    font-size: 1.25rem;
+  }
+
+  .host-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .host-properties-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .host-property-card h3 {
+    font-size: 0.95rem;
+  }
+
+  .reservations-table th,
+  .reservations-table td {
+    padding: 8px 10px;
+    font-size: 0.75rem;
+  }
+}

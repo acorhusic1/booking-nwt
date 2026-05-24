@@ -12,6 +12,12 @@ public class DataLoader {
     @Bean
     CommandLineRunner initAuditData(AuditLogRepository auditRepo) {
         return args -> {
+            // Idempotent — preskoci ako podaci vec postoje (ddl-auto=update zadrzava)
+            if (auditRepo.count() > 0) {
+                System.out.println("=== System Events Service: DB vec ima podatke, preskacem seed ===");
+                return;
+            }
+
             auditRepo.save(new AuditLog(2L, "CREATE", "PROPERTY", 1L,
                     "Kreiran objekat: Apartman Baščaršija, Sarajevo", "192.168.1.10"));
 

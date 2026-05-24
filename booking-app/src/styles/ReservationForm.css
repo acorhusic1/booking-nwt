@@ -139,3 +139,52 @@
   transform: none;
   box-shadow: none;
 }
+
+/* ── Responsive ─────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .reservation-form {
+    padding: 22px 20px;
+    margin: 16px auto;
+  }
+
+  .reservation-form h3 {
+    font-size: 1.15rem;
+    margin-bottom: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .reservation-form {
+    padding: 18px 14px;
+    margin: 12px 0;
+    border-radius: var(--radius-md);
+  }
+
+  .reservation-form h3 {
+    font-size: 1.05rem;
+    margin-bottom: 16px;
+  }
+
+  .reservation-form input,
+  .reservation-form select,
+  .reservation-form textarea {
+    font-size: 16px; /* sprječava iOS zoom prilikom focus */
+    padding: 12px 14px;
+  }
+
+  .reservation-form .summary {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .reservation-form .summary .summary-value {
+    font-size: 1.2rem;
+  }
+
+  .submit-btn {
+    padding: 14px 18px;
+    font-size: 1rem;
+  }
+}

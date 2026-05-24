@@ -1,6 +1,9 @@
 import { useState } from 'react'
 import { reservationApi } from '../../api/reservationApi'
 import { paymentApi } from '../../api/paymentApi'
+import ConfirmModal from '../common/ConfirmModal'
+import Spinner from '../common/Spinner'
+import { useToast } from '../common/ToastProvider'
 
 /**
  * Reservation kartica sa expand-on-click ponašanjem.
@@ -10,11 +13,13 @@ import { paymentApi } from '../../api/paymentApi'
  * PUT /api/reservations/{id}/cancel i ažurira state lokalno.
  */
 export default function ReservationCard({ reservation, onChanged }) {
+  const { showToast } = useToast()
   const [expanded, setExpanded] = useState(false)
   const [payments, setPayments] = useState(null)
   const [loading, setLoading] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [error, setError] = useState(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   const statusClass = (() => {
     const s = (reservation.status || '').toUpperCase()
@@ -41,17 +46,29 @@ export default function ReservationCard({ reservation, onChanged }) {
     }
   }
 
-  const cancel = async (e) => {
+  const openCancelDialog = (e) => {
     e.stopPropagation()
-    if (!confirm(`Otkazati rezervaciju #${reservation.id}?`)) return
-    setCancelling(true)
     setError(null)
+    setConfirmOpen(true)
+  }
+
+  const performCancel = async () => {
+    setCancelling(true)
     try {
       await reservationApi.cancel(reservation.id)
+      setConfirmOpen(false)
+      showToast({ type: 'success', title: 'Rezervacija otkazana',
+        message: `Rezervacija #${reservation.id} je otkazana. Iznos će biti refundiran u nekoliko sekundi.` })
       onChanged?.()
     } catch (err) {
       const msg = err.response?.data?.message
-      setError(typeof msg === 'string' ? msg : 'Otkazivanje nije uspjelo (možda je već CANCELLED ili je prošao rok)')
+      const text = typeof msg === 'string'
+        ? msg
+        : 'Otkazivanje nije uspjelo (možda je već CANCELLED ili je prošao rok).'
+      setError(text)
+      setConfirmOpen(false)
+      // Toast je najbolje vidljiv — inline error u kartici je previse sakriven
+      showToast({ type: 'error', title: 'Otkazivanje blokirano', message: text, duration: 7000 })
     } finally {
       setCancelling(false)
     }
@@ -72,7 +89,7 @@ export default function ReservationCard({ reservation, onChanged }) {
       {expanded && (
         <div className="reservation-expand" onClick={(e) => e.stopPropagation()}>
           <h4>💳 Plaćanja</h4>
-          {loading && <p className="loading-inline">Učitavanje plaćanja...</p>}
+          {loading && <Spinner size="sm" inline label="Učitavanje plaćanja..." />}
           {!loading && payments?.length === 0 && (
             <p className="loading-inline">Nema upisanih plaćanja za ovu rezervaciju.</p>
           )}
@@ -87,12 +104,24 @@ export default function ReservationCard({ reservation, onChanged }) {
           {error && <div className="card-error">{error}</div>}
 
           {canCancel && (
-            <button onClick={cancel} disabled={cancelling} className="cancel-btn">
+            <button onClick={openCancelDialog} disabled={cancelling} className="cancel-btn">
               {cancelling ? 'Otkazujem...' : '✕ Otkaži rezervaciju'}
             </button>
           )}
         </div>
       )}
+
+      <ConfirmModal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        onConfirm={performCancel}
+        title="Otkazivanje rezervacije"
+        message={`Otkazati rezervaciju #${reservation.id}?`}
+        detail="Iznos će biti refundiran na wallet (ako je rezervacija već plaćena)."
+        confirmText="Da, otkaži"
+        cancelText="Odustani"
+        danger
+      />
     </div>
   )
 }

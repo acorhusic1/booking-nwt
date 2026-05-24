@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -47,6 +48,28 @@ public class ReservationServiceImpl implements ReservationService {
     @Override
     @Transactional
     public ReservationResponseDTO createReservation(ReservationRequestDTO dto) {
+        // BUG-010: Realistic cap — ne dozvoli rezervaciju duzu od 30 dana
+        if (dto.getCheckIn() != null && dto.getCheckOut() != null) {
+            long days = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
+            if (days <= 0) {
+                throw new IllegalArgumentException("Datum odlaska mora biti nakon datuma dolaska");
+            }
+            if (days > 30) {
+                throw new IllegalArgumentException(
+                        "Maksimalna duzina rezervacije je 30 dana (tražili ste " + days + ")");
+            }
+        }
+
+        // BUG-001: Lokalni overlap check prije Saga-e. Hvata double-submit
+        // (npr. Back dugme → resubmit) kada property-service jos nije primio
+        // Rabbit event pa availability-gateway misli da je slobodno.
+        boolean overlap = reservationRepository.existsOverlap(
+                dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut());
+        if (overlap) {
+            throw new IllegalStateException(
+                    "Već postoji aktivna rezervacija za ovaj smještaj u datim datumima");
+        }
+
         // Task 5 — synchronous availability check against property-service.
         // Throws PropertyUnavailableException -> 409 Conflict if the property
         // doesn't exist, is inactive, is blocked on the calendar, or
@@ -163,6 +186,44 @@ public class ReservationServiceImpl implements ReservationService {
         if (reservation.getStatus() == ReservationStatus.CANCELLED) {
             // Vec otkazana — idempotent, ne emituj event ponovo
             return reservationMapper.toResponseDTO(reservation);
+        }
+
+        // Terminalni / aktivni statusi se ne smiju otkazivati
+        if (reservation.getStatus() == ReservationStatus.COMPLETED) {
+            throw new IllegalStateException(
+                    "Završena rezervacija ne može biti otkazana");
+        }
+        if (reservation.getStatus() == ReservationStatus.ACTIVE) {
+            throw new IllegalStateException(
+                    "Aktivna rezervacija (gost je već smješten) ne može biti otkazana — kontaktirajte support");
+        }
+
+        // Datum-based pravila se primjenjuju samo ako postoji check-in datum
+        LocalDate today = LocalDate.now();
+        if (reservation.getCheckIn() != null) {
+            // Ako je check-in već prošao (ili je danas), refund nema smisla
+            if (!reservation.getCheckIn().isAfter(today)) {
+                throw new IllegalStateException(
+                        "Datum dolaska (" + reservation.getCheckIn()
+                                + ") je već prošao — rezervacija ne može biti otkazana");
+            }
+
+            // Free cancellation window: per-property policy ili default 7 dana.
+            // Samo za CONFIRMED — CREATED znači Saga još uvijek čeka pa je
+            // sigurno abort-ovati bez obzira na rok.
+            if (reservation.getStatus() == ReservationStatus.CONFIRMED) {
+                int freeCancelDays = (reservation.getCancellationPolicy() != null
+                        && reservation.getCancellationPolicy().getFreeCancelDays() != null)
+                        ? reservation.getCancellationPolicy().getFreeCancelDays()
+                        : 7;
+
+                long daysUntilCheckIn = ChronoUnit.DAYS.between(today, reservation.getCheckIn());
+                if (daysUntilCheckIn < freeCancelDays) {
+                    throw new IllegalStateException(
+                            "Otkazivanje manje od " + freeCancelDays
+                                    + " dana prije dolaska nije moguće online — kontaktirajte support");
+                }
+            }
         }
 
         boolean wasConfirmed = reservation.getStatus() == ReservationStatus.CONFIRMED;
