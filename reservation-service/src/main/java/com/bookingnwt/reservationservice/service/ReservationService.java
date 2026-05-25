@@ -20,6 +20,7 @@ public interface ReservationService {
     List<ReservationResponseDTO> getReservationsByHost(Long hostId);
     ReservationResponseDTO updateStatus(Long id, ReservationStatus status);
     ReservationResponseDTO cancelReservation(Long id);
+    ReservationResponseDTO updateCancelStatus(Long id, Boolean isCancelled);
     void deleteReservation(Long id);
 
     // Task 4 — non-trivial endpoints

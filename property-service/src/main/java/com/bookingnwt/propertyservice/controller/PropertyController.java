@@ -83,7 +83,6 @@ public class PropertyController {
     // ===================== PROTECTED ENDPOINTS =====================
 
     @PostMapping
-    @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<PropertyResponse> createProperty(@Valid @RequestBody PropertyRequest request) {
         PropertyResponse created = propertyService.createProperty(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
@@ -118,7 +117,7 @@ public class PropertyController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<Void> deleteProperty(@PathVariable Long id) {
         propertyService.deleteProperty(id);
         return ResponseEntity.noContent().build();

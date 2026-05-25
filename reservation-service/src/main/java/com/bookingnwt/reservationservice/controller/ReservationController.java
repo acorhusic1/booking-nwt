@@ -76,6 +76,14 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
 
+    @PatchMapping("/{id}/is-cancelled")
+    @PreAuthorize("hasAnyAuthority('GUEST', 'ADMIN', 'HOST')")
+    public ResponseEntity<ReservationResponseDTO> updateCancelStatus(
+            @PathVariable Long id,
+            @RequestParam Boolean isCancelled) {
+        return ResponseEntity.ok(reservationService.updateCancelStatus(id, isCancelled));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<Void> deleteReservation(@PathVariable Long id) {

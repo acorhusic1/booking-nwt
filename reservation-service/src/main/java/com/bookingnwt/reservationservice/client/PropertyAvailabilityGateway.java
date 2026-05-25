@@ -62,6 +62,11 @@ public class PropertyAvailabilityGateway {
         }
     }
 
+    @CircuitBreaker(name = "property-service")
+    public void cancelListingByProperty(Long propertyId, Boolean isCancelled) {
+        propertyClient.cancelListingByProperty(propertyId, isCancelled);
+    }
+
     private boolean overlaps(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {
         if (aStart == null || aEnd == null) return false;
         // half-open interval semantics: [start, end) — the same day a block ends
