@@ -4,6 +4,7 @@ import { reservationApi } from '../../api/reservationApi'
 import { analyticsApi } from '../../api/analyticsApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate, Link } from 'react-router-dom'
+import { useToast } from '../common/ToastProvider'
 import Spinner from '../common/Spinner'
 import '../../styles/HostDashboard.css'
 
@@ -18,8 +19,8 @@ export default function HostDashboard() {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [totalRevenueBackend, setTotalRevenueBackend] = useState(0)
 
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
 
   const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar']
 
@@ -48,9 +49,8 @@ export default function HostDashboard() {
       if (resData.status === 'fulfilled') {
         setReservations(Array.isArray(resData.value) ? resData.value : resData.value?.content || [])
       }
-      setError(null)
     } catch {
-      setError('Greška pri učitavanju podataka')
+      showToast({ type: 'error', title: 'Greška', message: 'Greška pri učitavanju podataka' })
     } finally {
       setLoading(false)
     }
@@ -65,7 +65,7 @@ export default function HostDashboard() {
       const revenue = hostReports.reduce((sum, r) => sum + (r.totalRevenue || 0), 0)
       setTotalRevenueBackend(revenue)
     } catch {
-      // analitika je opciona — tih fail, prikazi 0 BAM
+      showToast({ type: 'warning', title: 'Analitika', message: 'Nije moguće učitati analitiku u ovom trenutku.' })
     }
   }
 
@@ -110,8 +110,6 @@ export default function HostDashboard() {
           </div>
         </div>
       </div>
-
-      {error && <div className="error-alert">{error}</div>}
 
       <div className="analytics-controls glass-panel" style={{ padding: '15px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
         <h3 style={{ margin: 0 }}>📊 Analitika za period:</h3>

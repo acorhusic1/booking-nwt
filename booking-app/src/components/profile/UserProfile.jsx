@@ -1,21 +1,34 @@
 import { useState, useEffect } from 'react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { useAuthStore } from '../../store/authStore'
 import { userApi } from '../../api/userApi'
+import { useToast } from '../common/ToastProvider'
 import Spinner from '../common/Spinner'
 import '../../styles/UserProfile.css'
 
+const profileSchema = z.object({
+  firstName: z.string().min(2, 'Ime mora imati najmanje 2 karaktera'),
+  lastName: z.string().min(2, 'Prezime mora imati najmanje 2 karaktera'),
+  phone: z.string().min(6, 'Neispravan broj telefona').optional().or(z.literal(''))
+})
+
 export default function UserProfile() {
   const { user, setAuth, token } = useAuthStore()
+  const { showToast } = useToast()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phone: ''
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      phone: ''
+    }
   })
 
   useEffect(() => {
@@ -23,36 +36,42 @@ export default function UserProfile() {
       try {
         const data = await userApi.getById(user.id)
         setProfile(data)
-        setFormData({
+        reset({
           firstName: data.firstName || '',
           lastName: data.lastName || '',
           phone: data.phone || ''
         })
       } catch {
-        setError('Greška pri učitavanju profila')
+        showToast({ type: 'error', title: 'Greška', message: 'Greška pri učitavanju profila' })
       } finally {
         setLoading(false)
       }
     }
     if (user?.id) fetchProfile()
-  }, [user?.id])
+  }, [user?.id, reset, showToast])
 
-  const handleSave = async () => {
+  const onSubmit = async (formData) => {
     setSaving(true)
-    setError(null)
-    setSuccess(null)
     try {
       const updated = await userApi.patch(user.id, formData)
       setProfile(updated)
       setAuth({ ...user, ...updated }, token)
       setEditing(false)
-      setSuccess('Profil uspješno ažuriran!')
-      setTimeout(() => setSuccess(null), 3000)
+      showToast({ type: 'success', title: 'Uspjeh', message: 'Profil uspješno ažuriran!' })
     } catch (err) {
-      setError(err.response?.data?.message || 'Greška pri ažuriranju profila')
+      showToast({ type: 'error', title: 'Greška', message: err.response?.data?.message || 'Greška pri ažuriranju profila' })
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleCancel = () => {
+    reset({
+      firstName: profile?.firstName || '',
+      lastName: profile?.lastName || '',
+      phone: profile?.phone || ''
+    })
+    setEditing(false)
   }
 
   if (loading) return <Spinner label="Učitavanje profila..." size="lg" />
@@ -69,9 +88,6 @@ export default function UserProfile() {
         </div>
       </div>
 
-      {success && <div className="success-alert">✅ {success}</div>}
-      {error && <div className="error-alert">❌ {error}</div>}
-
       <div className="profile-card glass-panel">
         <div className="profile-card-header">
           <h2>Lični podaci</h2>
@@ -83,38 +99,41 @@ export default function UserProfile() {
         </div>
 
         {editing ? (
-          <div className="profile-edit-form">
+          <form className="profile-edit-form" onSubmit={handleSubmit(onSubmit)}>
             <div className="form-group">
               <label>Ime:</label>
               <input
-                value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                {...register('firstName')}
                 id="profile-firstName"
+                className={errors.firstName ? 'error' : ''}
               />
+              {errors.firstName && <span className="error-message" style={{color: 'var(--error-text)', fontSize: '0.85rem', marginTop: '4px'}}>{errors.firstName.message}</span>}
             </div>
             <div className="form-group">
               <label>Prezime:</label>
               <input
-                value={formData.lastName}
-                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                {...register('lastName')}
                 id="profile-lastName"
+                className={errors.lastName ? 'error' : ''}
               />
+              {errors.lastName && <span className="error-message" style={{color: 'var(--error-text)', fontSize: '0.85rem', marginTop: '4px'}}>{errors.lastName.message}</span>}
             </div>
             <div className="form-group">
               <label>Telefon:</label>
               <input
-                value={formData.phone}
-                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                {...register('phone')}
                 id="profile-phone"
+                className={errors.phone ? 'error' : ''}
               />
+              {errors.phone && <span className="error-message" style={{color: 'var(--error-text)', fontSize: '0.85rem', marginTop: '4px'}}>{errors.phone.message}</span>}
             </div>
             <div className="form-actions">
-              <button onClick={handleSave} disabled={saving} className="save-btn" id="profile-save-btn">
+              <button type="submit" disabled={saving} className="save-btn" id="profile-save-btn">
                 {saving ? 'Spremanje...' : '💾 Spremi'}
               </button>
-              <button onClick={() => setEditing(false)} className="cancel-btn">Otkaži</button>
+              <button type="button" onClick={handleCancel} className="cancel-btn">Otkaži</button>
             </div>
-          </div>
+          </form>
         ) : (
           <div className="profile-info">
             <div className="info-row">
