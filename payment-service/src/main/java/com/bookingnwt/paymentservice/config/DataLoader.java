@@ -17,6 +17,12 @@ public class DataLoader {
                                        PaymentRepository paymentRepo,
                                        WalletTransactionRepository transactionRepo) {
         return args -> {
+            // Idempotent — preskoci ako podaci vec postoje (ddl-auto=update zadrzava)
+            if (walletRepo.count() > 0) {
+                System.out.println("=== Payment Service: DB vec ima podatke, preskacem seed ===");
+                return;
+            }
+
             // --- Virtualni novčanici ---
             walletRepo.save(new Wallet(2L, new BigDecimal("1500.00"), "BAM"));
             Wallet w2 = walletRepo.save(new Wallet(3L, new BigDecimal("800.00"), "BAM"));

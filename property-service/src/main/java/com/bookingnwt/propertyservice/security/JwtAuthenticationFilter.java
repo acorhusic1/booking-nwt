@@ -30,6 +30,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Value("${app.jwt.public-key}")
     private String publicKeyBase64;
+    @Value("${app.jwt.public-key}")
+    private String publicKeyBase64;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)

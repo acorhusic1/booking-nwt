@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "../../styles/PropertyDetail.css";
 import api from "../../api";
+import Spinner from "../common/Spinner";
+import ErrorState from "../common/ErrorState";
 
 export default function PropertyDetail() {
   const { id } = useParams();
@@ -10,23 +12,23 @@ export default function PropertyDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    const fetchProperty = async () => {
-      try {
-        const response = await api.get(`/properties/${id}`);
-        setProperty(response.data);
-      } catch (err) {
-        setError("Greška pri učitavanju smještaja");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchProperty = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await api.get(`/properties/${id}`);
+      setProperty(response.data);
+    } catch {
+      setError("Greška pri učitavanju smještaja");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchProperty();
-  }, [id]);
+  useEffect(() => { fetchProperty(); }, [id]);
 
-  if (loading) return <div className="loading">Učitavanje...</div>;
-  if (error) return <div className="error">{error}</div>;
+  if (loading) return <Spinner label="Učitavanje smještaja..." size="lg" />;
+  if (error) return <ErrorState message={error} onRetry={fetchProperty} />;
   if (!property) return <div>Smještaj nije pronađen</div>;
 
   // Picsum Photos - pouzdana URL za slike

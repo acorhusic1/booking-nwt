@@ -1,0 +1,114 @@
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 1100;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 280px;
+  max-width: 420px;
+  padding: 14px 16px;
+  background: #12091d;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+  animation: toast-in 0.25s cubic-bezier(0.22, 0.94, 0.36, 1);
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.toast-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.toast-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.toast-title {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  font-family: "Geist", sans-serif;
+  line-height: 1.4;
+}
+
+.toast-close {
+  background: transparent;
+  border: none;
+  color: var(--text-tertiary);
+  font-size: 1.3rem;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toast-close:hover {
+  color: var(--text-primary);
+}
+
+/* ── Type variants ──────────────────────────────────── */
+
+.toast-success {
+  border-left: 3px solid #4ade80;
+}
+.toast-success .toast-icon {
+  background: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+}
+
+.toast-error {
+  border-left: 3px solid var(--error-text);
+}
+.toast-error .toast-icon {
+  background: var(--error-bg);
+  color: var(--error-text);
+}
+
+.toast-warning {
+  border-left: 3px solid var(--warning-text);
+}
+.toast-warning .toast-icon {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}
+
+.toast-info {
+  border-left: 3px solid var(--violet-light);
+}
+.toast-info .toast-icon {
+  background: rgba(157, 78, 221, 0.15);
+  color: var(--violet-light);
+}
+
+@media (max-width: 480px) {
+  .toast {
+    top: 12px;
+    right: 12px;
+    left: 12px;
+    min-width: 0;
+    max-width: none;
+  }
+}

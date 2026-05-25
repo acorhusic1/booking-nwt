@@ -6,6 +6,11 @@ export const walletApi = {
     return response.data
   },
 
+  create: async (userId, currency = 'BAM', balance = 0) => {
+    const response = await apiClient.post('/api/wallets', { userId, currency, balance })
+    return response.data
+  },
+
   /**
    * Top-up wallet (deposit). Backend prima amount kao query param.
    */

@@ -18,6 +18,13 @@ public class DataLoader {
                                    UserPreferenceRepository preferenceRepo,
                                    org.springframework.security.crypto.password.PasswordEncoder passwordEncoder) {
         return args -> {
+            // Idempotent — preskoci seed ako baza vec ima podatke
+            // (ddl-auto=update zadrzava podatke izmedju restart-ova).
+            if (userRepo.count() > 0) {
+                System.out.println("=== User Service: DB vec ima " + userRepo.count() + " korisnika, preskacem seed ===");
+                return;
+            }
+
             // --- Kreiranje korisnika ---
             String commonPass = passwordEncoder.encode("password123");
 

@@ -18,6 +18,12 @@ public class DataLoader {
                                            PromoCodeRepository promoRepo,
                                            ProblemReportRepository problemRepo) {
         return args -> {
+            // Idempotent — preskoci ako podaci vec postoje (ddl-auto=update zadrzava)
+            if (reservationRepo.count() > 0 || policyRepo.count() > 0) {
+                System.out.println("=== Reservation Service: DB vec ima podatke, preskacem seed ===");
+                return;
+            }
+
             // --- Politike otkazivanja ---
             CancellationPolicy flexible = policyRepo.save(
                     new CancellationPolicy(1L, "Fleksibilna", 7, 100, false));

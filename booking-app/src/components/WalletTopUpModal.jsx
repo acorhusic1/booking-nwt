@@ -1,60 +1,27 @@
-import { useState } from 'react'
 import { walletApi } from '../api/walletApi'
+import PaymentCardModal from './common/PaymentCardModal'
 
 /**
- * Modal za top-up walleta — koristi POST /api/wallets/{id}/deposit.
- * Pure SPA: ne refreshuje stranicu, samo update-uje wallet u parent state-u
- * kroz onUpdated callback.
+ * Top-up walleta kroz mock karticu — POST /api/wallets/{id}/deposit.
+ * Card podaci se NE čuvaju backendu (samo simulacija); šalje se samo amount.
  */
 export default function WalletTopUpModal({ wallet, onClose, onUpdated }) {
-  const [amount, setAmount] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const submit = async (e) => {
-    e.preventDefault()
-    setError(null)
-    const num = Number(amount)
-    if (!num || num <= 0) {
-      setError('Iznos mora biti veći od 0')
-      return
-    }
-    setLoading(true)
-    try {
-      const updated = await walletApi.deposit(wallet.id, num)
-      onUpdated(updated)
-      onClose()
-    } catch (err) {
-      setError(err.response?.data?.message || 'Greška pri uplati')
-    } finally {
-      setLoading(false)
-    }
+  const handlePay = async ({ amount }) => {
+    const updated = await walletApi.deposit(wallet.id, amount)
+    onUpdated(updated)
+    onClose()
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Dosipaj wallet</h3>
-        <p className="modal-hint">Trenutni balance: <strong>{Number(wallet.balance).toFixed(2)} {wallet.currency}</strong></p>
-        <form onSubmit={submit}>
-          <input
-            type="number"
-            step="0.01"
-            min="1"
-            placeholder="Iznos u BAM"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            autoFocus
-          />
-          {error && <div className="modal-error">{error}</div>}
-          <div className="modal-actions">
-            <button type="button" onClick={onClose} className="btn-secondary">Otkaži</button>
-            <button type="submit" disabled={loading} className="btn-primary">
-              {loading ? 'Šaljem...' : 'Dosipaj'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <PaymentCardModal
+      open={true}
+      onClose={onClose}
+      onPay={handlePay}
+      currency={wallet.currency}
+      amountEditable
+      amountLabel={`Trenutni balance: ${Number(wallet.balance).toFixed(2)} ${wallet.currency} — koliko dodati?`}
+      payButtonLabel="Uplati"
+      title="Dosipanje wallet-a karticom"
+    />
   )
 }

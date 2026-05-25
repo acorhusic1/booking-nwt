@@ -4,6 +4,7 @@ import { reservationApi } from '../../api/reservationApi'
 import { analyticsApi } from '../../api/analyticsApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate, Link } from 'react-router-dom'
+import Spinner from '../common/Spinner'
 import '../../styles/HostDashboard.css'
 import AddPropertyModal from './AddPropertyModal'
 import ImageAddModal from './ImageAddModal'
@@ -52,9 +53,8 @@ export default function HostDashboard() {
         setReservations(Array.isArray(resData.value) ? resData.value : resData.value?.content || [])
       }
       setError(null)
-    } catch (err) {
+    } catch {
       setError('Greška pri učitavanju podataka')
-      console.error(err)
     } finally {
       setLoading(false)
     }
@@ -68,8 +68,8 @@ export default function HostDashboard() {
 
       const revenue = hostReports.reduce((sum, r) => sum + (r.totalRevenue || 0), 0)
       setTotalRevenueBackend(revenue)
-    } catch (err) {
-      console.error('Greška pri učitavanju analitike', err)
+    } catch {
+      // analitika je opciona — tih fail, prikazi 0 BAM
     }
   }
 
@@ -86,6 +86,7 @@ export default function HostDashboard() {
   }
 
   if (loading) return <div className="loading">Učitavanje domaćin panela...</div>
+  if (loading) return <Spinner label="Učitavanje domaćin panela..." size="lg" />
 
   return (
     <div className="host-dashboard">
@@ -215,10 +216,10 @@ export default function HostDashboard() {
         </section>
       </div>
 
-      <AddPropertyModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-        onPropertyAdded={(newProp) => setProperties(prev => [...prev, newProp])} 
+      <AddPropertyModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onPropertyAdded={(newProp) => setProperties(prev => [...prev, newProp])}
       />
 
       <ImageAddModal

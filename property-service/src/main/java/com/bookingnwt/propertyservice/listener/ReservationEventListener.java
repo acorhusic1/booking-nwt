@@ -92,40 +92,31 @@ public class ReservationEventListener {
             Optional<Property> propertyOpt = propertyRepository.findById(event.getPropertyId());
 
             if (propertyOpt.isPresent()) {
-                Property property = propertyOpt.get();
+                // NAPOMENA: NE flipamo property.available=false ovde.
+                // Razlog: dvije instance property-service-a paralelno obradjuju
+                // ReservationCreated i PaymentFailed event-e — race condition gde
+                // kasno stigli ReservationCreated pregazi compensation, ostavljajuci
+                // property "nedostupan" iako je rezervacija CANCELLED.
+                // Bolji dizajn: property.available je host-kontrolisani flag
+                // ("listing aktivan/neaktivan"). Overlap po datumima se proverava
+                // u PropertyAvailabilityGateway.existsOverlap() pri kreiranju.
+                // Saga i dalje emituje PropertyReservedEvent — reservation-service
+                // ga koristi za status tracking.
+                log.info("ℹ️ Nekretnina {} dobila novu rezervaciju {} (Saga link — available flag nije menjan)",
+                        event.getPropertyId(), event.getReservationId());
 
-                try {
-                    // LOKALNA TRANSAKCIJA: Markiranje nekretnine kao nedostupne
-                    property.setAvailable(false);
-                    propertyRepository.save(property);
-                    log.info("✅ Nekretnina {} je markirana kao NEDOSTUPNA za rezervaciju {}",
-                            event.getPropertyId(), event.getReservationId());
-
-                    // Emituj PROPERTY_RESERVED event → Reservation Service sluša
-                    PropertyReservedEvent reservedEvent = new PropertyReservedEvent(
-                            event.getPropertyId(),
-                            event.getReservationId(),
-                            event.getUserId(),
-                            1,
-                            event.getCheckInDate(),
-                            event.getCheckOutDate(),
-                            LocalDateTime.now(),
-                            "CONFIRMED"
-                    );
-                    eventPublisher.publishPropertyReserved(reservedEvent);
-                } catch (Exception dbException) {
-                    // BIDIREKCIONA ZAVISNOST: Ako DB write padne, emituj kompenzaciju
-                    log.error("❌ DB write za property {} pao — emitujem kompenzaciju za rezervaciju {}",
-                            event.getPropertyId(), event.getReservationId(), dbException);
-
-                    ReservationCompensationEvent compensationEvent = new ReservationCompensationEvent(
-                            event.getReservationId(),
-                            event.getPropertyId(),
-                            "Property DB write failed - reservation must be cancelled: " + dbException.getMessage(),
-                            true
-                    );
-                    eventPublisher.publishReservationCompensation(compensationEvent);
-                }
+                // Emituj PROPERTY_RESERVED event → Reservation Service sluša
+                PropertyReservedEvent reservedEvent = new PropertyReservedEvent(
+                        event.getPropertyId(),
+                        event.getReservationId(),
+                        event.getUserId(),
+                        1,
+                        event.getCheckInDate(),
+                        event.getCheckOutDate(),
+                        LocalDateTime.now(),
+                        "CONFIRMED"
+                );
+                eventPublisher.publishPropertyReserved(reservedEvent);
 
             } else {
                 log.warn("⚠️ Nekretnina sa ID {} nije pronađena — emitujem kompenzaciju", event.getPropertyId());
@@ -157,33 +148,12 @@ public class ReservationEventListener {
             log.info("📨 ⚠️ PaymentFailedEvent primljen: Reservation={}, Property={}, Reason={}",
                     event.getReservationId(), event.getPropertyId(), event.getReason());
 
-            // Defensive: stari payment-service event-i nemaju propertyId.
-            // Bez ovog guard-a findById(null) baca i poruka ulazi u poison
-            // requeue loop (vidjeli smo 946 poruka/s u RabbitMQ Management UI-ju).
-            if (event.getPropertyId() == null) {
-                log.warn("⚠️ PaymentFailedEvent bez propertyId — preskačem kompenzaciju property-a (Reservation={})",
-                        event.getReservationId());
-                return;
-            }
-
-            Optional<Property> propertyOpt = propertyRepository.findById(event.getPropertyId());
-
-            if (propertyOpt.isPresent()) {
-                Property property = propertyOpt.get();
-
-                // KOMPENZACIONA AKCIJA: Oslobodi nekretninu
-                property.setAvailable(true);
-                propertyRepository.save(property);
-                log.info("✅ KOMPENZACIJA: Nekretnina {} je oslobođena jer je plaćanje neuspješno",
-                        event.getPropertyId());
-
-                // NE emitujemo kompenzaciju za reservation-service: on već sluša
-                // booking.payment.failed direktno (Task 3) i sam markira CANCELLED.
-                // Stari kod je ovdje emitovao ReservationCompensationEvent, ali to
-                // je dovodilo do loop-a u kombinaciji sa novim payment Saga listenerom.
-            } else {
-                log.warn("⚠️ Nekretnina sa ID {} nije pronađena za kompenzaciju", event.getPropertyId());
-            }
+            // Posto handleReservationCreated VISE NE flippa available=false,
+            // ovde nema sta da se kompenzuje na property-u — reservation-service
+            // sam markira rezervaciju kao CANCELLED kad primi PaymentFailedEvent.
+            // Saga link i dalje cisto loguje za demo.
+            log.info("ℹ️ Saga kompenzacija primljena (rezervacija {} bice CANCELLED u reservation-service)",
+                    event.getReservationId());
 
         } catch (Exception e) {
             log.error("❌ Greška u handlePaymentFailed: {}", e.getMessage(), e);

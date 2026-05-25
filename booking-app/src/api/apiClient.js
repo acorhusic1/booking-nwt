@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { useAuthStore } from '../store/authStore'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080'
 
@@ -8,6 +9,23 @@ const apiClient = axios.create({
     'Content-Type': 'application/json'
   }
 })
+
+// BUG-005: globalni flag da paralelni 401-ovi ne triggeruju vise redirect-a
+let isRedirecting = false
+
+const forceLogout = () => {
+  if (isRedirecting) return
+  isRedirecting = true
+  try {
+    useAuthStore.getState().logout()
+  } catch {
+    localStorage.removeItem('user')
+    localStorage.removeItem('jwt_token')
+    localStorage.removeItem('jwt_refresh_token')
+  }
+  // replace umjesto href — Back ne smije vratiti korisnika na zasticenu rutu
+  window.location.replace('/login')
+}
 
 // Request interceptor - dodaj JWT token
 apiClient.interceptors.request.use(
@@ -79,22 +97,15 @@ apiClient.interceptors.response.use(
           return apiClient(originalRequest)
         } catch (refreshError) {
           processQueue(refreshError, null)
-
-          // Ako refresh token ne radi (istekao ili nevažeći), odjavi korisnika
-          localStorage.removeItem('jwt_token')
-          localStorage.removeItem('jwt_refresh_token')
-          localStorage.removeItem('user')
-          window.location.href = '/login'
+          // BUG-005: sync Zustand store + replace umjesto href + idempotent guard
+          forceLogout()
           return Promise.reject(refreshError)
         } finally {
           isRefreshing = false
         }
       } else {
         // Ako nema refresh tokena, odjavi korisnika
-        localStorage.removeItem('jwt_token')
-        localStorage.removeItem('jwt_refresh_token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
+        forceLogout()
       }
     }
 
