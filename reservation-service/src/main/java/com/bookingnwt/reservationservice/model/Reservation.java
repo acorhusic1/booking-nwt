@@ -61,6 +61,9 @@ public class Reservation {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "is_cancelled", nullable = false)
+    private Boolean isCancelled = false;
+
     @OneToMany(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ProblemReport> problemReports = new ArrayList<>();
 
@@ -78,6 +81,7 @@ public class Reservation {
         this.cancellationPolicy = cancellationPolicy;
         this.promoCode = promoCode;
         this.createdAt = LocalDateTime.now();
+        this.isCancelled = false;
     }
 
     @PrePersist

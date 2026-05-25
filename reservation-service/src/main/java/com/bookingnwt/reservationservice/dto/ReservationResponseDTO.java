@@ -29,4 +29,5 @@ public class ReservationResponseDTO {
     private Long promoCodeId;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Boolean isCancelled;
 }

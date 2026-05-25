@@ -39,6 +39,19 @@ export default function PropertyDetail() {
   if (error) return <div className="error">{error}</div>;
   if (!property) return <div>Smještaj nije pronađen</div>;
 
+  const getImageUrl = (url, id) => {
+    if (!url) return `https://picsum.photos/800/500?random=${id || Math.random()}`;
+    if (url.startsWith('http')) return url;
+    const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+    return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  };
+
+  const finalImageUrl = getImageUrl(imageUrl || property?.primaryImageUrl, id);
+
+  const handleImageError = (e) => {
+    e.target.src = `https://via.placeholder.com/800x500/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+  };
+
   return (
     <div className="property-detail">
       <button onClick={() => navigate(-1)} className="back-btn">
@@ -52,14 +65,13 @@ export default function PropertyDetail() {
             📍 {property.city}, {property.address}
           </p>
 
-          {imageUrl && (
-            <img
-              src={imageUrl}
-              alt={property.name}
-              className="property-image"
-              loading="lazy"
-            />
-          )}
+          <img
+            src={finalImageUrl}
+            alt={property.name}
+            className="property-image"
+            loading="lazy"
+            onError={handleImageError}
+          />
 
           <div className="property-description">
             <h3>Opis</h3>

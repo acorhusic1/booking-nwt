@@ -42,6 +42,11 @@ export const propertyApi = {
   getImages: async (propertyId) => {
     const response = await apiClient.get(`/api/properties/${propertyId}/images`)
     return response.data
+  },
+
+  addImage: async (propertyId, imageData) => {
+    const response = await apiClient.post(`/api/properties/${propertyId}/images`, imageData)
+    return response.data
   }
 }
 

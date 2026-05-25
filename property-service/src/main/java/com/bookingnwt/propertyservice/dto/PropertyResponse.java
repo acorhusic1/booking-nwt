@@ -26,4 +26,5 @@ public class PropertyResponse {
     private Boolean isActive;
     private Boolean available;
     private LocalDateTime createdAt;
+    private String primaryImageUrl;
 }

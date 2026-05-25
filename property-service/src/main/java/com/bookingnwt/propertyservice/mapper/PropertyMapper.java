@@ -10,7 +10,19 @@ import org.mapstruct.MappingTarget;
 @Mapper(componentModel = "spring")
 public interface PropertyMapper {
 
+    @Mapping(target = "primaryImageUrl", expression = "java(getPrimaryImageUrl(property))")
     PropertyResponse toResponse(Property property);
+
+    default String getPrimaryImageUrl(Property property) {
+        if (property.getImages() == null || property.getImages().isEmpty()) {
+            return null;
+        }
+        return property.getImages().stream()
+                .filter(img -> Boolean.TRUE.equals(img.getIsPrimary()))
+                .map(img -> img.getUrl())
+                .findFirst()
+                .orElse(property.getImages().get(0).getUrl());
+    }
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "isActive", constant = "true")
