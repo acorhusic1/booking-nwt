@@ -3,12 +3,14 @@ import { userApi } from '../../api/userApi'
 import { analyticsApi } from '../../api/analyticsApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
+import { useToast } from '../common/ToastProvider'
 import Spinner from '../common/Spinner'
 import '../../styles/AdminDashboard.css'
 
 export default function AdminDashboard() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
+  const { showToast } = useToast()
   
   // Tabs
   const [activeTab, setActiveTab] = useState('users') // 'users' or 'analytics'
@@ -16,7 +18,6 @@ export default function AdminDashboard() {
   // Users State
   const [users, setUsers] = useState([])
   const [loadingUsers, setLoadingUsers] = useState(true)
-  const [error, setError] = useState(null)
   const [page, setPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [totalUsers, setTotalUsers] = useState(0)
@@ -56,9 +57,8 @@ export default function AdminDashboard() {
       setUsers(data.content || [])
       setTotalPages(data.totalPages || 1)
       setTotalUsers(data.totalElements || 0)
-      setError(null)
     } catch {
-      setError('Greška pri učitavanju korisnika')
+      showToast({ type: 'error', title: 'Greška', message: 'Greška pri učitavanju korisnika' })
     } finally {
       setLoadingUsers(false)
     }
@@ -70,9 +70,8 @@ export default function AdminDashboard() {
       const data = await analyticsApi.getAllStatisticsPaginated(statsPage, 10)
       setStats(data.content || [])
       setStatsTotalPages(data.totalPages || 1)
-      setError(null)
     } catch {
-      setError('Greška pri učitavanju sistemske analitike')
+      showToast({ type: 'error', title: 'Greška', message: 'Greška pri učitavanju sistemske analitike' })
     } finally {
       setLoadingStats(false)
     }
@@ -82,9 +81,10 @@ export default function AdminDashboard() {
     try {
       await userApi.delete(userId)
       setDeleteConfirm(null)
+      showToast({ type: 'success', title: 'Obrisano', message: 'Korisnik je uspješno obrisan.' })
       fetchUsers()
     } catch (err) {
-      setError('Greška pri brisanju korisnika')
+      showToast({ type: 'error', title: 'Greška', message: 'Greška pri brisanju korisnika' })
     }
   }
 
@@ -120,8 +120,6 @@ export default function AdminDashboard() {
           Sistemska Analitika
         </button>
       </div>
-
-      {error && <div className="error-alert">{error}</div>}
 
       {activeTab === 'users' && (
         <>

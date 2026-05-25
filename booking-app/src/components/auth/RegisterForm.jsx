@@ -5,6 +5,7 @@ import { authApi } from '../../api/authApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { useToast } from '../common/ToastProvider'
 import '../../styles/RegisterForm.css'
 
 const registerSchema = z.object({
@@ -27,12 +28,11 @@ export default function RegisterForm() {
   })
   const setAuth = useAuthStore((state) => state.setAuth)
   const navigate = useNavigate()
-  const [error, setError] = useState(null)
+  const { showToast } = useToast()
   const [loading, setLoading] = useState(false)
 
   const onSubmit = async (data) => {
     setLoading(true)
-    setError(null)
     try {
       const { confirmPassword, ...userData } = data
       await authApi.register(userData)
@@ -43,9 +43,10 @@ export default function RegisterForm() {
         loginResponse.accessToken,
         loginResponse.refreshToken
       )
+      showToast({ type: 'success', title: 'Registracija uspješna', message: 'Vaš korisnički račun je kreiran!' })
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Greška pri registraciji')
+      showToast({ type: 'error', title: 'Greška pri registraciji', message: err.response?.data?.message || 'Pokušajte ponovo' })
     } finally {
       setLoading(false)
     }
@@ -145,8 +146,6 @@ export default function RegisterForm() {
         </div>
         {errors.role && <span className="error-message">{errors.role.message}</span>}
       </div>
-
-      {error && <div className="error-alert">{error}</div>}
 
       <button type="submit" disabled={loading} id="register-submit">
         {loading ? 'Registracija...' : 'Registruj se'}
