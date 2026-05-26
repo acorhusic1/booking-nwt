@@ -12,7 +12,9 @@ export default function PropertyCard({ property }) {
   const imageUrl = getImageUrl(property.primaryImageUrl, property.id);
 
   const handleImageError = (e) => {
-    e.target.src = `https://via.placeholder.com/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+    // via.placeholder.com je gasen krajem 2024 — placehold.co je live naslednik
+    e.target.onerror = null; // sprjecava infinite loop ako i fallback padne
+    e.target.src = `https://placehold.co/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
   };
 
   return (

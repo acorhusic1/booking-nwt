@@ -20,7 +20,7 @@ public class ListingController {
     private final ListingService listingService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('HOST', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
     public ResponseEntity<ListingResponse> createListing(@Valid @RequestBody ListingRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(listingService.createListing(request));
     }
@@ -36,7 +36,7 @@ public class ListingController {
     }
 
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyAuthority('HOST', 'ADMIN', 'GUEST')")
+    @PreAuthorize("hasAnyRole('HOST', 'ADMIN', 'GUEST')")
     public ResponseEntity<ListingResponse> toggleCancelStatus(
             @PathVariable Long id,
             @RequestParam Boolean isCancelled) {
@@ -44,7 +44,7 @@ public class ListingController {
     }
 
     @PatchMapping("/property/{propertyId}/cancel")
-    @PreAuthorize("hasAnyAuthority('HOST', 'ADMIN', 'GUEST')")
+    @PreAuthorize("hasAnyRole('HOST', 'ADMIN', 'GUEST')")
     public ResponseEntity<Void> cancelListingsByProperty(
             @PathVariable Long propertyId,
             @RequestParam Boolean isCancelled) {
