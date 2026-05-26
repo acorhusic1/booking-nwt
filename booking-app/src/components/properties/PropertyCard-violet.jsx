@@ -8,7 +8,8 @@ export default function PropertyCard({ property }) {
 
   // Fallback slike u slučaju da nešto ne radi
   const handleImageError = (e) => {
-    e.target.src = `https://via.placeholder.com/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+    e.target.onerror = null;
+    e.target.src = `https://placehold.co/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
   };
 
   return (

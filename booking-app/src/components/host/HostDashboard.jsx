@@ -62,8 +62,10 @@ export default function HostDashboard() {
 
   const fetchAnalytics = async () => {
     try {
-      const data = await analyticsApi.getReportsByPeriod(selectedYear, selectedMonth)
-      const hostReports = data.filter(r => r.hostId === user.id)
+      // Koristimo host-specifican endpoint (hasAnyRole HOST,ADMIN) jer
+      // /api/reports/period zahtjeva ADMIN role → 403 za hosta.
+      const data = await analyticsApi.getReportsByHostIdAndYear(user.id, selectedYear)
+      const hostReports = data.filter(r => r.month === selectedMonth)
       setReports(hostReports)
 
       const revenue = hostReports.reduce((sum, r) => sum + (r.totalRevenue || 0), 0)
