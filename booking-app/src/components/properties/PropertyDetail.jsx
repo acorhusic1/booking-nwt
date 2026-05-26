@@ -50,7 +50,8 @@ export default function PropertyDetail() {
   const finalImageUrl = getImageUrl(imageUrl || property?.primaryImageUrl, id);
 
   const handleImageError = (e) => {
-    e.target.src = `https://via.placeholder.com/800x500/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+    e.target.onerror = null;
+    e.target.src = `https://placehold.co/800x500/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
   };
 
   return (
