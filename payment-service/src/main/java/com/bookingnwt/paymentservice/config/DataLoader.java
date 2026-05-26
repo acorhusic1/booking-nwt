@@ -24,11 +24,15 @@ public class DataLoader {
             }
 
             // --- Virtualni novčanici ---
-            walletRepo.save(new Wallet(2L, new BigDecimal("1500.00"), "BAM"));
-            Wallet w2 = walletRepo.save(new Wallet(3L, new BigDecimal("800.00"), "BAM"));
-            Wallet w3 = walletRepo.save(new Wallet(4L, new BigDecimal("500.00"), "BAM"));
-            Wallet w4 = walletRepo.save(new Wallet(5L, new BigDecimal("250.00"), "BAM"));
-            Wallet w5 = walletRepo.save(new Wallet(6L, new BigDecimal("300.00"), "BAM"));
+            // HOST-ovi (Emir, Ahmed) imaju wallet sa balance=0 — wallet postoji za
+            // prijem payout-a od rezervacija, ali ne mogu sami rezervirati bez prvog
+            // dosipanja (insufficient funds → FAILED). Ovo razdvaja host-a (prima pare)
+            // od gosta (troši pare).
+            walletRepo.save(new Wallet(2L, BigDecimal.ZERO, "BAM"));                       // Emir (HOST)
+            Wallet w2 = walletRepo.save(new Wallet(3L, BigDecimal.ZERO, "BAM"));           // Ahmed (HOST) — za payout demo
+            Wallet w3 = walletRepo.save(new Wallet(4L, new BigDecimal("500.00"), "BAM"));  // Benjamin (GUEST)
+            Wallet w4 = walletRepo.save(new Wallet(5L, new BigDecimal("250.00"), "BAM"));  // Kenan (GUEST)
+            Wallet w5 = walletRepo.save(new Wallet(6L, new BigDecimal("300.00"), "BAM"));  // Marija (GUEST)
 
             // --- Uplate na novčanike (deposit) ---
             transactionRepo.save(new WalletTransaction(w3, new BigDecimal("500.00"),

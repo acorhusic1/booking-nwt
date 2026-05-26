@@ -36,7 +36,7 @@ export default function PropertyDetail() {
 
   const handleImageError = (e) => {
     e.target.onerror = null;
-    e.target.src = `https://placehold.co/800x600/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+    e.target.src = `https://picsum.photos/seed/property-${property?.id || id}/800/600`;
   };
 
   return (
