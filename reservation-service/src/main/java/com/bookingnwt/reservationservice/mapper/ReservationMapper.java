@@ -20,5 +20,6 @@ public interface ReservationMapper {
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "problemReports", ignore = true)
+    @Mapping(target = "isCancelled", ignore = true)
     Reservation toEntity(ReservationRequestDTO dto);
 }

@@ -1,0 +1,268 @@
+/* ── Modal Overlay ──────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 0, 10, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: overlayIn 0.2s ease-out;
+}
+
+@keyframes overlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* ── Modal Content ──────────────────────────────────── */
+
+.modal-content {
+  background: #150b24;
+  border: 1px solid rgba(157, 78, 221, 0.3);
+  border-radius: var(--radius-xl);
+  width: 90%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow:
+    0 0 0 1px rgba(157, 78, 221, 0.15),
+    0 20px 60px rgba(0, 0, 0, 0.85),
+    0 0 40px rgba(157, 78, 221, 0.08);
+  padding: 36px;
+  animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-content h2 {
+  font-family: "Inter", sans-serif;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--violet-bright);
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.modal-content > p,
+.modal-subtitle {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  font-family: "Geist", sans-serif;
+  margin-bottom: 28px;
+}
+
+/* ── Close Button ───────────────────────────────────── */
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  background: rgba(157, 78, 221, 0.08);
+  border: 1px solid rgba(157, 78, 221, 0.15);
+  font-size: 20px;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  line-height: 1;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background: rgba(157, 78, 221, 0.18);
+  border-color: rgba(157, 78, 221, 0.35);
+  color: var(--violet-bright);
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── Form ───────────────────────────────────────────── */
+
+.add-property-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.form-group label {
+  font-family: "Inter", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  background: rgba(26, 15, 46, 0.9);
+  border: 1px solid rgba(157, 78, 221, 0.2);
+  color: var(--text-primary);
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-family: "Geist", sans-serif;
+  font-size: 0.95rem;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: var(--violet-primary);
+  background: rgba(26, 15, 46, 1);
+  box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.15);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: rgba(168, 159, 219, 0.4);
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 90px;
+}
+
+/* ── Row layout ─────────────────────────────────────── */
+
+.form-row {
+  display: flex;
+  gap: 14px;
+}
+
+.form-group.half {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Modal Actions ──────────────────────────────────── */
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(157, 78, 221, 0.1);
+}
+
+.modal-actions button {
+  padding: 11px 24px;
+  border-radius: var(--radius-md);
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* ── Buttons ────────────────────────────────────────── */
+
+.btn-secondary {
+  background: transparent;
+  border: 1px solid rgba(157, 78, 221, 0.25);
+  color: var(--text-secondary);
+}
+
+.btn-secondary:hover {
+  background: rgba(157, 78, 221, 0.08);
+  border-color: rgba(157, 78, 221, 0.4);
+  color: var(--text-primary);
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: var(--violet-primary);
+  border: 1px solid var(--violet-primary);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(157, 78, 221, 0.35);
+}
+
+.btn-primary:hover {
+  background: var(--violet-light);
+  border-color: var(--violet-light);
+  box-shadow: 0 4px 20px rgba(199, 125, 255, 0.45);
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled,
+.btn-secondary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ── Error Alert ────────────────────────────────────── */
+
+.error-alert {
+  background: rgba(220, 38, 38, 0.1);
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  color: #f87171;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  margin-top: 16px;
+  font-family: "Geist", sans-serif;
+  font-size: 0.875rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.error-alert::before {
+  content: '⚠';
+  font-size: 1rem;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ── Divider ────────────────────────────────────────── */
+
+.form-section-label {
+  font-family: "Funnel Sans", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(157, 78, 221, 0.1);
+  margin-bottom: 4px;
+}
+
+/* ── Scrollbar ──────────────────────────────────────── */
+
+.modal-content::-webkit-scrollbar {
+  width: 5px;
+}
+.modal-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+.modal-content::-webkit-scrollbar-thumb {
+  background: rgba(157, 78, 221, 0.3);
+  border-radius: 3px;
+}
