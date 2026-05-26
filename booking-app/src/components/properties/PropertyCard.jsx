@@ -12,9 +12,10 @@ export default function PropertyCard({ property }) {
   const imageUrl = getImageUrl(property.primaryImageUrl, property.id);
 
   const handleImageError = (e) => {
-    // via.placeholder.com je gasen krajem 2024 — placehold.co je live naslednik
+    // picsum.photos vraca random stock-like fotografiju (bolje od plain tekstualne placehold.co).
+    // Koristimo property.id kao seed da svaki smjestaj ima konzistentnu sliku.
     e.target.onerror = null; // sprjecava infinite loop ako i fallback padne
-    e.target.src = `https://placehold.co/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+    e.target.src = `https://picsum.photos/seed/property-${property.id}/400/300`;
   };
 
   return (

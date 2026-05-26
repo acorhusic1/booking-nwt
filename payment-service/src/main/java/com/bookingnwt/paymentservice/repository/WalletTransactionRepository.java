@@ -10,4 +10,6 @@ import java.util.List;
 public interface WalletTransactionRepository extends JpaRepository<WalletTransaction, Long> {
     List<WalletTransaction> findByWalletId(Long walletId);
     List<WalletTransaction> findByPaymentId(Long paymentId);
+    // Idempotency check za Stripe deposit-e (description = "Stripe deposit: {sessionId}")
+    boolean existsByDescription(String description);
 }

@@ -6,10 +6,10 @@ export default function PropertyCard({ property }) {
   // Picsum vraća random sliku baziranu na ID-u
   const imageUrl = `https://picsum.photos/400/300?random=${property.id || Math.random()}`;
 
-  // Fallback slike u slučaju da nešto ne radi
+  // Fallback slike u slučaju da nešto ne radi — koristimo seed za konzistentnost
   const handleImageError = (e) => {
     e.target.onerror = null;
-    e.target.src = `https://placehold.co/400x300/9d4edd/ffffff?text=${encodeURIComponent(property.name)}`;
+    e.target.src = `https://picsum.photos/seed/property-${property.id}/400/300`;
   };
 
   return (

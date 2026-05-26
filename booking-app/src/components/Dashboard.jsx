@@ -154,16 +154,46 @@ export default function Dashboard() {
       const created = await walletApi.create(user.id, 'BAM', 0)
       setWallet(created)
       setWalletError(null)
-      setToast({ type: 'success', title: 'Wallet kreiran',
+      showToast({ type: 'success', title: 'Wallet kreiran',
         message: 'Sad možete dosipati sredstva karticom.' })
     } catch (err) {
       const msg = err.response?.data?.message
-      setToast({ type: 'error', title: 'Kreiranje nije uspjelo',
+      showToast({ type: 'error', title: 'Kreiranje nije uspjelo',
         message: typeof msg === 'string' ? msg : 'Greška pri kreiranju wallet-a.' })
     } finally {
       setCreatingWallet(false)
     }
   }
+
+  // Stripe Checkout callback handler — kad se vrati sa Stripe stranice
+  // sa ?stripe_session=... query param, verifikuj sesiju i dosipa wallet.
+  useEffect(() => {
+    const sessionId = searchParams.get('stripe_session')
+    const cancelled = searchParams.get('stripe_cancelled')
+    if (cancelled) {
+      showToast({ type: 'warning', title: 'Stripe placanje otkazano',
+        message: 'Niste dovršili plaćanje na Stripe stranici.' })
+      searchParams.delete('stripe_cancelled')
+      setSearchParams(searchParams, { replace: true })
+      return
+    }
+    if (!sessionId) return
+    walletApi.verifyStripeSession(sessionId)
+      .then(updatedWallet => {
+        setWallet(updatedWallet)
+        showToast({ type: 'success', title: '💳 Stripe placanje uspjesno',
+          message: `Wallet azuriran — novi balance: ${Number(updatedWallet.balance).toFixed(2)} ${updatedWallet.currency}.` })
+      })
+      .catch(err => {
+        const msg = err.response?.data?.error || err.message || 'Greska pri verifikaciji Stripe sesije'
+        showToast({ type: 'error', title: 'Stripe verifikacija nije uspjela', message: msg, duration: 8000 })
+      })
+      .finally(() => {
+        searchParams.delete('stripe_session')
+        setSearchParams(searchParams, { replace: true })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])
 
