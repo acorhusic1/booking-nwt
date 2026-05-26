@@ -236,6 +236,10 @@ services:
     environment:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://eureka-server:8761/eureka/
       - SPRING_CONFIG_IMPORT=configserver:http://config-server:8888
+      # Stripe test mode — postavi pravi sk_test_... iz .env (vidi STRIPE_SETUP.md)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_PLACEHOLDER_REPLACE_ME}
+      - STRIPE_SUCCESS_URL=${STRIPE_SUCCESS_URL:-http://localhost:3000/dashboard?stripe_session={CHECKOUT_SESSION_ID}}
+      - STRIPE_CANCEL_URL=${STRIPE_CANCEL_URL:-http://localhost:3000/dashboard?stripe_cancelled=1}
     depends_on:
       mysql-db:
         condition: service_healthy

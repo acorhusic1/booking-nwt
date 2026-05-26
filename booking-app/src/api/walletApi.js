@@ -30,5 +30,18 @@ export const walletApi = {
       { params: { amount } }
     )
     return response.data
+  },
+
+  // ── Stripe Checkout (real payment processor) ─────────────────────
+  createStripeCheckout: async (walletId, amount) => {
+    const response = await apiClient.post('/api/stripe/checkout-session', {
+      walletId, amount
+    })
+    return response.data  // { sessionId, url }
+  },
+
+  verifyStripeSession: async (sessionId) => {
+    const response = await apiClient.get(`/api/stripe/verify-session/${sessionId}`)
+    return response.data  // updated wallet
   }
 }
