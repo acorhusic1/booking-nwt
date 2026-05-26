@@ -178,6 +178,16 @@ public class ReservationServiceImpl implements ReservationService {
 
     @Override
     @Transactional
+    public ReservationResponseDTO updateCancelStatus(Long id, Boolean isCancelled) {
+        Reservation reservation = reservationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Rezervacija nije pronadjena"));
+        reservation.setIsCancelled(isCancelled);
+        Reservation updated = reservationRepository.save(reservation);
+        return reservationMapper.toResponseDTO(updated);
+    }
+
+    @Override
+    @Transactional
     public ReservationResponseDTO cancelReservation(Long id) {
         Reservation reservation = reservationRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException(
@@ -246,6 +256,16 @@ public class ReservationServiceImpl implements ReservationService {
                     "RESERVATION_CANCELLED"
             );
             reservationEventPublisher.publishReservationCancelled(event);
+            
+            // Task: Implementacija otkazivanja listinga od strane klijenta
+            // Slanje PATCH zahtjeva sa izmjenom isCancelled na true
+            try {
+                propertyAvailabilityGateway.cancelListingByProperty(saved.getPropertyId(), true);
+            } catch (Exception e) {
+                org.slf4j.LoggerFactory.getLogger(getClass())
+                        .warn("⚠️ Neuspješno otkazivanje listinga za property {}: {}", saved.getPropertyId(), e.getMessage());
+            }
+
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(getClass())
                     .warn("⚠️ Cancel event publish nije uspio za rezervaciju {}: {}",

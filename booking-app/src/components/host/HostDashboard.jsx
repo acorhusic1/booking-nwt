@@ -7,12 +7,16 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useToast } from '../common/ToastProvider'
 import Spinner from '../common/Spinner'
 import '../../styles/HostDashboard.css'
+import AddPropertyModal from './AddPropertyModal'
+import ImageAddModal from './ImageAddModal'
 
 export default function HostDashboard() {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const [properties, setProperties] = useState([])
   const [reservations, setReservations] = useState([])
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [selectedPropertyForImages, setSelectedPropertyForImages] = useState(null)
 
   const [reports, setReports] = useState([])
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -69,6 +73,19 @@ export default function HostDashboard() {
     }
   }
 
+  const handleDeleteProperty = async (id) => {
+    if (window.confirm('Da li ste sigurni da želite obrisati ovaj smještaj?')) {
+      try {
+        await propertyApi.delete(id)
+        setProperties(prev => prev.filter(p => p.id !== id))
+      } catch (err) {
+        console.error('Greška pri brisanju smještaja:', err)
+        alert('Došlo je do greške prilikom brisanja smještaja.')
+      }
+    }
+  }
+
+  if (loading) return <div className="loading">Učitavanje domaćin panela...</div>
   if (loading) return <Spinner label="Učitavanje domaćin panela..." size="lg" />
 
   return (
@@ -130,7 +147,10 @@ export default function HostDashboard() {
 
       <div className="host-sections">
         <section className="host-section glass-panel">
-          <h2>🏘️ Moji smještaji</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h2 style={{ margin: 0 }}>🏘️ Moji smještaji</h2>
+            <button className="btn-primary" onClick={() => setIsAddModalOpen(true)}>+ Dodaj smještaj</button>
+          </div>
           {properties.length === 0 ? (
             <p className="no-data">Nemate registrovanih smještaja</p>
           ) : (
@@ -146,7 +166,11 @@ export default function HostDashboard() {
                   <p>📍 {prop.city}</p>
                   <p>💰 ${prop.pricePerNight}/noć</p>
                   <p>👥 Max {prop.maxGuests} osoba</p>
-                  <Link to={`/properties/${prop.id}`} className="view-btn">Pogledaj →</Link>
+                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
+                    <Link to={`/properties/${prop.id}`} className="view-btn" style={{ flex: 1, textAlign: 'center', margin: 0, padding: '8px' }}>Pogledaj</Link>
+                    <button className="btn-secondary" onClick={() => setSelectedPropertyForImages(prop)} style={{ flex: 1, padding: '8px' }}>Slike</button>
+                    <button className="btn-secondary" onClick={() => handleDeleteProperty(prop.id)} style={{ flex: 1, padding: '8px', color: '#ef4444', borderColor: '#ef4444' }}>Obriši</button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -189,6 +213,18 @@ export default function HostDashboard() {
           )}
         </section>
       </div>
+
+      <AddPropertyModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onPropertyAdded={(newProp) => setProperties(prev => [...prev, newProp])}
+      />
+
+      <ImageAddModal
+        property={selectedPropertyForImages}
+        isOpen={!!selectedPropertyForImages}
+        onClose={() => setSelectedPropertyForImages(null)}
+      />
     </div>
   )
 }
