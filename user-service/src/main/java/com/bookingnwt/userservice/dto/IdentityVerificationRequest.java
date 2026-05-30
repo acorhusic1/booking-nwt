@@ -1,7 +1,6 @@
 package com.bookingnwt.userservice.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,7 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 public class IdentityVerificationRequest {
 
-    @NotNull(message = "User ID je obavezan")
+    // userId se setuje iz @PathVariable u kontroleru — ne validira se u body
     private Long userId;
 
     @NotBlank(message = "Tip dokumenta je obavezan")

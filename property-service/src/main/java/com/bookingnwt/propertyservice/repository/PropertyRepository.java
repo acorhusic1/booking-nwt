@@ -16,10 +16,13 @@ public interface PropertyRepository extends JpaRepository<Property, Long> {
     List<Property> findByHostId(Long hostId);
     List<Property> findByCityAndIsActiveTrue(String city);
 
-    @Query("SELECT p FROM Property p WHERE p.city = :city AND p.isActive = true AND " +
+    // BUG 4 — match po city OR country, case-insensitive, partial (LIKE)
+    @Query("SELECT p FROM Property p WHERE p.isActive = true AND " +
+           "(LOWER(p.city) LIKE LOWER(CONCAT('%', :q, '%')) OR " +
+           " LOWER(p.country) LIKE LOWER(CONCAT('%', :q, '%'))) AND " +
            "NOT EXISTS (SELECT b FROM CalendarBlock b WHERE b.property = p AND " +
            "b.startDate < :endDate AND b.endDate > :startDate)")
-    List<Property> findAvailableProperties(@Param("city") String city,
+    List<Property> findAvailableProperties(@Param("q") String query,
                                            @Param("startDate") LocalDate startDate,
                                            @Param("endDate") LocalDate endDate);
 

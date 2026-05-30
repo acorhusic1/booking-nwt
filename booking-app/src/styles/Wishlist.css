@@ -1,0 +1,152 @@
+.wishlist-page {
+  max-width: 800px;
+  margin: 0 auto;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.wishlist-page h1 {
+  font-family: "Inter", sans-serif;
+  font-size: 1.8rem;
+  margin-bottom: 24px;
+  color: var(--text-primary);
+}
+
+.wishlist-create {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+
+.wishlist-create input {
+  flex: 1;
+  padding: 11px 14px;
+  background: #1a0f2e;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: "Geist", sans-serif;
+}
+
+.wishlist-create .btn-primary {
+  padding: 0 20px;
+  background: var(--violet-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.wishlist-create .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.wishlist-section {
+  background: #12091d;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 18px;
+}
+
+.wishlist-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+}
+
+.wishlist-section-header h2 {
+  font-size: 1.15rem;
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+}
+
+.wishlist-delete-btn {
+  background: transparent;
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.wishlist-delete-btn:hover {
+  background: var(--error-bg);
+}
+
+.wishlist-empty {
+  color: var(--text-tertiary);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.wishlist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wishlist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(157, 78, 221, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+}
+
+.wishlist-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--text-primary);
+}
+
+.wishlist-item-info strong {
+  font-family: "Inter", sans-serif;
+}
+
+.wishlist-item-info span {
+  font-size: 0.82rem;
+  color: var(--text-tertiary);
+}
+
+.wishlist-item-remove {
+  background: transparent;
+  border: none;
+  color: var(--error-text);
+  font-size: 1.1rem;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* ── Heart dugme na PropertyCard ────────────────────── */
+.wishlist-heart {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.45);
+  border: none;
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.12s ease, background 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+
+.wishlist-heart:hover {
+  transform: scale(1.15);
+  background: rgba(0, 0, 0, 0.65);
+}

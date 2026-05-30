@@ -38,14 +38,14 @@ class PropertyAvailabilityGatewayTest {
         ));
 
         assertThatNoException().isThrownBy(() ->
-                gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5)));
+                gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), null));
     }
 
     @Test
     void verifyAvailable_propertyMissing_throws() {
         when(propertyClient.getProperty(99L)).thenReturn(null);
 
-        assertThatThrownBy(() -> gateway.verifyAvailable(99L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5)))
+        assertThatThrownBy(() -> gateway.verifyAvailable(99L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), null))
                 .isInstanceOf(PropertyUnavailableException.class)
                 .hasMessageContaining("99");
     }
@@ -55,7 +55,7 @@ class PropertyAvailabilityGatewayTest {
         PropertyDTO inactive = new PropertyDTO(30L, 99L, "Stan A", "Sarajevo", 4, false);
         when(propertyClient.getProperty(30L)).thenReturn(inactive);
 
-        assertThatThrownBy(() -> gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5)))
+        assertThatThrownBy(() -> gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), null))
                 .isInstanceOf(PropertyUnavailableException.class)
                 .hasMessageContaining("neaktivan");
     }
@@ -67,21 +67,21 @@ class PropertyAvailabilityGatewayTest {
                 new CalendarBlockDTO(1L, 30L, LocalDate.of(2026, 8, 3), LocalDate.of(2026, 8, 10), "Renoviranje", 99L)
         ));
 
-        assertThatThrownBy(() -> gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5)))
+        assertThatThrownBy(() -> gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), null))
                 .isInstanceOf(PropertyUnavailableException.class)
                 .hasMessageContaining("blokiran");
     }
 
     @Test
     void verifyAvailable_invalidWindow_throws() {
-        assertThatThrownBy(() -> gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 5), LocalDate.of(2026, 8, 1)))
+        assertThatThrownBy(() -> gateway.verifyAvailable(30L, LocalDate.of(2026, 8, 5), LocalDate.of(2026, 8, 1), null))
                 .isInstanceOf(PropertyUnavailableException.class)
                 .hasMessageContaining("checkIn");
     }
 
     @Test
     void verifyAvailable_nullArgs_throws() {
-        assertThatThrownBy(() -> gateway.verifyAvailable(null, null, null))
+        assertThatThrownBy(() -> gateway.verifyAvailable(null, null, null, null))
                 .isInstanceOf(PropertyUnavailableException.class);
     }
 
@@ -93,12 +93,12 @@ class PropertyAvailabilityGatewayTest {
         // policy: if property-service is unreachable, reject the reservation
         // instead of silently allowing an unverified booking.
         Method m = PropertyAvailabilityGateway.class.getDeclaredMethod(
-                "fallback", Long.class, LocalDate.class, LocalDate.class, Throwable.class);
+                "fallback", Long.class, LocalDate.class, LocalDate.class, Integer.class, Throwable.class);
         m.setAccessible(true);
 
         assertThatThrownBy(() -> {
             try {
-                m.invoke(gateway, 30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5),
+                m.invoke(gateway, 30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), null,
                         new RuntimeException("connection refused"));
             } catch (java.lang.reflect.InvocationTargetException ite) {
                 throw ite.getCause();
@@ -113,13 +113,13 @@ class PropertyAvailabilityGatewayTest {
         // Business validation failures (PropertyUnavailableException) should be
         // re-thrown as-is, not masked behind a generic "service down" message.
         Method m = PropertyAvailabilityGateway.class.getDeclaredMethod(
-                "fallback", Long.class, LocalDate.class, LocalDate.class, Throwable.class);
+                "fallback", Long.class, LocalDate.class, LocalDate.class, Integer.class, Throwable.class);
         m.setAccessible(true);
 
         PropertyUnavailableException original = new PropertyUnavailableException("Smještaj 30 ne postoji");
         assertThatThrownBy(() -> {
             try {
-                m.invoke(gateway, 30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), original);
+                m.invoke(gateway, 30L, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 5), null, original);
             } catch (java.lang.reflect.InvocationTargetException ite) {
                 throw ite.getCause();
             }

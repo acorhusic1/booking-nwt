@@ -57,8 +57,10 @@ public class PropertyServiceImpl implements PropertyService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<PropertyResponse> getAvailableProperties(String city, java.time.LocalDate startDate, java.time.LocalDate endDate) {
-        return propertyRepository.findAvailableProperties(city, startDate, endDate)
+    public List<PropertyResponse> getAvailableProperties(String query, java.time.LocalDate startDate, java.time.LocalDate endDate) {
+        // BUG 4 — query matches city ILI country; ako je prazan/null, vrati sve dostupne
+        String safe = (query == null) ? "" : query.trim();
+        return propertyRepository.findAvailableProperties(safe, startDate, endDate)
                 .stream()
                 .map(propertyMapper::toResponse)
                 .toList();

@@ -57,6 +57,30 @@ public class ReservationController {
         return ResponseEntity.ok(reservationService.getReservationsByProperty(propertyId));
     }
 
+    /**
+     * Public endpoint za prikaz zauzetih datuma na guest kalendaru.
+     * Vraca samo {checkIn, checkOut, status} za aktivne rezervacije —
+     * bez guest/host detalja. Svi authenticirani korisnici smiju (GUEST).
+     */
+    @GetMapping("/property/{propertyId}/occupied-dates")
+    public ResponseEntity<List<java.util.Map<String, Object>>> getOccupiedDates(@PathVariable Long propertyId) {
+        return ResponseEntity.ok(
+                reservationService.getReservationsByProperty(propertyId).stream()
+                        .filter(r -> {
+                            String s = (r.getStatus() == null ? "" : r.getStatus().name()).toUpperCase();
+                            return !"CANCELLED".equals(s);
+                        })
+                        .map(r -> {
+                            java.util.Map<String, Object> m = new java.util.HashMap<>();
+                            m.put("checkIn", r.getCheckIn());
+                            m.put("checkOut", r.getCheckOut());
+                            m.put("status", r.getStatus());
+                            return m;
+                        })
+                        .toList()
+        );
+    }
+
     @GetMapping("/host/{hostId}")
     @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
     public ResponseEntity<List<ReservationResponseDTO>> getByHost(@PathVariable Long hostId) {

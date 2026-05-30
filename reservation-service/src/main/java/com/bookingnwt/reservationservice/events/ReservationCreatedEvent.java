@@ -28,4 +28,6 @@ public class ReservationCreatedEvent {
     // Task 3 — payment-service koristi ova polja za naplatu
     private BigDecimal totalPrice;
     private String currency;
+    // BUG 2 — notification-service treba hostId za "Nova rezervacija" notifikaciju
+    private Long hostId;
 }

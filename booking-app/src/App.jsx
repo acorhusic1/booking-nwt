@@ -11,6 +11,8 @@ import ReservationForm from './components/reservations/ReservationForm'
 import UserProfile from './components/profile/UserProfile'
 import AdminDashboard from './components/admin/AdminDashboard'
 import HostDashboard from './components/host/HostDashboard'
+import Wishlist from './components/wishlist/Wishlist'
+import Messages from './components/messages/Messages'
 import { useAuthStore } from './store/authStore'
 
 function App() {
@@ -38,6 +40,14 @@ function App() {
           <Route
             path="/profile"
             element={isAuthenticated ? <ProfilePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/wishlist"
+            element={isAuthenticated ? <WishlistPage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/messages"
+            element={isAuthenticated ? <MessagesPage /> : <Navigate to="/login" />}
           />
           <Route
             path="/admin"
@@ -121,6 +131,14 @@ function ReservationPage() {
 
 function ProfilePage() {
   return <UserProfile />
+}
+
+function WishlistPage() {
+  return <Wishlist />
+}
+
+function MessagesPage() {
+  return <Messages />
 }
 
 function AdminPage() {

@@ -59,6 +59,63 @@
   box-shadow: 0 0 0 3px rgba(157, 78, 221, 0.12);
 }
 
+/* ── Promo kod (F13) ────────────────────────────────── */
+
+.promo-input-row {
+  display: flex;
+  gap: 8px;
+}
+
+.promo-input-row input {
+  flex: 1;
+  text-transform: uppercase;
+}
+
+.promo-apply-btn {
+  padding: 0 18px;
+  background: var(--violet-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.promo-apply-btn:hover:not(:disabled) {
+  background: var(--violet-light);
+}
+
+.promo-apply-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.promo-applied {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-family: "Geist", sans-serif;
+  color: var(--text-secondary);
+}
+
+.promo-remove-btn {
+  background: transparent;
+  border: none;
+  color: var(--error-text);
+  font-size: 0.8rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
 /* ── Summary box ────────────────────────────────────── */
 
 .reservation-form .summary {
@@ -73,6 +130,31 @@
   font-family: "Inter", sans-serif;
 }
 
+.reservation-form .summary-breakdown {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+
+.summary-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+.summary-line.discount-line {
+  color: #4ade80;
+}
+
+.summary-line.summary-total {
+  border-top: 1px solid var(--border-color);
+  padding-top: 8px;
+  margin-top: 2px;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
 .reservation-form .summary .summary-label {
   color: var(--text-tertiary);
   font-size: 0.875rem;
@@ -82,6 +164,75 @@
   color: var(--text-primary);
   font-weight: 700;
   font-size: 1.1rem;
+}
+
+.summary-sub {
+  display: block;
+  font-style: normal;
+  font-size: 0.72rem;
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+
+/* F15 — Seasonal banner */
+.seasonal-banner {
+  background: rgba(157, 78, 221, 0.08);
+  border: 1px solid rgba(157, 78, 221, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  font-size: 0.85rem;
+  font-family: "Geist", sans-serif;
+  color: var(--text-secondary);
+}
+
+/* F15 — Host modal: lista pravila */
+.seasonal-rules-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.seasonal-rule-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(157, 78, 221, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+}
+
+.seasonal-rule-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+
+.seasonal-rule-info strong {
+  color: var(--text-primary);
+  font-size: 0.95rem;
+  font-family: "Inter", sans-serif;
+}
+
+.seasonal-rule-delete {
+  background: transparent;
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+  border-radius: var(--radius-sm);
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.seasonal-rule-delete:hover {
+  background: var(--error-bg);
+}
+
+.seasonal-form .form-group {
+  margin-bottom: 12px;
 }
 
 /* ── Error states ───────────────────────────────────── */

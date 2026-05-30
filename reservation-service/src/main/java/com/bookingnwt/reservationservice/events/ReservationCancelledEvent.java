@@ -31,4 +31,6 @@ public class ReservationCancelledEvent {
     private String reason;
     private LocalDateTime eventTimestamp;
     private String eventType = "RESERVATION_CANCELLED";
+    // BUG A — notification-service treba hostId za "Otkazana rezervacija" notifikaciju hostu
+    private Long hostId;
 }

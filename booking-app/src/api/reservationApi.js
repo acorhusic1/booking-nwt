@@ -39,6 +39,12 @@ export const reservationApi = {
   getByHostId: async (hostId) => {
     const response = await apiClient.get(`/api/reservations/host/${hostId}`)
     return response.data
+  },
+
+  // Public — guest moze dohvatiti zauzete datume za prikaz na kalendaru
+  getOccupiedDates: async (propertyId) => {
+    const response = await apiClient.get(`/api/reservations/property/${propertyId}/occupied-dates`)
+    return response.data
   }
 }
 

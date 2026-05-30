@@ -1,0 +1,148 @@
+/* ── Host verification kartica ──────────────────────── */
+.verification-card {
+  background: #12091d;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+}
+
+.verification-card.verified {
+  border-color: rgba(74, 222, 128, 0.4);
+}
+
+.verification-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.verification-header h2 {
+  font-size: 1.1rem;
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+}
+
+.verification-hint {
+  color: var(--text-tertiary);
+  font-size: 0.88rem;
+  font-family: "Geist", sans-serif;
+  margin-bottom: 14px;
+}
+
+.verification-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.verification-form select,
+.verification-form input {
+  padding: 10px 12px;
+  background: #1a0f2e;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-primary);
+  font-family: "Geist", sans-serif;
+}
+
+.verification-form input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.verification-form .btn-primary {
+  padding: 0 18px;
+  background: var(--violet-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.verification-form .btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ── Status badges ──────────────────────────────────── */
+.verif-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  font-family: "Geist", sans-serif;
+}
+
+.verif-approved {
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.verif-pending {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+
+.verif-rejected {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border: 1px solid var(--error-border);
+}
+
+/* ── Admin panel ────────────────────────────────────── */
+.admin-verifications h2 {
+  margin-bottom: 16px;
+  color: var(--text-secondary);
+  font-family: "Inter", sans-serif;
+  font-size: 1.1rem;
+}
+
+.verif-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.verif-approve-btn,
+.verif-reject-btn {
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.verif-approve-btn {
+  background: rgba(74, 222, 128, 0.12);
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+
+.verif-approve-btn:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.22);
+}
+
+.verif-reject-btn {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error-border);
+}
+
+.verif-reject-btn:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.verif-approve-btn:disabled,
+.verif-reject-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -9,6 +9,12 @@ import Spinner from '../common/Spinner'
 import '../../styles/HostDashboard.css'
 import AddPropertyModal from './AddPropertyModal'
 import ImageAddModal from './ImageAddModal'
+import HostVerification from './HostVerification'
+import PricingModal from './PricingModal'
+import SeasonalRulesModal from './SeasonalRulesModal'
+import CalendarModal from './CalendarModal'
+import HostProblemReports from './HostProblemReports'
+import RevenueChart from './RevenueChart'
 
 export default function HostDashboard() {
   const { user } = useAuthStore()
@@ -17,6 +23,9 @@ export default function HostDashboard() {
   const [reservations, setReservations] = useState([])
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
   const [selectedPropertyForImages, setSelectedPropertyForImages] = useState(null)
+  const [selectedPropertyForPricing, setSelectedPropertyForPricing] = useState(null)
+  const [selectedPropertyForSeasonal, setSelectedPropertyForSeasonal] = useState(null)
+  const [selectedPropertyForCalendar, setSelectedPropertyForCalendar] = useState(null)
 
   const [reports, setReports] = useState([])
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
@@ -87,8 +96,12 @@ export default function HostDashboard() {
     }
   }
 
-  if (loading) return <div className="loading">Učitavanje domaćin panela...</div>
   if (loading) return <Spinner label="Učitavanje domaćin panela..." size="lg" />
+
+  // BUG: "Prihodi" stat — sada se računa iz live rezervacija (matchira chart)
+  const liveRevenue = reservations
+    .filter(r => ['CONFIRMED', 'ACTIVE', 'COMPLETED'].includes((r.status || '').toUpperCase()))
+    .reduce((sum, r) => sum + (Number(r.totalPrice) || 0), 0)
 
   return (
     <div className="host-dashboard">
@@ -96,6 +109,8 @@ export default function HostDashboard() {
         <h1>🏠 Domaćin Panel</h1>
         <p className="host-subtitle">Dobrodošli, {user.email}!</p>
       </div>
+
+      <HostVerification />
 
       <div className="host-stats">
         <div className="stat-card glass-panel">
@@ -115,8 +130,8 @@ export default function HostDashboard() {
         <div className="stat-card glass-panel">
           <span className="stat-icon">💰</span>
           <div className="stat-info">
-            <span className="stat-value">${totalRevenueBackend.toFixed(2)}</span>
-            <span className="stat-label">Prihod (Backend)</span>
+            <span className="stat-value">{liveRevenue.toFixed(2)} BAM</span>
+            <span className="stat-label">Prihod ukupno</span>
           </div>
         </div>
         <div className="stat-card glass-panel">
@@ -130,22 +145,22 @@ export default function HostDashboard() {
         </div>
       </div>
 
-      <div className="analytics-controls glass-panel" style={{ padding: '15px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center' }}>
-        <h3 style={{ margin: 0 }}>📊 Analitika za period:</h3>
-        <select value={selectedMonth} onChange={e => setSelectedMonth(Number(e.target.value))}>
-          {Array.from({ length: 12 }, (_, i) => i + 1).map(m => (
-            <option key={m} value={m}>{mjeseci[m - 1]}</option>
-          ))}
-        </select>
-        <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))}>
-          {[2024, 2025, 2026].map(y => (
-            <option key={y} value={y}>{y}</option>
-          ))}
-        </select>
-        <span style={{ marginLeft: 'auto', fontWeight: 'bold' }}>
-          Ukupno u periodu: ${totalRevenueBackend.toFixed(2)}
-        </span>
+      <div className="analytics-controls glass-panel" style={{ padding: '15px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <h3 style={{ margin: 0 }}>📊 Analitika</h3>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
+          Godina:
+          <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="admin-select">
+            {[2024, 2025, 2026, 2027].map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </label>
       </div>
+
+      {/* BUG 9 — Bar chart zarade po mjesecu */}
+      <RevenueChart reservations={reservations} year={selectedYear} />
+
+      <div style={{ height: '20px' }} />
 
       <div className="host-sections">
         <section className="host-section glass-panel">
@@ -168,10 +183,13 @@ export default function HostDashboard() {
                   <p>📍 {prop.city}</p>
                   <p>💰 ${prop.pricePerNight}/noć</p>
                   <p>👥 Max {prop.maxGuests} osoba</p>
-                  <div style={{ display: 'flex', gap: '10px', marginTop: '15px' }}>
-                    <Link to={`/properties/${prop.id}`} className="view-btn" style={{ flex: 1, textAlign: 'center', margin: 0, padding: '8px' }}>Pogledaj</Link>
-                    <button className="btn-secondary" onClick={() => setSelectedPropertyForImages(prop)} style={{ flex: 1, padding: '8px' }}>Slike</button>
-                    <button className="btn-secondary" onClick={() => handleDeleteProperty(prop.id)} style={{ flex: 1, padding: '8px', color: '#ef4444', borderColor: '#ef4444' }}>Obriši</button>
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '15px', flexWrap: 'wrap' }}>
+                    <Link to={`/properties/${prop.id}`} className="view-btn" style={{ flex: '1 1 80px', textAlign: 'center', margin: 0, padding: '8px' }}>Pogledaj</Link>
+                    <button className="btn-secondary" onClick={() => setSelectedPropertyForImages(prop)} style={{ flex: '1 1 80px', padding: '8px' }}>Slike</button>
+                    <button className="btn-secondary" onClick={() => setSelectedPropertyForPricing(prop)} style={{ flex: '1 1 80px', padding: '8px' }}>💰 Cijene</button>
+                    <button className="btn-secondary" onClick={() => setSelectedPropertyForSeasonal(prop)} style={{ flex: '1 1 80px', padding: '8px' }}>🗓 Sezone</button>
+                    <button className="btn-secondary" onClick={() => setSelectedPropertyForCalendar(prop)} style={{ flex: '1 1 80px', padding: '8px' }}>📅 Kalendar</button>
+                    <button className="btn-secondary" onClick={() => handleDeleteProperty(prop.id)} style={{ flex: '1 1 80px', padding: '8px', color: '#ef4444', borderColor: '#ef4444' }}>Obriši</button>
                   </div>
                 </div>
               ))}
@@ -214,6 +232,8 @@ export default function HostDashboard() {
             </table>
           )}
         </section>
+
+        <HostProblemReports />
       </div>
 
       <AddPropertyModal
@@ -227,6 +247,30 @@ export default function HostDashboard() {
         isOpen={!!selectedPropertyForImages}
         onClose={() => setSelectedPropertyForImages(null)}
       />
+
+      {selectedPropertyForPricing && (
+        <PricingModal
+          open={!!selectedPropertyForPricing}
+          property={selectedPropertyForPricing}
+          onClose={() => setSelectedPropertyForPricing(null)}
+        />
+      )}
+
+      {selectedPropertyForSeasonal && (
+        <SeasonalRulesModal
+          open={!!selectedPropertyForSeasonal}
+          property={selectedPropertyForSeasonal}
+          onClose={() => setSelectedPropertyForSeasonal(null)}
+        />
+      )}
+
+      {selectedPropertyForCalendar && (
+        <CalendarModal
+          open={!!selectedPropertyForCalendar}
+          property={selectedPropertyForCalendar}
+          onClose={() => setSelectedPropertyForCalendar(null)}
+        />
+      )}
     </div>
   )
 }
