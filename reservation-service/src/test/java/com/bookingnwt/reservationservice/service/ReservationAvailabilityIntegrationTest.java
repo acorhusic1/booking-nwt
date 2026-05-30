@@ -84,7 +84,7 @@ class ReservationAvailabilityIntegrationTest {
         assertThatNoException().isThrownBy(() -> service.createReservation(request));
 
         verify(propertyAvailabilityGateway, times(1))
-                .verifyAvailable(eq(30L), eq(request.getCheckIn()), eq(request.getCheckOut()));
+                .verifyAvailable(eq(30L), eq(request.getCheckIn()), eq(request.getCheckOut()), any());
         verify(reservationRepository, times(1)).save(any(Reservation.class));
     }
 
@@ -92,7 +92,7 @@ class ReservationAvailabilityIntegrationTest {
     void createReservation_propertyUnavailable_aborts_andDoesNotSave() {
         doThrow(new PropertyUnavailableException("Smještaj 30 je blokiran"))
                 .when(propertyAvailabilityGateway)
-                .verifyAvailable(eq(30L), any(LocalDate.class), any(LocalDate.class));
+                .verifyAvailable(eq(30L), any(LocalDate.class), any(LocalDate.class), any());
 
         assertThatThrownBy(() -> service.createReservation(request))
                 .isInstanceOf(PropertyUnavailableException.class);
@@ -117,17 +117,17 @@ class ReservationAvailabilityIntegrationTest {
         // case as do-nothing so Mockito's strict-stubs doesn't flag the second
         // stub as a mismatch when the first call (propertyId=30) arrives.
         doNothing().when(propertyAvailabilityGateway)
-                .verifyAvailable(eq(30L), any(LocalDate.class), any(LocalDate.class));
+                .verifyAvailable(eq(30L), any(LocalDate.class), any(LocalDate.class), any());
         doThrow(new PropertyUnavailableException("Smještaj 31 je blokiran"))
                 .when(propertyAvailabilityGateway)
-                .verifyAvailable(eq(31L), any(LocalDate.class), any(LocalDate.class));
+                .verifyAvailable(eq(31L), any(LocalDate.class), any(LocalDate.class), any());
 
         assertThatThrownBy(() -> service.batchCreate(List.of(ok, blocked)))
                 .isInstanceOf(PropertyUnavailableException.class);
 
         // First item passed validation, second failed — we never reach the saveAll call.
-        verify(propertyAvailabilityGateway).verifyAvailable(eq(30L), any(LocalDate.class), any(LocalDate.class));
-        verify(propertyAvailabilityGateway).verifyAvailable(eq(31L), any(LocalDate.class), any(LocalDate.class));
+        verify(propertyAvailabilityGateway).verifyAvailable(eq(30L), any(LocalDate.class), any(LocalDate.class), any());
+        verify(propertyAvailabilityGateway).verifyAvailable(eq(31L), any(LocalDate.class), any(LocalDate.class), any());
         verify(reservationRepository, never()).saveAll(anyList());
     }
 }

@@ -59,4 +59,33 @@ public class IdentityVerificationServiceImpl implements IdentityVerificationServ
         IdentityVerification saved = verificationRepository.save(verification);
         return verificationMapper.toResponse(saved);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IdentityVerificationResponse> getAllVerifications() {
+        return verificationRepository.findAll()
+                .stream()
+                .map(verificationMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    public IdentityVerificationResponse updateStatus(Long id, String status, Long verifiedBy) {
+        IdentityVerification verification = verificationRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Verifikacija sa ID " + id + " nije pronađena"));
+
+        com.bookingnwt.userservice.model.VerificationStatus newStatus;
+        try {
+            newStatus = com.bookingnwt.userservice.model.VerificationStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Nepoznat status: " + status + " (dozvoljeno: APPROVED, REJECTED, PENDING)");
+        }
+
+        verification.setStatus(newStatus);
+        verification.setVerifiedBy(verifiedBy);
+        verification.setVerifiedAt(java.time.LocalDateTime.now());
+
+        return verificationMapper.toResponse(verificationRepository.save(verification));
+    }
 }

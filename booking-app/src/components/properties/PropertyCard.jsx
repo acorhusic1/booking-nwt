@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import "../../styles/PropertyCard.css";
 
-export default function PropertyCard({ property }) {
+export default function PropertyCard({ property, showWishlist = false, wishlisted = false, onToggleWishlist }) {
   const getImageUrl = (url, id) => {
     if (!url) return `https://picsum.photos/400/300?random=${id || Math.random()}`;
     if (url.startsWith('http')) return url;
@@ -22,6 +22,16 @@ export default function PropertyCard({ property }) {
     <Link to={`/properties/${property.id}`} className="property-card-link">
       <div className="property-card">
         <div className="property-image">
+          {showWishlist && (
+            <button
+              type="button"
+              className="wishlist-heart"
+              title={wishlisted ? 'Ukloni iz liste želja' : 'Sačuvaj u listu želja'}
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleWishlist?.(property.id) }}
+            >
+              {wishlisted ? '❤️' : '🤍'}
+            </button>
+          )}
           <img
             src={imageUrl}
             alt={property.name}

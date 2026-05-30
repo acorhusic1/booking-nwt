@@ -44,6 +44,12 @@ public class ProblemReportController {
         return ResponseEntity.ok(reportService.getReportsByReporter(reporterId));
     }
 
+    // BUG 5 — Host vidi prijave problema za svoje smjestaje
+    @GetMapping("/host/{hostId}")
+    public ResponseEntity<List<ProblemReportResponseDTO>> getByHost(@PathVariable Long hostId) {
+        return ResponseEntity.ok(reportService.getReportsByHost(hostId));
+    }
+
     @PutMapping("/{id}/status")
     public ResponseEntity<ProblemReportResponseDTO> updateStatus(@PathVariable Long id,
                                                                   @RequestParam ProblemReportStatus status) {

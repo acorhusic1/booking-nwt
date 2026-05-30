@@ -75,7 +75,7 @@ public class ReservationServiceImpl implements ReservationService {
         // doesn't exist, is inactive, is blocked on the calendar, or
         // property-service is unreachable (fail-closed via circuit breaker).
         propertyAvailabilityGateway.verifyAvailable(
-                dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut());
+                dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut(), dto.getNumGuests());
 
         Reservation reservation = reservationMapper.toEntity(dto);
         reservation.setStatus(ReservationStatus.CREATED);
@@ -112,7 +112,8 @@ public class ReservationServiceImpl implements ReservationService {
                     LocalDateTime.now(),
                     "RESERVATION_CREATED",
                     saved.getTotalPrice(),
-                    "BAM"
+                    "BAM",
+                    saved.getHostId()  // BUG 2 — za host notifikaciju
             );
             reservationEventPublisher.publishReservationCreated(event);
         } catch (Exception e) {
@@ -253,7 +254,8 @@ public class ReservationServiceImpl implements ReservationService {
                     "BAM",
                     wasConfirmed ? "Korisnik je otkazao potvrđenu rezervaciju" : "Korisnik je otkazao rezervaciju",
                     LocalDateTime.now(),
-                    "RESERVATION_CANCELLED"
+                    "RESERVATION_CANCELLED",
+                    saved.getHostId()
             );
             reservationEventPublisher.publishReservationCancelled(event);
             
@@ -348,7 +350,7 @@ public class ReservationServiceImpl implements ReservationService {
         // ensures partial state never leaks).
         for (ReservationRequestDTO dto : dtos) {
             propertyAvailabilityGateway.verifyAvailable(
-                    dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut());
+                    dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut(), dto.getNumGuests());
         }
 
         List<Reservation> entities = dtos.stream().map(dto -> {

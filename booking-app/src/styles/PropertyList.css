@@ -59,6 +59,101 @@
   accent-color: var(--violet-primary, #9d4edd);
 }
 
+/* ── F1: Napredni filteri ───────────────────────────── */
+.filter-toggle-btn {
+  padding: 8px 14px;
+  background: transparent;
+  color: var(--violet-light);
+  border: 1px solid rgba(157, 78, 221, 0.35);
+  border-radius: var(--radius-md);
+  font-family: "Inter", sans-serif;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filter-toggle-btn:hover {
+  background: rgba(157, 78, 221, 0.1);
+}
+
+.property-advanced-filters {
+  background: rgba(157, 78, 221, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filter-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.filter-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+  font-family: "Inter", sans-serif;
+}
+
+.filter-row select,
+.filter-row input[type="number"],
+.filter-row input[type="date"] {
+  padding: 8px 12px;
+  background: #1a0f2e;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: "Geist", sans-serif;
+  font-size: 0.88rem;
+  min-width: 140px;
+}
+
+.filter-search-btn,
+.filter-reset-btn {
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-family: "Inter", sans-serif;
+  font-weight: 600;
+  font-size: 0.82rem;
+  cursor: pointer;
+  height: 36px;
+  align-self: flex-end;
+}
+
+.filter-search-btn {
+  background: var(--violet-primary);
+  color: #fff;
+  border: 1px solid var(--violet-primary);
+}
+
+.filter-search-btn:hover:not(:disabled) {
+  background: var(--violet-light);
+}
+
+.filter-search-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.filter-reset-btn {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-color);
+}
+
+.filter-reset-btn:hover {
+  border-color: var(--border-highlight);
+  color: var(--text-secondary);
+}
+
 /* ── Responsive ─────────────────────────────────────── */
 
 @media (max-width: 768px) {

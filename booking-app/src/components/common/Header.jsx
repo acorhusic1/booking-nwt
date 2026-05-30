@@ -11,9 +11,15 @@ export default function Header() {
 
   useEffect(() => {
     if (!isAuthenticated || !user?.id) return
-    notificationApi.countUnread(user.id)
-      .then(count => setUnread(Number(count) || 0))
-      .catch(() => {})
+    const fetchUnread = () => {
+      notificationApi.countUnread(user.id)
+        .then(count => setUnread(Number(count) || 0))
+        .catch(() => {})
+    }
+    fetchUnread()
+    // Polling svakih 15s — bez ovog badge se updateuje tek na page refresh
+    const interval = setInterval(fetchUnread, 15000)
+    return () => clearInterval(interval)
   }, [isAuthenticated, user?.id])
 
   return (
@@ -35,6 +41,12 @@ export default function Header() {
               )}
               {user?.role === 'HOST' && (
                 <Link to="/host/dashboard" className="nav-host">🏘️ Moji smještaji</Link>
+              )}
+              {user?.role === 'GUEST' && (
+                <Link to="/wishlist" className="nav-wishlist">❤️ Liste želja</Link>
+              )}
+              {(user?.role === 'GUEST' || user?.role === 'HOST') && (
+                <Link to="/messages" className="nav-messages">💬 Poruke</Link>
               )}
               <Link to="/dashboard?tab=notifications" className="nav-bell" title="Notifikacije">
                 🔔

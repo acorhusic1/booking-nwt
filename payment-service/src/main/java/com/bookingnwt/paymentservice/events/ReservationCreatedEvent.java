@@ -27,4 +27,5 @@ public class ReservationCreatedEvent {
     private String eventType;
     private BigDecimal totalPrice;
     private String currency;
+    private Long hostId;
 }

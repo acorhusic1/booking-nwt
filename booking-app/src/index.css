@@ -1,5 +1,38 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Geist:wght@400;500&family=Funnel+Sans:wght@400;600;700&display=swap");
 
+/* ── Custom scrollbar (violet, sve elemente uključujući modale) ─ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(157, 78, 221, 0.5) rgba(18, 9, 29, 0.4);
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(18, 9, 29, 0.4);
+  border-radius: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(157, 78, 221, 0.45);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(157, 78, 221, 0.7);
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 :root {
   --bg-primary: #0d0514;
   --bg-secondary: #12091d;
