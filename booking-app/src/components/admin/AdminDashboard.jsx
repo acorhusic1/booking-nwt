@@ -5,6 +5,8 @@ import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../common/ToastProvider'
 import Spinner from '../common/Spinner'
+import AdminVerifications from './AdminVerifications'
+import AdminProblemReports from './AdminProblemReports'
 import '../../styles/AdminDashboard.css'
 
 export default function AdminDashboard() {
@@ -104,22 +106,35 @@ export default function AdminDashboard() {
         <p className="admin-subtitle">Upravljanje sistemom i korisnicima</p>
       </div>
 
-      <div className="admin-tabs" style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-        <button 
-          onClick={() => setActiveTab('users')} 
-          className={activeTab === 'users' ? 'tab-btn active' : 'tab-btn'}
-          style={{ padding: '10px 20px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #ccc', background: activeTab === 'users' ? '#4f46e5' : '#fff', color: activeTab === 'users' ? '#fff' : '#333' }}
+      <div className="admin-tabs">
+        <button
+          onClick={() => setActiveTab('users')}
+          className={`tab-btn ${activeTab === 'users' ? 'active' : ''}`}
         >
-          Korisnici
+          👥 Korisnici
         </button>
-        <button 
-          onClick={() => setActiveTab('analytics')} 
-          className={activeTab === 'analytics' ? 'tab-btn active' : 'tab-btn'}
-          style={{ padding: '10px 20px', cursor: 'pointer', borderRadius: '5px', border: '1px solid #ccc', background: activeTab === 'analytics' ? '#4f46e5' : '#fff', color: activeTab === 'analytics' ? '#fff' : '#333' }}
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
         >
-          Sistemska Analitika
+          📊 Sistemska Analitika
+        </button>
+        <button
+          onClick={() => setActiveTab('verifications')}
+          className={`tab-btn ${activeTab === 'verifications' ? 'active' : ''}`}
+        >
+          🪪 Verifikacije
+        </button>
+        <button
+          onClick={() => setActiveTab('reports')}
+          className={`tab-btn ${activeTab === 'reports' ? 'active' : ''}`}
+        >
+          ⚠ Prijave problema
         </button>
       </div>
+
+      {activeTab === 'verifications' && <AdminVerifications />}
+      {activeTab === 'reports' && <AdminProblemReports />}
 
       {activeTab === 'users' && (
         <>
@@ -151,7 +166,7 @@ export default function AdminDashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
               <h2>Svi korisnici</h2>
               <div className="user-filters">
-                <select value={searchRole} onChange={e => { setSearchRole(e.target.value); setPage(0); }} style={{ padding: '8px', borderRadius: '5px' }}>
+                <select value={searchRole} onChange={e => { setSearchRole(e.target.value); setPage(0); }} className="admin-select">
                   <option value="">Sve uloge</option>
                   <option value="ADMIN">Admini</option>
                   <option value="HOST">Domaćini</option>

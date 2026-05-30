@@ -24,6 +24,10 @@ function formatDate(dt) {
 
 export default function NotificationsList({ onUnreadChange }) {
   const { user } = useAuthStore()
+  // BUG C — klik na notifikaciju je ranije vodio na /properties/<id> (lista smjestaja
+  // kad propertyId nije bio postavljen). Sad linkamo direktno na korisnikove
+  // rezervacije, sto je smisao notifikacije.
+  const reservationsHref = user?.role === 'HOST' ? '/host/dashboard' : '/dashboard?tab=reservations'
   const [notifications, setNotifications] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -97,7 +101,7 @@ export default function NotificationsList({ onUnreadChange }) {
               <div className="notif-actions">
                 {n.relatedReservationId && (
                   <Link
-                    to={`/properties/${n.relatedPropertyId || ''}`}
+                    to={reservationsHref}
                     className="notif-link"
                     onClick={() => !n.isRead && handleMarkRead(n.id)}
                   >

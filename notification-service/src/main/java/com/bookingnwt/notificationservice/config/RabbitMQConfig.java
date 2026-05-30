@@ -34,6 +34,14 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.routing-key.payment-failed}")
     private String paymentFailedKey;
 
+    // BUG 2 — notification-service sluša i RESERVATION_CREATED za "Nova rezervacija" hostu
+    @Value("${app.rabbitmq.routing-key.reservation-created:booking.reservation.created}")
+    private String reservationCreatedKey;
+
+    // BUG A — notification-service sluša i RESERVATION_CANCELLED za "Otkazana rezervacija" hostu
+    @Value("${app.rabbitmq.routing-key.reservation-cancelled:booking.reservation.cancelled}")
+    private String reservationCancelledKey;
+
     @Bean
     public TopicExchange bookingExchange() {
         return new TopicExchange(exchange, true, false);
@@ -52,6 +60,16 @@ public class RabbitMQConfig {
     @Bean
     public Binding bindingPaymentFailed(Queue notificationServiceQueue, TopicExchange bookingExchange) {
         return BindingBuilder.bind(notificationServiceQueue).to(bookingExchange).with(paymentFailedKey);
+    }
+
+    @Bean
+    public Binding bindingReservationCreated(Queue notificationServiceQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(notificationServiceQueue).to(bookingExchange).with(reservationCreatedKey);
+    }
+
+    @Bean
+    public Binding bindingReservationCancelled(Queue notificationServiceQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(notificationServiceQueue).to(bookingExchange).with(reservationCancelledKey);
     }
 
     @Bean

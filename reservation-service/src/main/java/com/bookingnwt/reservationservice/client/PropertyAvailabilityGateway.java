@@ -33,7 +33,7 @@ public class PropertyAvailabilityGateway {
     private final PropertyClient propertyClient;
 
     @CircuitBreaker(name = "property-service", fallbackMethod = "fallback")
-    public void verifyAvailable(Long propertyId, LocalDate checkIn, LocalDate checkOut) {
+    public void verifyAvailable(Long propertyId, LocalDate checkIn, LocalDate checkOut, Integer numGuests) {
         if (propertyId == null || checkIn == null || checkOut == null) {
             throw new PropertyUnavailableException("Nedostaju propertyId / checkIn / checkOut za provjeru dostupnosti");
         }
@@ -47,6 +47,12 @@ public class PropertyAvailabilityGateway {
         }
         if (Boolean.FALSE.equals(property.getIsActive())) {
             throw new PropertyUnavailableException("Smještaj " + propertyId + " je trenutno neaktivan");
+        }
+        // BUG 1 — kapacitet check (backend guard protiv klijentskog bypass-a)
+        if (numGuests != null && property.getMaxGuests() != null && numGuests > property.getMaxGuests()) {
+            throw new PropertyUnavailableException(
+                    "Smještaj " + propertyId + " prima maksimalno " + property.getMaxGuests()
+                            + " osoba (tražili ste " + numGuests + ")");
         }
 
         List<CalendarBlockDTO> blocks = propertyClient.getCalendarBlocks(propertyId);
@@ -75,7 +81,7 @@ public class PropertyAvailabilityGateway {
     }
 
     @SuppressWarnings("unused")
-    private void fallback(Long propertyId, LocalDate checkIn, LocalDate checkOut, Throwable t) {
+    private void fallback(Long propertyId, LocalDate checkIn, LocalDate checkOut, Integer numGuests, Throwable t) {
         if (t instanceof PropertyUnavailableException pue) {
             // Business validation failure — propagate as-is, don't wrap.
             throw pue;

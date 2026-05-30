@@ -1,0 +1,194 @@
+/* F3 — Vizualni kalendar dostupnosti */
+
+.calendar-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 6px 10px;
+  background: rgba(157, 78, 221, 0.06);
+  border-radius: var(--radius-md);
+}
+
+.calendar-nav strong {
+  font-family: "Inter", sans-serif;
+  font-size: 1.05rem;
+  color: var(--text-primary);
+}
+
+.calendar-nav button {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  width: 32px;
+  height: 32px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.calendar-nav button:hover {
+  background: rgba(157, 78, 221, 0.15);
+  border-color: var(--violet-primary);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  margin-bottom: 16px;
+}
+
+.cal-dayname {
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  padding: 6px 0;
+  font-family: "Inter", sans-serif;
+}
+
+.cal-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(157, 78, 221, 0.05);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  transition: all 0.1s ease;
+  user-select: none;
+}
+
+.cal-day:hover:not(.out):not(.past):not(.blocked) {
+  background: rgba(157, 78, 221, 0.18);
+  border-color: var(--violet-primary);
+}
+
+.cal-day.out {
+  color: rgba(168, 159, 219, 0.2);
+  cursor: default;
+  background: transparent;
+  border-color: transparent;
+}
+
+.cal-day.past {
+  color: var(--text-tertiary);
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cal-day.blocked {
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error-border);
+  cursor: not-allowed;
+  text-decoration: line-through;
+}
+
+.cal-day.selected {
+  background: var(--violet-primary);
+  color: #fff;
+  border-color: var(--violet-light);
+}
+
+.calendar-selection {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  background: rgba(157, 78, 221, 0.08);
+  border: 1px solid rgba(157, 78, 221, 0.25);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.calendar-selection input {
+  padding: 10px 12px;
+  background: #1a0f2e;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: "Geist", sans-serif;
+}
+
+.calendar-blocks-list h4 {
+  margin-bottom: 10px;
+  color: var(--text-secondary);
+}
+
+.cal-block-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(157, 78, 221, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 6px;
+  font-size: 0.85rem;
+}
+
+.cal-block-item em {
+  font-style: normal;
+  color: var(--text-tertiary);
+  margin-left: 8px;
+}
+
+.cal-block-item button {
+  background: transparent;
+  border: 1px solid var(--error-border);
+  color: var(--error-text);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.cal-block-item button:hover {
+  background: var(--error-bg);
+}
+
+/* BUG 8 — Guest date picker */
+.guest-date-picker {
+  background: rgba(157, 78, 221, 0.04);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.guest-date-picker-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 0.78rem;
+  color: var(--text-tertiary);
+}
+
+.legend-box {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+.legend-box.past { background: rgba(168, 159, 219, 0.2); }
+.legend-box.blocked { background: var(--error-bg); border: 1px solid var(--error-border); }
+.legend-box.selected { background: var(--violet-primary); }
+
+.guest-date-picker-summary {
+  margin-top: 10px;
+  padding: 8px 12px;
+  background: rgba(157, 78, 221, 0.1);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}

@@ -2,6 +2,8 @@ package com.bookingnwt.notificationservice.listener;
 
 import com.bookingnwt.notificationservice.events.PaymentCompletedEvent;
 import com.bookingnwt.notificationservice.events.PaymentFailedEvent;
+import com.bookingnwt.notificationservice.events.ReservationCancelledEvent;
+import com.bookingnwt.notificationservice.events.ReservationCreatedEvent;
 import com.bookingnwt.notificationservice.model.Notification;
 import com.bookingnwt.notificationservice.repository.NotificationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,8 +37,10 @@ public class SagaNotificationListener {
             String eventType = node.has("eventType") ? node.get("eventType").asText() : "";
 
             switch (eventType) {
-                case "PAYMENT_COMPLETED" -> handlePaymentCompleted(message);
-                case "PAYMENT_FAILED"    -> handlePaymentFailed(message);
+                case "PAYMENT_COMPLETED"  -> handlePaymentCompleted(message);
+                case "PAYMENT_FAILED"     -> handlePaymentFailed(message);
+                case "RESERVATION_CREATED" -> handleReservationCreated(message);
+                case "RESERVATION_CANCELLED" -> handleReservationCancelled(message);
                 default -> log.warn("Neprepoznat eventType na notification queue: {}", eventType);
             }
         } catch (Exception e) {
@@ -87,5 +91,67 @@ public class SagaNotificationListener {
 
         notificationRepository.save(notification);
         log.warn("Notifikacija OTKAZANA_REZERVACIJA kreirana za korisnika {}", event.getGuestId());
+    }
+
+    /**
+     * BUG 2 — Host dobija notifikaciju cim gost kreira rezervaciju za njegov smjestaj
+     * (nezavisno od ishoda Saga payment-a).
+     */
+    private void handleReservationCreated(String message) throws Exception {
+        ReservationCreatedEvent event = objectMapper.readValue(message, ReservationCreatedEvent.class);
+        if (event.getHostId() == null) {
+            log.warn("RESERVATION_CREATED event bez hostId — preskacem host notifikaciju (Reservation={})",
+                    event.getReservationId());
+            return;
+        }
+        log.info("Kreiranje host notifikacije za rezervaciju {}: hostId={}, guestId={}",
+                event.getReservationId(), event.getHostId(), event.getUserId());
+
+        Notification notification = new Notification(
+                event.getHostId(),
+                "NOVA_REZERVACIJA",
+                "Nova rezervacija",
+                String.format(
+                        "Gost #%d je kreirao rezervaciju #%d za vaš smještaj #%d. " +
+                        "Pratite status u Mojim smještajima.",
+                        event.getUserId(),
+                        event.getReservationId(),
+                        event.getPropertyId()
+                ),
+                event.getReservationId()
+        );
+        notificationRepository.save(notification);
+        log.info("Notifikacija NOVA_REZERVACIJA kreirana za hosta {}", event.getHostId());
+    }
+
+    /**
+     * BUG A — Host dobija notifikaciju kad gost OTKAŽE rezervaciju za njegov smještaj.
+     * Bez ovoga, host vidi kalendar promijenjen "ničim izazvano".
+     */
+    private void handleReservationCancelled(String message) throws Exception {
+        ReservationCancelledEvent event = objectMapper.readValue(message, ReservationCancelledEvent.class);
+        if (event.getHostId() == null) {
+            log.warn("RESERVATION_CANCELLED event bez hostId — preskacem host notifikaciju (Reservation={})",
+                    event.getReservationId());
+            return;
+        }
+        log.info("Kreiranje host notifikacije za otkazanu rezervaciju {}: hostId={}",
+                event.getReservationId(), event.getHostId());
+
+        Notification notification = new Notification(
+                event.getHostId(),
+                "OTKAZANA_REZERVACIJA",
+                "Otkazana rezervacija",
+                String.format(
+                        "Gost #%d je otkazao rezervaciju #%d za vaš smještaj #%d. " +
+                        "Termin je oslobođen i ponovo dostupan za booking.",
+                        event.getGuestId(),
+                        event.getReservationId(),
+                        event.getPropertyId()
+                ),
+                event.getReservationId()
+        );
+        notificationRepository.save(notification);
+        log.info("Notifikacija OTKAZANA_REZERVACIJA kreirana za hosta {}", event.getHostId());
     }
 }

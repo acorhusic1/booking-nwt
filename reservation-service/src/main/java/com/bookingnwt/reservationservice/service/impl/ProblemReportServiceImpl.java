@@ -69,6 +69,13 @@ public class ProblemReportServiceImpl implements ProblemReportService {
     }
 
     @Override
+    public List<ProblemReportResponseDTO> getReportsByHost(Long hostId) {
+        return reportRepository.findByReservationHostId(hostId).stream()
+                .map(reportMapper::toResponseDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public ProblemReportResponseDTO updateStatus(Long id, ProblemReportStatus status) {
         ProblemReport report = reportRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("ProblemReport nije pronađen sa ID: " + id));
