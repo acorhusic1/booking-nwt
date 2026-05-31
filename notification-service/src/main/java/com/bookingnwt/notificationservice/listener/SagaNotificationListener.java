@@ -4,6 +4,7 @@ import com.bookingnwt.notificationservice.events.PaymentCompletedEvent;
 import com.bookingnwt.notificationservice.events.PaymentFailedEvent;
 import com.bookingnwt.notificationservice.events.ReservationCancelledEvent;
 import com.bookingnwt.notificationservice.events.ReservationCreatedEvent;
+import com.bookingnwt.notificationservice.events.ReservationReminderEvent;
 import com.bookingnwt.notificationservice.model.Notification;
 import com.bookingnwt.notificationservice.repository.NotificationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -41,6 +42,8 @@ public class SagaNotificationListener {
                 case "PAYMENT_FAILED"     -> handlePaymentFailed(message);
                 case "RESERVATION_CREATED" -> handleReservationCreated(message);
                 case "RESERVATION_CANCELLED" -> handleReservationCancelled(message);
+                case "RESERVATION_REMINDER" -> handleReservationReminder(message, false);
+                case "REVIEW_REQUEST" -> handleReservationReminder(message, true);
                 default -> log.warn("Neprepoznat eventType na notification queue: {}", eventType);
             }
         } catch (Exception e) {
@@ -153,5 +156,39 @@ public class SagaNotificationListener {
         );
         notificationRepository.save(notification);
         log.info("Notifikacija OTKAZANA_REZERVACIJA kreirana za hosta {}", event.getHostId());
+    }
+
+    /**
+     * F9 — Podsjetnik gostu dan prije dolaska + zahtjev za recenziju dan poslije odlaska.
+     */
+    private void handleReservationReminder(String message, boolean isReviewRequest) throws Exception {
+        ReservationReminderEvent event = objectMapper.readValue(message, ReservationReminderEvent.class);
+        if (event.getGuestId() == null) return;
+
+        Notification notification;
+        if (isReviewRequest) {
+            notification = new Notification(
+                    event.getGuestId(),
+                    "ZAHTJEV_ZA_RECENZIJU",
+                    "Ostavite recenziju",
+                    String.format("Vaš boravak na smještaju #%d je završen. " +
+                                  "Podijelite svoje iskustvo — ostavite recenziju za rezervaciju #%d.",
+                                  event.getPropertyId(), event.getReservationId()),
+                    event.getReservationId()
+            );
+        } else {
+            notification = new Notification(
+                    event.getGuestId(),
+                    "PODSJETNIK",
+                    "Podsjetnik na dolazak",
+                    String.format("Sutra je vaš check-in za rezervaciju #%d (smještaj #%d). " +
+                                  "Provjerite detalje rezervacije prije dolaska.",
+                                  event.getReservationId(), event.getPropertyId()),
+                    event.getReservationId()
+            );
+        }
+        notificationRepository.save(notification);
+        log.info("F9 notif kreirana ({}) za gosta {}",
+                isReviewRequest ? "REVIEW_REQUEST" : "RESERVATION_REMINDER", event.getGuestId());
     }
 }

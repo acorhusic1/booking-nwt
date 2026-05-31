@@ -15,6 +15,11 @@ import java.util.Optional;
 public interface PropertyRepository extends JpaRepository<Property, Long> {
     List<Property> findByHostId(Long hostId);
     List<Property> findByCityAndIsActiveTrue(String city);
+    List<Property> findByModerationStatus(String status); // F2 — admin lista pending
+
+    // F2 — paged public listing samo APPROVED (ili legacy NULL za stari seed data)
+    @Query("SELECT p FROM Property p WHERE p.moderationStatus = 'APPROVED' OR p.moderationStatus IS NULL")
+    org.springframework.data.domain.Page<Property> findApprovedForPublic(org.springframework.data.domain.Pageable pageable);
 
     // BUG 4 — match po city OR country, case-insensitive, partial (LIKE)
     @Query("SELECT p FROM Property p WHERE p.isActive = true AND " +

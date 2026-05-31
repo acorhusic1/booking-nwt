@@ -15,6 +15,7 @@ import SeasonalRulesModal from './SeasonalRulesModal'
 import CalendarModal from './CalendarModal'
 import HostProblemReports from './HostProblemReports'
 import RevenueChart from './RevenueChart'
+import HostAnalyticsPanel from './HostAnalyticsPanel'
 
 export default function HostDashboard() {
   const { user } = useAuthStore()
@@ -31,6 +32,8 @@ export default function HostDashboard() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
   const [totalRevenueBackend, setTotalRevenueBackend] = useState(0)
+  // F11 — filter analitike na jedan smjestaj
+  const [selectedPropertyId, setSelectedPropertyId] = useState(null)
 
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
@@ -157,8 +160,22 @@ export default function HostDashboard() {
         </label>
       </div>
 
-      {/* BUG 9 — Bar chart zarade po mjesecu */}
-      <RevenueChart reservations={reservations} year={selectedYear} />
+      {/* F11 — Stopa popunjenosti, prosjecna ocjena, rank po popularnosti, filter po objektu */}
+      <HostAnalyticsPanel
+        properties={properties}
+        reservations={reservations}
+        year={selectedYear}
+        selectedPropertyId={selectedPropertyId}
+        onSelectProperty={setSelectedPropertyId}
+      />
+
+      {/* Bar chart zarade po mjesecu — postuje filter po objektu iz analytics panel-a */}
+      <RevenueChart
+        reservations={selectedPropertyId
+          ? reservations.filter(r => r.propertyId === selectedPropertyId)
+          : reservations}
+        year={selectedYear}
+      />
 
       <div style={{ height: '20px' }} />
 

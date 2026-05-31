@@ -1,11 +1,13 @@
 package com.bookingnwt.propertyservice.controller;
 
+import com.bookingnwt.propertyservice.client.UserClient;
 import com.bookingnwt.propertyservice.dto.PropertyPatchRequest;
 import com.bookingnwt.propertyservice.dto.PropertyRequest;
 import com.bookingnwt.propertyservice.dto.PropertyResponse;
 import com.bookingnwt.propertyservice.service.PropertyService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,12 +31,14 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @RestController
 @RequestMapping("/api/properties")
 @RequiredArgsConstructor
 public class PropertyController {
 
     private final PropertyService propertyService;
+    private final UserClient userClient;
 
     @Value("${server.port}")
     private String port;
@@ -82,8 +86,51 @@ public class PropertyController {
 
     // ===================== PROTECTED ENDPOINTS =====================
 
+    // F2 — Admin moderacija: APPROVE / REJECT objekat. Tek nakon APPROVED objekat
+    // postaje vidljiv na public listingu (filter u PropertyServiceImpl.getAllProperties).
+    @PutMapping("/{id}/moderation")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<PropertyResponse> moderateProperty(@PathVariable Long id,
+                                                              @RequestParam String status) {
+        if (!"APPROVED".equals(status) && !"REJECTED".equals(status) && !"PENDING".equals(status)) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(propertyService.updateModerationStatus(id, status));
+    }
+
+    @GetMapping("/pending-moderation")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<PropertyResponse>> getPendingModeration() {
+        return ResponseEntity.ok(propertyService.getByModerationStatus("PENDING"));
+    }
+
     @PostMapping
-    public ResponseEntity<PropertyResponse> createProperty(@Valid @RequestBody PropertyRequest request) {
+    public ResponseEntity<?> createProperty(@Valid @RequestBody PropertyRequest request) {
+        // F16 enforce — host MORA imati APPROVED verifikaciju prije nego sto
+        // objavi novi objekat. JWT se propagira kroz FeignAuthInterceptor pa
+        // user-service moze odgovoriti.
+        if (request.getHostId() != null) {
+            boolean approved = false;
+            try {
+                List<java.util.Map<String, Object>> verifs = userClient.getVerifications(request.getHostId());
+                approved = verifs != null && verifs.stream()
+                        .anyMatch(v -> "APPROVED".equalsIgnoreCase(String.valueOf(v.get("status"))));
+            } catch (Exception e) {
+                log.error("Verification check failed for hostId={}: {}", request.getHostId(), e.getMessage());
+                // Fail-closed — bolje blokirati nego dozvoliti neverifikovan
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                        java.util.Map.of("error", "VerificationCheckFailed",
+                                "message", "Nije moguće provjeriti status verifikacije. Pokušajte ponovo za nekoliko trenutaka."));
+            }
+            if (!approved) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                        java.util.Map.of(
+                                "error", "VerificationRequired",
+                                "message", "Vaš identitet nije verifikovan. Pošaljite zahtjev za verifikaciju i sačekajte odobrenje administratora prije nego što objavite smještaj."
+                        )
+                );
+            }
+        }
         PropertyResponse created = propertyService.createProperty(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }

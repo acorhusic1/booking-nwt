@@ -32,9 +32,12 @@ export default function NotificationsList({ onUnreadChange }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  const load = () => {
+  // BUG: na svaki poll-driven load setovali smo loading=true → cijela lista bi se
+  // zamijenila Spinner-om i scroll bi skocio na vrh stranice. Sad poll radi "tiho":
+  // samo prvi mount pokazuje Spinner, polling u pozadini samo apdejtuje state.
+  const load = (showSpinner = false) => {
     if (!user?.id) return
-    setLoading(true)
+    if (showSpinner) setLoading(true)
     setError(null)
     notificationApi.getByUserId(user.id)
       .then(data => {
@@ -44,10 +47,16 @@ export default function NotificationsList({ onUnreadChange }) {
         onUnreadChange?.(unread)
       })
       .catch(() => setError('Greška pri učitavanju notifikacija'))
-      .finally(() => setLoading(false))
+      .finally(() => { if (showSpinner) setLoading(false) })
   }
 
-  useEffect(() => { load() }, [user?.id])
+  useEffect(() => {
+    load(true)
+    // Tihi poll svakih 15s — bez setLoading da ne unmountuje listu i ne skace scroll
+    const t = setInterval(() => load(false), 15000)
+    return () => clearInterval(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
   const handleMarkRead = async (id) => {
     try {

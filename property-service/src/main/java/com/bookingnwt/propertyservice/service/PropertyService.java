@@ -20,4 +20,8 @@ public interface PropertyService {
     PropertyResponse patchProperty(Long id, PropertyPatchRequest request);
     List<PropertyResponse> batchCreateProperties(List<PropertyRequest> requests);
     void deleteProperty(Long id);
+
+    // F2 — moderacija
+    PropertyResponse updateModerationStatus(Long id, String status);
+    List<PropertyResponse> getByModerationStatus(String status);
 }

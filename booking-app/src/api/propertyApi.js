@@ -88,6 +88,17 @@ export const propertyApi = {
 
   deleteCalendarBlock: async (propertyId, blockId) => {
     await apiClient.delete(`/api/properties/${propertyId}/calendar-blocks/${blockId}`)
+  },
+
+  // F2 — Admin moderacija
+  getPendingModeration: async () => {
+    const r = await apiClient.get('/api/properties/pending-moderation')
+    return r.data
+  },
+
+  moderate: async (id, status) => {
+    const r = await apiClient.put(`/api/properties/${id}/moderation`, null, { params: { status } })
+    return r.data
   }
 }
 

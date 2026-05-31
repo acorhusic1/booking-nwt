@@ -42,6 +42,10 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.routing-key.reservation-cancelled:booking.reservation.cancelled}")
     private String reservationCancelledKey;
 
+    // F9 — podsjetnik na dolazak + zahtjev za recenziju
+    @Value("${app.rabbitmq.routing-key.reservation-reminder:booking.reservation.reminder}")
+    private String reservationReminderKey;
+
     @Bean
     public TopicExchange bookingExchange() {
         return new TopicExchange(exchange, true, false);
@@ -70,6 +74,11 @@ public class RabbitMQConfig {
     @Bean
     public Binding bindingReservationCancelled(Queue notificationServiceQueue, TopicExchange bookingExchange) {
         return BindingBuilder.bind(notificationServiceQueue).to(bookingExchange).with(reservationCancelledKey);
+    }
+
+    @Bean
+    public Binding bindingReservationReminder(Queue notificationServiceQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(notificationServiceQueue).to(bookingExchange).with(reservationReminderKey);
     }
 
     @Bean

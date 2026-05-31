@@ -25,7 +25,10 @@ public class PropertyServiceImpl implements PropertyService {
     @Override
     @Transactional(readOnly = true)
     public org.springframework.data.domain.Page<PropertyResponse> getAllProperties(org.springframework.data.domain.Pageable pageable) {
-        return propertyRepository.findAll(pageable)
+        // F2 — javna lista vraca samo APPROVED smjestaje. PENDING/REJECTED su sakriveni
+        // od gostiju dok admin ne odobri. Legacy seed data (null moderationStatus)
+        // se tretira kao APPROVED radi backwards compat.
+        return propertyRepository.findApprovedForPublic(pageable)
                 .map(propertyMapper::toResponse);
     }
 
@@ -131,5 +134,23 @@ public class PropertyServiceImpl implements PropertyService {
             throw new ResourceNotFoundException("Nekretnina sa ID " + id + " nije pronađena");
         }
         propertyRepository.deleteById(id);
+    }
+
+    // F2 — moderacija
+    @Override
+    public PropertyResponse updateModerationStatus(Long id, String status) {
+        Property property = propertyRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Nekretnina sa ID " + id + " nije pronađena"));
+        property.setModerationStatus(status);
+        return propertyMapper.toResponse(propertyRepository.save(property));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<PropertyResponse> getByModerationStatus(String status) {
+        return propertyRepository.findByModerationStatus(status)
+                .stream()
+                .map(propertyMapper::toResponse)
+                .toList();
     }
 }
