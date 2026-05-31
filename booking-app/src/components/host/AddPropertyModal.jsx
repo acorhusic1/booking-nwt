@@ -11,7 +11,12 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
     address: '',
     city: '',
     country: '',
-    maxGuests: 1
+    maxGuests: 1,
+    // F2 — kucna pravila
+    ruleNoSmoking: true,
+    rulePetsAllowed: false,
+    rulePartiesAllowed: false,
+    ruleChildrenAllowed: true
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
@@ -163,7 +168,35 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
             />
           </div>
 
+          <div className="form-section-label">Kućna pravila</div>
+          <div className="form-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px' }}>
+              <input type="checkbox" checked={formData.ruleNoSmoking}
+                onChange={(e) => setFormData(p => ({ ...p, ruleNoSmoking: e.target.checked }))} />
+              🚭 Zabranjeno pušenje
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px' }}>
+              <input type="checkbox" checked={formData.rulePetsAllowed}
+                onChange={(e) => setFormData(p => ({ ...p, rulePetsAllowed: e.target.checked }))} />
+              🐾 Kućni ljubimci dozvoljeni
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px' }}>
+              <input type="checkbox" checked={formData.rulePartiesAllowed}
+                onChange={(e) => setFormData(p => ({ ...p, rulePartiesAllowed: e.target.checked }))} />
+              🎉 Žurke dozvoljene
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px' }}>
+              <input type="checkbox" checked={formData.ruleChildrenAllowed}
+                onChange={(e) => setFormData(p => ({ ...p, ruleChildrenAllowed: e.target.checked }))} />
+              👶 Djeca dobrodošla
+            </label>
+          </div>
+
           {error && <div className="error-alert">{error}</div>}
+
+          <div className="modal-hint" style={{ marginTop: '10px', padding: '10px', background: 'rgba(245, 158, 11, 0.1)', borderRadius: '6px', fontSize: '0.85em' }}>
+            ℹ️ Smještaj prolazi kroz moderaciju administratora prije nego što postane javno vidljiv gostima.
+          </div>
 
           <div className="modal-actions">
             <button type="button" className="btn-secondary" onClick={onClose} disabled={loading}>

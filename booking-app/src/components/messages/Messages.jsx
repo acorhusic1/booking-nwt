@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { messagesApi } from '../../api/messagesApi'
 import { userApi } from '../../api/userApi'
 import { propertyApi } from '../../api/propertyApi'
@@ -16,6 +17,10 @@ export default function Messages() {
   const { user } = useAuthStore()
   const { showToast } = useToast()
   const isHost = (user?.role || '').toUpperCase() === 'HOST'
+  // BUG F — kad gost klikne "Pošalji poruku domaćinu", redirect dolazi sa ?conv=ID.
+  // Bez ovog activeId bi uvijek bio prva konverzacija iz liste.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const preferredConvId = searchParams.get('conv')
 
   const [conversations, setConversations] = useState([])
   const [activeId, setActiveId] = useState(null)
@@ -68,7 +73,16 @@ export default function Messages() {
       }))
       setConversations(enriched)
       if (enriched.length > 0 && !activeId) {
-        setActiveId(enriched[0].id)
+        const preferred = preferredConvId
+          ? enriched.find(c => String(c.id) === String(preferredConvId))
+          : null
+        setActiveId(preferred ? preferred.id : enriched[0].id)
+        // Ocisti ?conv= iz URL-a nakon prve upotrebe — refresh stranice ne treba
+        // ponovo skakati na tu istu konverzaciju ako je korisnik kliknuo drugu.
+        if (preferredConvId) {
+          searchParams.delete('conv')
+          setSearchParams(searchParams, { replace: true })
+        }
       }
     } catch {
       setError('Greška pri učitavanju konverzacija')

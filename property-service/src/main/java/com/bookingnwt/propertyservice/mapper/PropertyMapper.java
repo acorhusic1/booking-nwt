@@ -11,6 +11,7 @@ import org.mapstruct.MappingTarget;
 public interface PropertyMapper {
 
     @Mapping(target = "primaryImageUrl", expression = "java(getPrimaryImageUrl(property))")
+    @Mapping(target = "basePrice", expression = "java(getBasePrice(property))")
     PropertyResponse toResponse(Property property);
 
     default String getPrimaryImageUrl(Property property) {
@@ -24,6 +25,10 @@ public interface PropertyMapper {
                 .orElse(property.getImages().get(0).getUrl());
     }
 
+    default java.math.BigDecimal getBasePrice(Property property) {
+        return property.getPricingRule() != null ? property.getPricingRule().getBasePrice() : null;
+    }
+
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "isActive", constant = "true")
     @Mapping(target = "createdAt", ignore = true)
@@ -33,6 +38,7 @@ public interface PropertyMapper {
     @Mapping(target = "calendarBlocks", ignore = true)
     @Mapping(target = "seasonalRules", ignore = true)
     @Mapping(target = "available", constant = "true")
+    @Mapping(target = "moderationStatus", ignore = true) // entity default = "PENDING"
     Property toEntity(PropertyRequest request);
 
     @Mapping(target = "id", ignore = true)
@@ -44,5 +50,6 @@ public interface PropertyMapper {
     @Mapping(target = "calendarBlocks", ignore = true)
     @Mapping(target = "seasonalRules", ignore = true)
     @Mapping(target = "available", ignore = true)
+    @Mapping(target = "moderationStatus", ignore = true) // host ne smije sam mijenjati status
     void updateEntity(PropertyRequest request, @MappingTarget Property property);
 }

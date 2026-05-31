@@ -211,6 +211,7 @@ public class ReservationServiceImpl implements ReservationService {
 
         // Datum-based pravila se primjenjuju samo ako postoji check-in datum
         LocalDate today = LocalDate.now();
+        int refundPct = 100; // default: full refund (npr. za CREATED status)
         if (reservation.getCheckIn() != null) {
             // Ako je check-in već prošao (ili je danas), refund nema smisla
             if (!reservation.getCheckIn().isAfter(today)) {
@@ -219,20 +220,25 @@ public class ReservationServiceImpl implements ReservationService {
                                 + ") je već prošao — rezervacija ne može biti otkazana");
             }
 
-            // Free cancellation window: per-property policy ili default 7 dana.
-            // Samo za CONFIRMED — CREATED znači Saga još uvijek čeka pa je
-            // sigurno abort-ovati bez obzira na rok.
+            // F6 — politika otkazivanja u 3 tier-a (po policy ili default):
+            //   * unutar freeCancelDays prije check-ina → pun refund (100%)
+            //   * van toga + noRefund=true → bez refunda (0%)
+            //   * van toga + partialRefundPct postavljen → djelimican refund
+            //   * inace → kao default (100% unutar 7 dana, 0% inace)
             if (reservation.getStatus() == ReservationStatus.CONFIRMED) {
-                int freeCancelDays = (reservation.getCancellationPolicy() != null
-                        && reservation.getCancellationPolicy().getFreeCancelDays() != null)
-                        ? reservation.getCancellationPolicy().getFreeCancelDays()
-                        : 7;
-
+                CancellationPolicy policy = reservation.getCancellationPolicy();
+                int freeCancelDays = (policy != null && policy.getFreeCancelDays() != null)
+                        ? policy.getFreeCancelDays() : 7;
                 long daysUntilCheckIn = ChronoUnit.DAYS.between(today, reservation.getCheckIn());
-                if (daysUntilCheckIn < freeCancelDays) {
-                    throw new IllegalStateException(
-                            "Otkazivanje manje od " + freeCancelDays
-                                    + " dana prije dolaska nije moguće online — kontaktirajte support");
+
+                if (daysUntilCheckIn >= freeCancelDays) {
+                    refundPct = 100;
+                } else if (policy != null && Boolean.TRUE.equals(policy.getNoRefund())) {
+                    refundPct = 0;
+                } else if (policy != null && policy.getPartialRefundPct() != null) {
+                    refundPct = policy.getPartialRefundPct();
+                } else {
+                    refundPct = 0; // default — bez politike, manje od freeCancelDays = nista
                 }
             }
         }
@@ -252,10 +258,12 @@ public class ReservationServiceImpl implements ReservationService {
                     saved.getGuestId(),
                     saved.getTotalPrice(),
                     "BAM",
-                    wasConfirmed ? "Korisnik je otkazao potvrđenu rezervaciju" : "Korisnik je otkazao rezervaciju",
+                    wasConfirmed ? "Korisnik je otkazao potvrđenu rezervaciju (refund " + refundPct + "%)"
+                                 : "Korisnik je otkazao rezervaciju",
                     LocalDateTime.now(),
                     "RESERVATION_CANCELLED",
-                    saved.getHostId()
+                    saved.getHostId(),
+                    refundPct
             );
             reservationEventPublisher.publishReservationCancelled(event);
             

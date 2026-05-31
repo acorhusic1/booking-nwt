@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom'
 import { useToast } from '../common/ToastProvider'
 import Spinner from '../common/Spinner'
 import AdminVerifications from './AdminVerifications'
+import AdminPropertyModeration from './AdminPropertyModeration'
 import AdminProblemReports from './AdminProblemReports'
 import '../../styles/AdminDashboard.css'
 
@@ -131,10 +132,17 @@ export default function AdminDashboard() {
         >
           ⚠ Prijave problema
         </button>
+        <button
+          onClick={() => setActiveTab('moderation')}
+          className={`tab-btn ${activeTab === 'moderation' ? 'active' : ''}`}
+        >
+          🛡 Moderacija smještaja
+        </button>
       </div>
 
       {activeTab === 'verifications' && <AdminVerifications />}
       {activeTab === 'reports' && <AdminProblemReports />}
+      {activeTab === 'moderation' && <AdminPropertyModeration />}
 
       {activeTab === 'users' && (
         <>

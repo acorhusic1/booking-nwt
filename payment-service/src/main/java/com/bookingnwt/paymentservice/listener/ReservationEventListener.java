@@ -102,6 +102,28 @@ public class ReservationEventListener {
                 completed.getId(), event.getReservationId(), event.getUserId(),
                 amount, currency, LocalDateTime.now(), "PAYMENT_COMPLETED"
         ));
+
+        // F19 — host payout sa komisijom platforme.
+        // Spec: "Domacin prima isplatu na svoj racun nakon uspjesno zavrsenog
+        // boravka gosta, umanjenu za proviziju platforme." Za demo: kreditiramo
+        // host wallet odmah (komisija = 10%). U produkciji bi cekali COMPLETED status.
+        if (event.getHostId() != null) {
+            BigDecimal commissionPct = BigDecimal.valueOf(10);
+            BigDecimal commission = amount.multiply(commissionPct)
+                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+            BigDecimal hostPayout = amount.subtract(commission);
+
+            Wallet hostWallet = walletRepository.findByUserId(event.getHostId())
+                    .orElseGet(() -> {
+                        Wallet w = new Wallet(event.getHostId(), BigDecimal.ZERO, currency);
+                        return walletRepository.save(w);
+                    });
+            hostWallet.setBalance(hostWallet.getBalance().add(hostPayout));
+            hostWallet.setUpdatedAt(LocalDateTime.now());
+            walletRepository.save(hostWallet);
+            log.info("💵 Host {} payout: {} {} ({} odvojeno za platformu kao komisija 10%)",
+                    event.getHostId(), hostPayout, currency, commission);
+        }
     }
 
     private Payment persistPayment(ReservationCreatedEvent event,

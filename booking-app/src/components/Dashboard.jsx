@@ -47,8 +47,6 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState(defaultTab)
   const [unreadCount, setUnreadCount] = useState(0)
   const [sagaPending, setSagaPending] = useState(searchParams.get('pending') === '1')
-  const [notifKey, setNotifKey] = useState(0)
-  const notifPollRef = useRef(null)
 
   // Reservations + wallet (Benjamin)
   const [reservations, setReservations] = useState([])
@@ -61,21 +59,18 @@ export default function Dashboard() {
   const [creatingWallet, setCreatingWallet] = useState(false)
   const lastSeenStatusRef = useRef({})
   const resPollRef = useRef(null)
+  // Sprjecava ponovljene auto-create wallet pokusaje pri svakom poll-u — bez ovog
+  // bi se toast "Wallet automatski kreiran" pojavljivao svakih par sekundi.
+  const walletAutoCreateAttemptedRef = useRef(false)
 
-  // Notification auto-poll (Kenan grana) — refresh NotificationsList 3× kad
-  // se vrati sa rezervacije sa ?pending=1
+  // BUG I — ranije smo force-remountovali NotificationsList kroz setNotifKey
+  // svake 3s × 3 puta. Vizualno je to izgledalo kao "stranica se osvjezava vise puta"
+  // dok je Saga obrazovala odgovor. Header bell ionako polluje svakih 15s i
+  // resPoll ispod osvjezava rezervacije, pa je ovaj remount bio suvisan.
   useEffect(() => {
     if (!sagaPending) return
-    let count = 0
-    notifPollRef.current = setInterval(() => {
-      setNotifKey(k => k + 1)
-      count++
-      if (count >= 3) {
-        clearInterval(notifPollRef.current)
-        setSagaPending(false)
-      }
-    }, 3000)
-    return () => clearInterval(notifPollRef.current)
+    const t = setTimeout(() => setSagaPending(false), 12000)
+    return () => clearTimeout(t)
   }, [sagaPending])
 
   // Glavni fetch (rezervacije + wallet) — Benjamin grana
@@ -131,15 +126,22 @@ export default function Dashboard() {
       } else {
         // BUG-006: auto-create wallet pri prvom login-u ako ne postoji
         // (umjesto da gost mora rucno kliknuti "Kreiraj wallet" dugme)
-        try {
-          const created = await walletApi.create(user.id, 'BAM', 0)
-          setWallet(created)
-          setWalletError(null)
-          showToast({ type: 'info', title: 'Wallet automatski kreiran',
-            message: 'Dosipajte sredstva karticom prije rezervacije smjestaja.' })
-        } catch {
+        // Pokusaj samo jednom po session-u — bez ovoga svaki poll bi spamovao toast.
+        if (walletAutoCreateAttemptedRef.current) {
           setWallet(null)
           setWalletError('Wallet ne postoji — kliknite "+ Kreiraj wallet" da ga kreirate.')
+        } else {
+          walletAutoCreateAttemptedRef.current = true
+          try {
+            const created = await walletApi.create(user.id, 'BAM', 0)
+            setWallet(created)
+            setWalletError(null)
+            showToast({ type: 'info', title: 'Wallet automatski kreiran',
+              message: 'Dosipajte sredstva karticom prije rezervacije smjestaja.' })
+          } catch {
+            setWallet(null)
+            setWalletError('Wallet ne postoji — kliknite "+ Kreiraj wallet" da ga kreirate.')
+          }
         }
       }
     } finally {
@@ -202,6 +204,8 @@ export default function Dashboard() {
     if (!pendingId) return
     setSagaPolling(true)
     let count = 0
+    // BUG I — produzeno sa 2s na 3s; manje vidljivog "treperenja" liste
+    // dok cekamo Saga ishod.
     resPollRef.current = setInterval(async () => {
       count++
       await fetchAll()
@@ -212,7 +216,7 @@ export default function Dashboard() {
         searchParams.delete('pendingId')
         setSearchParams(searchParams, { replace: true })
       }
-    }, 2000)
+    }, 3000)
     return () => clearInterval(resPollRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingId])
@@ -338,7 +342,7 @@ export default function Dashboard() {
               ⏳ Rezervacija kreirana — plaćanje se obrađuje. Notifikacija će se pojaviti za nekoliko sekundi…
             </div>
           )}
-          <NotificationsList key={notifKey} onUnreadChange={setUnreadCount} />
+          <NotificationsList onUnreadChange={setUnreadCount} />
         </section>
       )}
 

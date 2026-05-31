@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { propertyApi } from '../../api/propertyApi'
 import { reservationApi } from '../../api/reservationApi'
+import { reviewApi } from '../../api/reviewApi'
 import { wishlistApi } from '../../api/wishlistApi'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../common/ToastProvider'
@@ -29,11 +30,20 @@ export default function PropertyList({ filters }) {
   // F1 — prosireni filteri
   const [country, setCountry] = useState('')
   const [minGuests, setMinGuests] = useState(1)
-  const [sortBy, setSortBy] = useState('default') // default | name | capacity | city
+  const [sortBy, setSortBy] = useState('default')
   const [showFilters, setShowFilters] = useState(false)
   // F1 — period boravka (koristi backend /search endpoint kad su oba datuma data)
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
+  // F1 — cijena range + min ocjena + amenities checkboxes
+  const [minPrice, setMinPrice] = useState('')
+  const [maxPrice, setMaxPrice] = useState('')
+  const [minRating, setMinRating] = useState(0)
+  const [amenityFilters, setAmenityFilters] = useState({
+    WIFI: false, PARKING: false, AC: false, POOL: false
+  })
+  // F1 — prosjecne ocjene po property-u (dohvacene jednom za sve vidljive)
+  const [ratingByProp, setRatingByProp] = useState({})
 
   // F10 — wishlist state: mapa propertyId → wishlistItemId (da znamo i ukloniti)
   const [wishlistItems, setWishlistItems] = useState({}) // { propertyId: itemId }
@@ -82,11 +92,39 @@ export default function PropertyList({ filters }) {
 
   useEffect(() => { fetchProperties() }, [page])
 
-  // F1 — dropdown drzava izveden iz ucitanih property-a
+  // F1 — dropdown drzava izveden iz ucitanih property-a.
+  // Ukljucujemo i trenutno odabranu zemlju cak i ako trenutni rezultati
+  // ne sadrze nista iz nje — inace dropdown "izgubi" tu opciju nakon search-a
+  // i select izgleda prazan iako je state postavljen.
   const availableCountries = useMemo(() => {
     const set = new Set(properties.map(p => p.country).filter(Boolean))
+    if (country) set.add(country)
     return Array.from(set).sort()
-  }, [properties])
+  }, [properties, country])
+
+  // F1 — dohvati prosjecne ocjene za vidljive propertije (za rating filter + sort)
+  useEffect(() => {
+    if (properties.length === 0) return
+    let cancelled = false
+    Promise.all(
+      properties.map(p =>
+        reviewApi.getByProperty(p.id)
+          .then(rs => {
+            const arr = Array.isArray(rs) ? rs : []
+            if (arr.length === 0) return [p.id, 0]
+            const avg = arr.reduce((s, r) => s + Number(r.overallRating || 0), 0) / arr.length
+            return [p.id, avg]
+          })
+          .catch(() => [p.id, 0])
+      )
+    ).then(pairs => {
+      if (cancelled) return
+      const m = {}
+      pairs.forEach(([id, avg]) => { m[id] = avg })
+      setRatingByProp(m)
+    })
+    return () => { cancelled = true }
+  }, [properties.map(p => p.id).join(',')])
 
   // F10 — dohvati gostovu prvu (default) wishlist listu + stavke
   const loadWishlist = useCallback(async () => {
@@ -153,7 +191,12 @@ export default function PropertyList({ filters }) {
       )
     }
 
-    if (country) {
+    // Kad je aktivan date-period search, backend je vec primijenio LIKE filter
+    // po city ILI country sa istim terminom. Dodatni strict === filter na
+    // frontendu je suvisak i moze izbaciti validne stavke (npr. backend match
+    // bio po city dok je country drugog tipa).
+    const dateSearchActive = !!(checkIn && checkOut && (search.trim() || country.trim()))
+    if (country && !dateSearchActive) {
       list = list.filter(p => p.country === country)
     }
 
@@ -163,6 +206,30 @@ export default function PropertyList({ filters }) {
 
     if (onlyAvailable) {
       list = list.filter(p => p.available)
+    }
+
+    // F1 — cijena range filter
+    const minP = Number(minPrice) || 0
+    const maxP = Number(maxPrice) || Infinity
+    if (minP > 0 || maxP < Infinity) {
+      list = list.filter(p => {
+        const price = Number((p.basePrice ?? p.pricePerNight)) || 0
+        return price >= minP && price <= maxP
+      })
+    }
+
+    // F1 — min ocjena (na osnovu reviews fetch-a)
+    if (minRating > 0) {
+      list = list.filter(p => (ratingByProp[p.id] || 0) >= minRating)
+    }
+
+    // F1 — amenities filter (smjestaj mora imati SVE oznacene)
+    const activeAmenities = Object.entries(amenityFilters).filter(([, v]) => v).map(([k]) => k)
+    if (activeAmenities.length > 0) {
+      list = list.filter(p => {
+        const names = (p.amenities || []).map(a => (typeof a === 'string' ? a : a.name || '').toUpperCase())
+        return activeAmenities.every(a => names.includes(a))
+      })
     }
 
     // Sortiranje
@@ -176,6 +243,15 @@ export default function PropertyList({ filters }) {
       case 'city':
         list.sort((a, b) => (a.city || '').localeCompare(b.city || ''))
         break
+      case 'price-asc':
+        list.sort((a, b) => (Number(a.pricePerNight) || 0) - (Number(b.pricePerNight) || 0))
+        break
+      case 'price-desc':
+        list.sort((a, b) => (Number(b.pricePerNight) || 0) - (Number(a.pricePerNight) || 0))
+        break
+      case 'rating-desc':
+        list.sort((a, b) => (ratingByProp[b.id] || 0) - (ratingByProp[a.id] || 0))
+        break
       default: // dostupni prvo, pa po imenu
         list.sort((a, b) => {
           if (a.available !== b.available) return a.available ? -1 : 1
@@ -184,12 +260,14 @@ export default function PropertyList({ filters }) {
     }
 
     return list
-  }, [properties, search, country, minGuests, onlyAvailable, sortBy])
+  }, [properties, search, country, minGuests, onlyAvailable, sortBy, minPrice, maxPrice, minRating, amenityFilters, ratingByProp])
 
   const resetFilters = () => {
     setSearch(''); setCountry(''); setMinGuests(1)
     setOnlyAvailable(true); setSortBy('default')
     setCheckIn(''); setCheckOut('')
+    setMinPrice(''); setMaxPrice(''); setMinRating(0)
+    setAmenityFilters({ WIFI: false, PARKING: false, AC: false, POOL: false })
   }
 
   const handleDateSearch = (e) => {
@@ -252,8 +330,48 @@ export default function PropertyList({ filters }) {
                 <option value="name">Imenu (A-Z)</option>
                 <option value="capacity">Kapacitetu (najveci prvi)</option>
                 <option value="city">Gradu (A-Z)</option>
+                <option value="price-asc">Cijeni ↑ (jeftiniji prvi)</option>
+                <option value="price-desc">Cijeni ↓ (skuplji prvi)</option>
+                <option value="rating-desc">Ocjeni ↓ (najbolji prvi)</option>
               </select>
             </label>
+          </div>
+
+          {/* F1 — cijena range + min ocjena */}
+          <div className="filter-row">
+            <label>Min. cijena/noć:
+              <input type="number" min="0" placeholder="0" value={minPrice}
+                     onChange={(e) => setMinPrice(e.target.value)} style={{ width: '90px' }} />
+            </label>
+            <label>Max. cijena/noć:
+              <input type="number" min="0" placeholder="∞" value={maxPrice}
+                     onChange={(e) => setMaxPrice(e.target.value)} style={{ width: '90px' }} />
+            </label>
+            <label>Min. ocjena:
+              <select value={minRating} onChange={(e) => setMinRating(Number(e.target.value))}>
+                <option value={0}>Sve</option>
+                <option value={3}>3+ ★</option>
+                <option value={4}>4+ ★</option>
+                <option value={4.5}>4.5+ ★</option>
+              </select>
+            </label>
+          </div>
+
+          {/* F1 — amenities checkboxes */}
+          <div className="filter-row" style={{ flexWrap: 'wrap' }}>
+            <span style={{ color: 'var(--text-tertiary)', fontSize: '0.85em' }}>Sadržaji:</span>
+            {[
+              { key: 'WIFI', label: '📶 WiFi' },
+              { key: 'PARKING', label: '🅿️ Parking' },
+              { key: 'AC', label: '❄️ Klima' },
+              { key: 'POOL', label: '🏊 Bazen' }
+            ].map(a => (
+              <label key={a.key} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.9em' }}>
+                <input type="checkbox" checked={amenityFilters[a.key]}
+                  onChange={(e) => setAmenityFilters(prev => ({ ...prev, [a.key]: e.target.checked }))} />
+                {a.label}
+              </label>
+            ))}
           </div>
 
           <form className="filter-row" onSubmit={handleDateSearch}>

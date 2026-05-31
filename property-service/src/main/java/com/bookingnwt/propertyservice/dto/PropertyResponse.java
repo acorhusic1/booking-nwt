@@ -27,4 +27,12 @@ public class PropertyResponse {
     private Boolean available;
     private LocalDateTime createdAt;
     private String primaryImageUrl;
+    // F2 — kucna pravila + moderacija status
+    private Boolean ruleNoSmoking;
+    private Boolean rulePetsAllowed;
+    private Boolean rulePartiesAllowed;
+    private Boolean ruleChildrenAllowed;
+    private String moderationStatus;
+    // F1 — bazna cijena (iz PricingRule) da frontend moze filtrirati/sortirati
+    private java.math.BigDecimal basePrice;
 }

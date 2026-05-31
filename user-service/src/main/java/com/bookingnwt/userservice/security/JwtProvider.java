@@ -45,21 +45,30 @@ public class JwtProvider {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
 
-        return generateToken(email, roles);
+        return generateToken(email, roles, null);
     }
 
     public String generateToken(String email, List<String> roles) {
+        return generateToken(email, roles, null);
+    }
+
+    // Dodajemo userId claim ("uid") da downstream servisi (reservation, payment, ...)
+    // mogu da identifikuju korisnika iz tokena umjesto da vjeruju ID-u iz body-a.
+    public String generateToken(String email, List<String> roles, Long userId) {
         try {
             Date now = new Date();
             Date expiryDate = new Date(now.getTime() + jwtExpirationInMs);
 
-            return Jwts.builder()
+            var builder = Jwts.builder()
                     .subject(email)
                     .claim("roles", roles)
                     .issuedAt(now)
                     .expiration(expiryDate)
-                    .signWith(getPrivateKey())
-                    .compact();
+                    .signWith(getPrivateKey());
+
+            if (userId != null) builder.claim("uid", userId);
+
+            return builder.compact();
         } catch (Exception ex) {
             throw new RuntimeException("Greška pri generiranju JWT tokena", ex);
         }

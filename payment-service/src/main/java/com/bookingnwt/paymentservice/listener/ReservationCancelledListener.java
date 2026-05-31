@@ -58,16 +58,25 @@ public class ReservationCancelledListener {
 
             Payment payment = toRefund.get();
 
+            // F6 — refund po procentu iz cancellation policy (default 100% ako stari publisher).
+            int refundPct = event.getRefundPercentage() != null ? event.getRefundPercentage() : 100;
+            java.math.BigDecimal refundAmount = payment.getAmount()
+                    .multiply(java.math.BigDecimal.valueOf(refundPct))
+                    .divide(java.math.BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
+
             // Vrati iznos na wallet
             Optional<Wallet> walletOpt = walletRepository.findByUserId(payment.getGuestId());
-            if (walletOpt.isPresent()) {
+            if (walletOpt.isPresent() && refundAmount.signum() > 0) {
                 Wallet wallet = walletOpt.get();
-                wallet.setBalance(wallet.getBalance().add(payment.getAmount()));
+                wallet.setBalance(wallet.getBalance().add(refundAmount));
                 wallet.setUpdatedAt(LocalDateTime.now());
                 walletRepository.save(wallet);
-                log.info("💰 Refund {} {} na wallet korisnika {} (novi balance: {})",
-                        payment.getAmount(), payment.getCurrency(),
+                log.info("💰 Refund {} {} ({}% od {}) na wallet korisnika {} (novi balance: {})",
+                        refundAmount, payment.getCurrency(), refundPct, payment.getAmount(),
                         payment.getGuestId(), wallet.getBalance());
+            } else if (refundAmount.signum() == 0) {
+                log.info("ℹ️ Refund {}% = 0 BAM (politika bez povrata) za payment {}",
+                        refundPct, payment.getId());
             } else {
                 log.warn("⚠️ Wallet ne postoji za korisnika {} — refund preskočen", payment.getGuestId());
             }

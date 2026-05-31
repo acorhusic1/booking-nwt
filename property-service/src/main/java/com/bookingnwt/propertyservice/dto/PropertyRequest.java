@@ -37,4 +37,10 @@ public class PropertyRequest {
     private BigDecimal longitude;
 
     private Integer maxGuests;
+
+    // F2 — kucna pravila (opciono, defaultovi se primjenjuju u entity-ju)
+    private Boolean ruleNoSmoking;
+    private Boolean rulePetsAllowed;
+    private Boolean rulePartiesAllowed;
+    private Boolean ruleChildrenAllowed;
 }

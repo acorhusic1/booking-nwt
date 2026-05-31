@@ -17,8 +17,9 @@ export default function Header() {
         .catch(() => {})
     }
     fetchUnread()
-    // Polling svakih 15s — bez ovog badge se updateuje tek na page refresh
-    const interval = setInterval(fetchUnread, 15000)
+    // Polling svakih 8s — bez ovog badge se updateuje tek na page refresh.
+    // 8s je dovoljno brzo za "live" osjecaj, sporo dovoljno da ne tuce backend.
+    const interval = setInterval(fetchUnread, 8000)
     return () => clearInterval(interval)
   }, [isAuthenticated, user?.id])
 

@@ -2,6 +2,7 @@ package com.bookingnwt.reservationservice.publisher;
 
 import com.bookingnwt.reservationservice.events.ReservationCancelledEvent;
 import com.bookingnwt.reservationservice.events.ReservationCreatedEvent;
+import com.bookingnwt.reservationservice.events.ReservationReminderEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,6 +33,10 @@ public class ReservationEventPublisher {
     @Value("${app.rabbitmq.routing-key.reservation-cancelled}")
     private String reservationCancelledRoutingKey;
 
+    // F9 — podsjetnik na dolazak / zahtjev za recenziju (notifikacije, ne saga)
+    @Value("${app.rabbitmq.routing-key.reservation-reminder:booking.reservation.reminder}")
+    private String reservationReminderRoutingKey;
+
     /**
      * Emituje ReservationCreatedEvent u RabbitMQ.
      * Property Service sluša i markira nekretninu kao nedostupnu.
@@ -49,6 +54,17 @@ public class ReservationEventPublisher {
         } catch (Exception e) {
             log.error("❌ Greška pri objavljivanju ReservationCancelledEvent", e);
             throw new RuntimeException("Failed to publish ReservationCancelledEvent", e);
+        }
+    }
+
+    public void publishReservationReminder(ReservationReminderEvent event) {
+        try {
+            String message = objectMapper.writeValueAsString(event);
+            rabbitTemplate.convertAndSend(exchange, reservationReminderRoutingKey, message);
+            log.info("📤 🔔 ReservationReminder objavljen: type={}, reservation={}, guest={}",
+                    event.getEventType(), event.getReservationId(), event.getGuestId());
+        } catch (Exception e) {
+            log.error("❌ Greška pri objavljivanju ReservationReminderEvent", e);
         }
     }
 

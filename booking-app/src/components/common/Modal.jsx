@@ -23,13 +23,20 @@ export default function Modal({ open, onClose, title, children, size = 'md', clo
 
   if (!open) return null
 
+  // VAZNO: React portali propagiraju event kroz React tree (ne DOM tree).
+  // Bez stopPropagation, svaki klik unutar modala bubbla do roditeljskih komponenata
+  // (npr. ReservationCard onClick={toggle}) → kartica flickera dok je modal otvoren.
   const handleBackdrop = (e) => {
+    e.stopPropagation()
     if (closeOnBackdrop && e.target === e.currentTarget) onClose?.()
   }
 
+  const stopInsideClicks = (e) => e.stopPropagation()
+
   const node = (
     <div className="modal-overlay" onClick={handleBackdrop}>
-      <div className={`modal modal-${size}`} role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div className={`modal modal-${size}`} role="dialog" aria-modal="true"
+           aria-labelledby="modal-title" onClick={stopInsideClicks}>
         {title && (
           <div className="modal-header">
             <h3 id="modal-title">{title}</h3>
