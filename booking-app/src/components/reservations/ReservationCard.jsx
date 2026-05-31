@@ -46,9 +46,11 @@ export default function ReservationCard({ reservation, onChanged }) {
     if ((user?.role || '').toUpperCase() !== 'GUEST') return
     setContactingHost(true)
     try {
-      await messagesApi.createConversation(reservation.guestId, reservation.hostId, reservation.propertyId, reservation.id)
+      const conv = await messagesApi.createConversation(reservation.guestId, reservation.hostId, reservation.propertyId, reservation.id)
       showToast({ type: 'success', title: 'Konverzacija otvorena', message: 'Preusmjeravam vas na poruke...' })
-      setTimeout(() => navigate('/messages'), 600)
+      // BUG F — bez ?conv=X Messages stranica bi otvorila prvu konverzaciju
+      // umjesto upravo kreirane.
+      setTimeout(() => navigate(`/messages?conv=${conv?.id || ''}`), 600)
     } catch (err) {
       showToast({ type: 'error', title: 'Greška', message: err.response?.data?.message || 'Nije moguće otvoriti konverzaciju.' })
     } finally {

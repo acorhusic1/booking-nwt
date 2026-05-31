@@ -39,9 +39,15 @@ public class AuthServiceImpl implements AuthService {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
-        String jwt = jwtProvider.generateToken(authentication);
-
         User user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
+        // Token nosi uid claim — downstream servisi ga koriste umjesto guestId iz body-a.
+        // VAZNO: roles moraju imati ROLE_ prefix da bi hasRole('ADMIN') prosao u JwtFilter-u.
+        String jwt = jwtProvider.generateToken(
+                user.getEmail(),
+                java.util.List.of("ROLE_" + user.getRole().name()),
+                user.getId()
+        );
+
         RefreshToken refreshToken = refreshTokenService.createRefreshToken(user.getId());
 
         return new LoginResponse(jwt, refreshToken.getToken(), user.getEmail(), user.getRole().name(), user.getId());
@@ -56,7 +62,7 @@ public class AuthServiceImpl implements AuthService {
                 .map(refreshTokenService::verifyExpiration)
                 .map(RefreshToken::getUser)
                 .map(user -> {
-                    String token = jwtProvider.generateToken(user.getEmail(), java.util.List.of(user.getRole().name()));
+                    String token = jwtProvider.generateToken(user.getEmail(), java.util.List.of("ROLE_" + user.getRole().name()), user.getId());
                     return new TokenRefreshResponse(token, requestRefreshToken);
                 })
                 .orElseThrow(() -> new TokenRefreshException(requestRefreshToken, "Refresh token ne postoji u bazi podataka!"));

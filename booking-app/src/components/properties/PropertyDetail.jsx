@@ -36,7 +36,8 @@ export default function PropertyDetail() {
     try {
       const conv = await messagesApi.createConversation(user.id, property.hostId, property.id, null);
       showToast({ type: 'success', title: 'Konverzacija otvorena', message: 'Preusmjeravam vas na poruke...' });
-      setTimeout(() => navigate('/messages'), 600);
+      // BUG F — bez ?conv=X otvorila bi se prva konverzacija u listi
+      setTimeout(() => navigate(`/messages?conv=${conv?.id || ''}`), 600);
     } catch (err) {
       showToast({ type: 'error', title: 'Greška', message: err.response?.data?.message || 'Konverzacija nije otvorena.' });
     } finally {

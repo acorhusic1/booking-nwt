@@ -5,6 +5,7 @@ import com.bookingnwt.reservationservice.dto.ReservationResponseDTO;
 import com.bookingnwt.reservationservice.model.ReservationStatus;
 import com.bookingnwt.reservationservice.service.ReservationService;
 import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,8 +30,19 @@ public class ReservationController {
 
     @PostMapping
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
-    public ResponseEntity<ReservationResponseDTO> createReservation(@Valid @RequestBody ReservationRequestDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(reservationService.createReservation(dto));
+    public ResponseEntity<ReservationResponseDTO> createReservation(@Valid @RequestBody ReservationRequestDTO dto,
+                                                                    HttpServletRequest request) {
+        // Token-derivirani userId pregazi guestId iz body-a (sprjecava spoofing
+        // tudjeg userId-a). Ako token nema uid claim (stari token bez ovog fielda),
+        // padamo natrag na body — useri ce po novom loginu dobiti svjez token.
+        Object authUid = request.getAttribute("authUserId");
+        if (authUid instanceof Long uid) {
+            dto.setGuestId(uid);
+        }
+        // 202 Accepted: rezervacija je kreirana sa status=CREATED, ali Saga
+        // (naplata + property rezervacija) je jos u toku. Klijent dobija
+        // konacan status (CONFIRMED / CANCELLED) kroz notifikaciju.
+        return ResponseEntity.status(HttpStatus.ACCEPTED).body(reservationService.createReservation(dto));
     }
 
     @GetMapping("/{id}")

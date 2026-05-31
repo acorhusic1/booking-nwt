@@ -24,4 +24,6 @@ public class ReservationCancelledEvent {
     private String reason;
     private LocalDateTime eventTimestamp;
     private String eventType;
+    // F6 — % iznosa za refund (defaults to 100 ako stari publisher ne salje)
+    private Integer refundPercentage;
 }

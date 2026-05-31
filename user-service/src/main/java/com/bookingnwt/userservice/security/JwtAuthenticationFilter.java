@@ -35,8 +35,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String email = claims.getSubject();
 
             List<?> roles = claims.get("roles", List.class);
+            // hasRole('ADMIN') trazi ROLE_ADMIN — auto-prepend prefix ako fali (defensive)
             List<SimpleGrantedAuthority> authorities = roles.stream()
-                    .map(role -> new SimpleGrantedAuthority(role.toString()))
+                    .map(Object::toString)
+                    .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                    .map(SimpleGrantedAuthority::new)
                     .collect(Collectors.toList());
 
             UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

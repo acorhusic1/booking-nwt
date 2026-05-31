@@ -48,8 +48,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 String email = claims.getSubject();
                 List<?> roles = claims.get("roles", List.class);
+                // hasAnyRole('HOST') trazi ROLE_HOST. JWT cuva samo "HOST" pa moramo
+                // prepend-ovati prefix prije nego sto pravimo authorities — bez ovog
+                // svi HOST endpoint-i bi vracali 403 (kao /api/reports/host/{id}/year/{y}).
                 List<SimpleGrantedAuthority> authorities = roles.stream()
-                        .map(role -> new SimpleGrantedAuthority(role.toString()))
+                        .map(Object::toString)
+                        .map(r -> r.startsWith("ROLE_") ? r : "ROLE_" + r)
+                        .map(SimpleGrantedAuthority::new)
                         .collect(Collectors.toList());
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(

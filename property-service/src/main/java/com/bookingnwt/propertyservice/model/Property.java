@@ -54,6 +54,27 @@ public class Property {
     @Column(name = "available")
     private Boolean available = true;
 
+    // F2 — kucna pravila (smoking, pets, parties, children).
+    // Cuvamo kao 4 boolean kolone radi jednostavnosti (ne JSON da bi mogli
+    // filtrirati u JPA query-ju u buducnosti).
+    @Column(name = "rule_no_smoking")
+    private Boolean ruleNoSmoking = true;
+
+    @Column(name = "rule_pets_allowed")
+    private Boolean rulePetsAllowed = false;
+
+    @Column(name = "rule_parties_allowed")
+    private Boolean rulePartiesAllowed = false;
+
+    @Column(name = "rule_children_allowed")
+    private Boolean ruleChildrenAllowed = true;
+
+    // F2 — moderacija. Default: PENDING — admin mora odobriti prije nego objekt
+    // postane javno vidljiv na /properties listi (filtrira se u getAll/search).
+    // nullable=true zbog DDL update-a na postojecu tabelu; PrePersist setuje default.
+    @Column(name = "moderation_status", columnDefinition = "VARCHAR(20) DEFAULT 'APPROVED'")
+    private String moderationStatus = "PENDING";
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
@@ -96,6 +117,7 @@ public class Property {
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+        if (moderationStatus == null) moderationStatus = "PENDING";
     }
 
 }

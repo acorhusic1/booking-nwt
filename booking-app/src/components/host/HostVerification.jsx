@@ -21,9 +21,10 @@ export default function HostVerification() {
     if (!user?.id) return
     try {
       const data = await verificationApi.getByUser(user.id)
-      setVerifications(data)
+      // backend ponekad vrati null/undefined umjesto []; bez ovog se padne na verifications[0]
+      setVerifications(Array.isArray(data) ? data : [])
     } catch {
-      // tiho
+      setVerifications([])
     } finally {
       setLoading(false)
     }

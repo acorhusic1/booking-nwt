@@ -91,6 +91,14 @@
   text-decoration: line-through;
 }
 
+/* Rezervisani datumi (gostova rezervacija) — host vidi da ne smije tu blokirati */
+.cal-day.reserved {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.4);
+  cursor: not-allowed;
+}
+
 .cal-day.selected {
   background: var(--violet-primary);
   color: #fff;

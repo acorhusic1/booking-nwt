@@ -33,4 +33,6 @@ public class ReservationCancelledEvent {
     private String eventType = "RESERVATION_CANCELLED";
     // BUG A — notification-service treba hostId za "Otkazana rezervacija" notifikaciju hostu
     private Long hostId;
+    // F6 — refund % iz cancellation policy (100 = pun, 50 = pola, 0 = nista)
+    private Integer refundPercentage;
 }

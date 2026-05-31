@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import Modal from '../common/Modal'
 import { propertyApi } from '../../api/propertyApi'
+import { reservationApi } from '../../api/reservationApi'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../common/ToastProvider'
 import '../../styles/Calendar.css'
@@ -18,6 +19,8 @@ export default function CalendarModal({ open, onClose, property }) {
   const { user } = useAuthStore()
   const { showToast } = useToast()
   const [blocks, setBlocks] = useState([])
+  // BUG H — host treba vidjeti i gostove rezervacije da ne stavi radove preko njih
+  const [reservedRanges, setReservedRanges] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [viewMonth, setViewMonth] = useState(new Date().getMonth())
@@ -30,10 +33,12 @@ export default function CalendarModal({ open, onClose, property }) {
     if (!property?.id) return
     setLoading(true)
     try {
-      const data = await propertyApi.getCalendarBlocks(property.id)
-      setBlocks(data || [])
-    } catch {
-      setBlocks([])
+      const [blocksData, occupied] = await Promise.allSettled([
+        propertyApi.getCalendarBlocks(property.id),
+        reservationApi.getOccupiedDates(property.id)
+      ])
+      setBlocks(blocksData.status === 'fulfilled' ? (blocksData.value || []) : [])
+      setReservedRanges(occupied.status === 'fulfilled' ? (occupied.value || []) : [])
     } finally {
       setLoading(false)
     }
@@ -66,6 +71,15 @@ export default function CalendarModal({ open, onClose, property }) {
     const iso = isoDate(d)
     return blocks.find(b => iso >= b.startDate && iso <= b.endDate)
   }
+  // checkOut je exclusive — gost odlazi tog dana pa je dan slobodan
+  const isReserved = (d) => {
+    const iso = isoDate(d)
+    return reservedRanges.find(r => {
+      const s = (r.checkIn || '').slice(0, 10)
+      const e = (r.checkOut || '').slice(0, 10)
+      return s && e && iso >= s && iso < e
+    })
+  }
   const isInSelectedRange = (d) => {
     if (!rangeStart) return false
     if (!rangeEnd) return isoDate(d) === isoDate(rangeStart)
@@ -76,7 +90,7 @@ export default function CalendarModal({ open, onClose, property }) {
   }
 
   const handleDayClick = (d) => {
-    if (!isInMonth(d) || isPast(d) || isBlocked(d)) return
+    if (!isInMonth(d) || isPast(d) || isBlocked(d) || isReserved(d)) return
     if (!rangeStart || (rangeStart && rangeEnd)) {
       setRangeStart(d); setRangeEnd(null)
     } else {
@@ -138,6 +152,7 @@ export default function CalendarModal({ open, onClose, property }) {
         {DAY_NAMES.map(d => <div key={d} className="cal-dayname">{d}</div>)}
         {days.map((d) => {
           const block = isBlocked(d)
+          const reserved = !block && isReserved(d)
           const inMonth = isInMonth(d)
           const past = isPast(d)
           const selected = isInSelectedRange(d)
@@ -145,13 +160,16 @@ export default function CalendarModal({ open, onClose, property }) {
           if (!inMonth) classes.push('out')
           if (past) classes.push('past')
           if (block) classes.push('blocked')
+          else if (reserved) classes.push('reserved')
           if (selected) classes.push('selected')
+          const title = block ? `Blokirano: ${block.reason}`
+            : reserved ? 'Rezervisano (gost)' : ''
           return (
             <div
               key={d.toISOString()}
               className={classes.join(' ')}
               onClick={() => handleDayClick(d)}
-              title={block ? `Blokirano: ${block.reason}` : ''}
+              title={title}
             >
               {d.getDate()}
             </div>

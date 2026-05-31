@@ -40,6 +40,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         tokenProvider.getAuthorities(claims));
                 auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                // uid claim — autentifikovani userId koji controlleri citaju umjesto
+                // da vjeruju ID-u iz request body-a (sprjecava spoofing tudjeg guestId-a)
+                Object uidRaw = claims.get("uid");
+                if (uidRaw != null) {
+                    request.setAttribute("authUserId", Long.valueOf(uidRaw.toString()));
+                }
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (JwtException | IllegalArgumentException e) {
                 SecurityContextHolder.clearContext();
