@@ -43,4 +43,7 @@ public class PropertyRequest {
     private Boolean rulePetsAllowed;
     private Boolean rulePartiesAllowed;
     private Boolean ruleChildrenAllowed;
+
+    // F1 — sadrzaji (amenityId-evi koje korisnik bira pri kreiranju)
+    private java.util.Set<Long> amenityIds;
 }

@@ -73,7 +73,8 @@ public class ReservationEventListener {
                     failed.getId(), event.getReservationId(), event.getPropertyId(),
                     event.getUserId(),
                     "Wallet ne postoji za korisnika " + event.getUserId(),
-                    LocalDateTime.now(), "PAYMENT_FAILED"
+                    LocalDateTime.now(), "PAYMENT_FAILED",
+                    event.getHostId()
             ));
             return;
         }
@@ -87,7 +88,8 @@ public class ReservationEventListener {
                     failed.getId(), event.getReservationId(), event.getPropertyId(),
                     event.getUserId(),
                     "Nedovoljno sredstava (balance=" + wallet.getBalance() + ", potrebno=" + amount + ")",
-                    LocalDateTime.now(), "PAYMENT_FAILED"
+                    LocalDateTime.now(), "PAYMENT_FAILED",
+                    event.getHostId()
             ));
             return;
         }

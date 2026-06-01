@@ -204,19 +204,19 @@ export default function Dashboard() {
     if (!pendingId) return
     setSagaPolling(true)
     let count = 0
-    // BUG I — produzeno sa 2s na 3s; manje vidljivog "treperenja" liste
-    // dok cekamo Saga ishod.
+    // Saga normalno zavrsi za <1s. Pollujemo svake 1.5s, max 10 pokusaja (=15s).
+    // Bez ovog kratkog perioda gost bi cekao do 15s da vidi CONFIRMED/CANCELLED.
     resPollRef.current = setInterval(async () => {
       count++
       await fetchAll()
       const target = reservations.find(r => String(r.id) === pendingId)
-      if ((target && target.status !== 'CREATED') || count >= 5) {
+      if ((target && target.status !== 'CREATED') || count >= 10) {
         clearInterval(resPollRef.current)
         setSagaPolling(false)
         searchParams.delete('pendingId')
         setSearchParams(searchParams, { replace: true })
       }
-    }, 3000)
+    }, 1500)
     return () => clearInterval(resPollRef.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingId])

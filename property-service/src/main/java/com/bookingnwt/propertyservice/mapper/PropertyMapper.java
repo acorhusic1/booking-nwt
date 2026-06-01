@@ -12,7 +12,16 @@ public interface PropertyMapper {
 
     @Mapping(target = "primaryImageUrl", expression = "java(getPrimaryImageUrl(property))")
     @Mapping(target = "basePrice", expression = "java(getBasePrice(property))")
+    @Mapping(target = "amenities", expression = "java(getAmenityNames(property))")
     PropertyResponse toResponse(Property property);
+
+    default java.util.List<String> getAmenityNames(Property property) {
+        if (property.getAmenities() == null) return java.util.Collections.emptyList();
+        return property.getAmenities().stream()
+                .map(com.bookingnwt.propertyservice.model.Amenity::getName)
+                .sorted()
+                .toList();
+    }
 
     default String getPrimaryImageUrl(Property property) {
         if (property.getImages() == null || property.getImages().isEmpty()) {

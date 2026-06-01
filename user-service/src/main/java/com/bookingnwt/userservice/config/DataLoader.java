@@ -59,8 +59,11 @@ public class DataLoader {
             v1.setVerifiedBy(admin.getId());
             verificationRepo.save(v1);
 
+            // Auto-APPROVED za sve seed hostove da ne moraju manualno svaki put
             IdentityVerification v2 = new IdentityVerification(host2, "PASOŠ", "PA-987654321");
-            v2.setStatus(VerificationStatus.PENDING);
+            v2.setStatus(VerificationStatus.APPROVED);
+            v2.setVerifiedAt(LocalDateTime.now());
+            v2.setVerifiedBy(admin.getId());
             verificationRepo.save(v2);
 
             // --- Korisničke preferencije ---

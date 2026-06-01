@@ -6,6 +6,8 @@ import { wishlistApi } from '../../api/wishlistApi'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../common/ToastProvider'
 import PropertyCard from './PropertyCard'
+import PropertyMap from './PropertyMap'
+import WishlistPicker from '../wishlist/WishlistPicker'
 import Spinner from '../common/Spinner'
 import ErrorState from '../common/ErrorState'
 import '../../styles/PropertyList.css'
@@ -32,6 +34,12 @@ export default function PropertyList({ filters }) {
   const [minGuests, setMinGuests] = useState(1)
   const [sortBy, setSortBy] = useState('default')
   const [showFilters, setShowFilters] = useState(false)
+  // F18 — grid ili mapa view
+  const [viewMode, setViewMode] = useState('grid') // 'grid' | 'map'
+  // F18 — kad je map mode, dohvati SVE smjestaje odjednom (ne samo trenutnu stranicu)
+  const [allForMap, setAllForMap] = useState([])
+  // F10 — koji property je otvoren u WishlistPicker modalu
+  const [pickerForProperty, setPickerForProperty] = useState(null)
   // F1 — period boravka (koristi backend /search endpoint kad su oba datuma data)
   const [checkIn, setCheckIn] = useState('')
   const [checkOut, setCheckOut] = useState('')
@@ -92,6 +100,15 @@ export default function PropertyList({ filters }) {
 
   useEffect(() => { fetchProperties() }, [page])
 
+  // F18 — kad korisnik prebaci na mapu, dohvati SVE smjestaje (size=1000) da
+  // mapa pokaze sve markere, ne samo onih sa trenutne stranice.
+  useEffect(() => {
+    if (viewMode !== 'map') return
+    propertyApi.getAll(0, 1000, '')
+      .then(data => setAllForMap(data.content || []))
+      .catch(() => setAllForMap([]))
+  }, [viewMode])
+
   // F1 — dropdown drzava izveden iz ucitanih property-a.
   // Ukljucujemo i trenutno odabranu zemlju cak i ako trenutni rezultati
   // ne sadrze nista iz nje — inace dropdown "izgubi" tu opciju nakon search-a
@@ -126,17 +143,23 @@ export default function PropertyList({ filters }) {
     return () => { cancelled = true }
   }, [properties.map(p => p.id).join(',')])
 
-  // F10 — dohvati gostovu prvu (default) wishlist listu + stavke
+  // F10 — dohvati stavke iz SVIH gostovih wishlist lista (ne samo prve).
+  // Heart na property kartici je popunjen ako se property nalazi u BAR JEDNOJ listi.
   const loadWishlist = useCallback(async () => {
     if (!isAuthenticated || !isGuest || !user?.id) return
     try {
       const lists = await wishlistApi.getByGuest(user.id)
-      if (lists.length === 0) return // nema liste — kreirat ce se lazy pri prvom srcu
-      const def = lists[0]
-      setDefaultListId(def.id)
-      const items = await wishlistApi.getItems(def.id)
+      if (lists.length === 0) {
+        setDefaultListId(null)
+        setWishlistItems({})
+        return
+      }
+      setDefaultListId(lists[0].id) // backward compat za druge dijelove koji koriste default
+      const allItems = await Promise.all(
+        lists.map(l => wishlistApi.getItems(l.id).catch(() => []))
+      )
       const map = {}
-      items.forEach((it) => { map[it.propertyId] = it.id })
+      allItems.flat().forEach((it) => { map[it.propertyId] = it.id })
       setWishlistItems(map)
     } catch {
       // tiho — wishlist nije kriticna funkcija za prikaz liste
@@ -150,6 +173,11 @@ export default function PropertyList({ filters }) {
       showToast({ type: 'info', title: 'Prijava potrebna', message: 'Prijavite se kao gost da sačuvate smještaj.' })
       return
     }
+    // F10 fix — umjesto auto-dodavanja u "prvu" listu, otvori picker da gost
+    // bira u koju listu (ili kreira novu)
+    setPickerForProperty(propertyId)
+    return
+    // eslint-disable-next-line no-unreachable
     try {
       let listId = defaultListId
       // Lazy kreiranje default liste pri prvom srcu
@@ -223,12 +251,21 @@ export default function PropertyList({ filters }) {
       list = list.filter(p => (ratingByProp[p.id] || 0) >= minRating)
     }
 
-    // F1 — amenities filter (smjestaj mora imati SVE oznacene)
+    // F1 — amenities filter (smjestaj mora imati SVE oznacene).
+    // Backend vraca amenities kao listu imena ("WiFi", "Parking", ...). Mi
+    // upoređujemo case-insensitive substring (npr. AC matchira "Klima uređaj"
+    // ako ima "klima" tekst).
+    const AMENITY_MATCH = {
+      WIFI: ['wifi'], PARKING: ['parking'], AC: ['klima', 'ac'], POOL: ['bazen', 'pool']
+    }
     const activeAmenities = Object.entries(amenityFilters).filter(([, v]) => v).map(([k]) => k)
     if (activeAmenities.length > 0) {
       list = list.filter(p => {
-        const names = (p.amenities || []).map(a => (typeof a === 'string' ? a : a.name || '').toUpperCase())
-        return activeAmenities.every(a => names.includes(a))
+        const names = (p.amenities || []).map(a => (typeof a === 'string' ? a : a.name || '').toLowerCase())
+        return activeAmenities.every(key => {
+          const needles = AMENITY_MATCH[key] || [key.toLowerCase()]
+          return needles.some(n => names.some(name => name.includes(n)))
+        })
       })
     }
 
@@ -301,6 +338,15 @@ export default function PropertyList({ filters }) {
           onClick={() => setShowFilters(s => !s)}
         >
           {showFilters ? '▲ Sakrij filtere' : '▼ Više filtera'}
+        </button>
+        {/* F18 — toggle grid/map */}
+        <button
+          type="button"
+          className="filter-toggle-btn"
+          onClick={() => setViewMode(v => v === 'grid' ? 'map' : 'grid')}
+          title={viewMode === 'grid' ? 'Prikaži na mapi' : 'Prikaži kao listu'}
+        >
+          {viewMode === 'grid' ? '🗺 Mapa' : '🔳 Lista'}
         </button>
       </div>
 
@@ -396,6 +442,9 @@ export default function PropertyList({ filters }) {
 
       {!loading && !error && (
         <>
+          {viewMode === 'map' ? (
+            <PropertyMap properties={allForMap.length ? allForMap : visible} />
+          ) : (
           <div className="properties-grid">
             {visible.map((property) => (
               <PropertyCard
@@ -407,6 +456,7 @@ export default function PropertyList({ filters }) {
               />
             ))}
           </div>
+          )}
 
           {visible.length === 0 && (
             <div className="no-properties">
@@ -433,6 +483,13 @@ export default function PropertyList({ filters }) {
           </div>
         </>
       )}
+
+      <WishlistPicker
+        open={pickerForProperty != null}
+        propertyId={pickerForProperty}
+        onClose={() => setPickerForProperty(null)}
+        onChanged={loadWishlist}
+      />
     </div>
   )
 }

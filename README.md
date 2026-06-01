@@ -139,7 +139,7 @@ npm run test:ui     # vizualni UI u browser-u
 | F3 | Upravljanje kalendarom dostupnosti | ✅ | Vizualni kalendar, blokiranje datuma, prikaz gostovih rezervacija (BUG H fix). Min/max nights kroz sezonska pravila (F15). |
 | F4 | Dinamičko određivanje cijena | ✅ | Base price, weekend price, long-stay discount, sezonski modifikator. Breakdown se prikazuje gostu prije potvrde. |
 | F5 | Proces rezervacije sa provjerom dostupnosti | ✅ | Saga choreography sprjecava duple rezervacije. Statusi: CREATED → CONFIRMED → ACTIVE → COMPLETED (auto-scheduler). 202 Accepted response. |
-| F6 | Politike otkazivanja | ⚠ Djelimično | CancellationPolicy entity, 7-day pravilo, automatski refund u wallet pri otkazivanju. Različite tier-politike (partial refund, no refund po sezoni) nisu implementirane. |
+| F6 | Politike otkazivanja | ✅ | 3 tier-a: pun refund (unutar `freeCancelDays`), djelimičan (`partialRefundPct%`), bez refunda (`noRefund=true`). Saga propagira `refundPercentage` u payment-service koji kalkuliše tačan iznos za wallet credit. |
 | F7 | Ocjenjivanje i recenzije | ✅ | 5 kategorija (čistoća, lokacija, komunikacija, vrijednost, tačnost), tekstualni komentar, host reply, prosječna ocjena na detalju. Samo COMPLETED rezervacije mogu ostaviti recenziju. |
 | F8 | Sistem poruka gost ↔ host | ✅ | Konverzacije vezane za property/rezervaciju, prikaz imena umjesto ID-a, notifikacije o novim porukama. |
 | F9 | Sistem notifikacija | ✅ | Notifikacije za: novu rezervaciju (host), potvrdu/otkazivanje (gost + host), nova poruka, recenzija. Read/unread status, bell badge sa polling-om (15s). Podsjetnik na dolazak nije implementiran. |
@@ -151,10 +151,10 @@ npm run test:ui     # vizualni UI u browser-u
 | F15 | Sezonska pravila i ograničenja | ✅ | Cijenovni modifikator (+30%, -10%, ...), min nights u sezoni. Automatska primjena pri kreiranju rezervacije. |
 | F16 | Verifikacija identiteta domaćina | ✅ | Host upload broja dokumenta, admin approve/reject, badge "Verifikovan" na host profilu. |
 | F17 | Prijava problema tokom boravka | ✅ | 6 kategorija, opis problema, host vidi i mijenja status (REPORTED → IN_PROGRESS → RESOLVED/CLOSED). Notifikacija domaćinu. |
-| F18 | Interaktivna mapa | ❌ | Nije implementirano. Property entity ima `latitude`/`longitude` polja, fali samo react-leaflet integracija u frontu. |
+| F18 | Interaktivna mapa | ✅ | OpenStreetMap kroz `react-leaflet`. Toggle "🗺 Mapa / 🔳 Lista" na `/properties`. Marker per property sa popup-om (naziv, cijena, link na detalje). Pomicanje + zoom radi nativno. Host pri dodavanju smještaja koristi LocationPicker — klik na mapu postavlja lat/lng. |
 | F19 | Plaćanje i virtualni novčanik | ✅ | Wallet (Saga naplata pri rezervaciji, refund pri otkazu), Stripe Checkout za dopunu kartice. Pri PAYMENT_FAILED — kompenzacijska transakcija oslobađa kalendar. |
 
-**Sažetak:** 15 ✅ kompletno · 1 ⚠ djelimično (F6) · 1 ⏭ namjerno preskočeno (F14) · 2 ❌ nedostaje (F12, F18).
+**Sažetak:** 17 ✅ kompletno · 1 ⏭ namjerno preskočeno (F14) · 1 ❌ nedostaje (F12 — preporuke iz historije).
 
 ## Struktura repozitorija
 

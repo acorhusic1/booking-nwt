@@ -35,4 +35,6 @@ public class PropertyResponse {
     private String moderationStatus;
     // F1 — bazna cijena (iz PricingRule) da frontend moze filtrirati/sortirati
     private java.math.BigDecimal basePrice;
+    // F1 — sadrzaji (lista imena za frontend filter + display)
+    private java.util.List<String> amenities;
 }
