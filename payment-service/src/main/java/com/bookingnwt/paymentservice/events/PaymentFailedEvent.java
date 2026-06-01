@@ -27,4 +27,7 @@ public class PaymentFailedEvent {
     private String reason;
     private LocalDateTime eventTimestamp;
     private String eventType = "PAYMENT_FAILED";
+    // Host treba notif "Rezervacija otkazana — naplata nije uspjela" da zna
+    // da gost nije uspio platiti pa termin ne ostaje "rezervisan" za njega
+    private Long hostId;
 }

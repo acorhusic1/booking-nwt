@@ -94,6 +94,21 @@ public class SagaNotificationListener {
 
         notificationRepository.save(notification);
         log.warn("Notifikacija OTKAZANA_REZERVACIJA kreirana za korisnika {}", event.getGuestId());
+
+        // Hostov notif kad gostu padne naplata — termin se oslobađa
+        if (event.getHostId() != null) {
+            Notification hostNotif = new Notification(
+                    event.getHostId(),
+                    "OTKAZANA_REZERVACIJA",
+                    "Rezervacija nije uspjela",
+                    String.format("Gost #%d je pokušao rezervisati vaš smještaj #%d ali naplata nije uspjela. " +
+                                  "Termin je oslobođen i ponovo dostupan.",
+                                  event.getGuestId(), event.getPropertyId()),
+                    event.getReservationId()
+            );
+            notificationRepository.save(hostNotif);
+            log.info("Notifikacija o failed payment poslata hostu {}", event.getHostId());
+        }
     }
 
     /**

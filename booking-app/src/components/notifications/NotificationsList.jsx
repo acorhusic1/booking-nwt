@@ -108,7 +108,16 @@ export default function NotificationsList({ onUnreadChange }) {
               <p className="notif-content">{n.content}</p>
 
               <div className="notif-actions">
-                {n.relatedReservationId && (
+                {n.type === 'NOVA_PORUKA' ? (
+                  // Notif za novu poruku vodi direktno u Messages, ne na rezervaciju
+                  <Link
+                    to="/messages"
+                    className="notif-link"
+                    onClick={() => !n.isRead && handleMarkRead(n.id)}
+                  >
+                    Otvori poruke →
+                  </Link>
+                ) : n.relatedReservationId && (
                   <Link
                     to={reservationsHref}
                     className="notif-link"

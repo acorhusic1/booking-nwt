@@ -1,6 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { propertyApi } from '../../api/propertyApi'
+import { amenityApi } from '../../api/amenityApi'
 import { useAuthStore } from '../../store/authStore'
+import LocationPicker from './LocationPicker'
 import '../../styles/AddPropertyModal.css'
 
 export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
@@ -12,6 +14,9 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
     city: '',
     country: '',
     maxGuests: 1,
+    // F18 — koordinate za prikaz na mapi
+    latitude: '',
+    longitude: '',
     // F2 — kucna pravila
     ruleNoSmoking: true,
     rulePetsAllowed: false,
@@ -20,6 +25,15 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  // F1 — lista svih amenities + selektovani ID-evi
+  const [amenities, setAmenities] = useState([])
+  const [selectedAmenityIds, setSelectedAmenityIds] = useState(new Set())
+
+  useEffect(() => {
+    if (isOpen) {
+      amenityApi.getAll().then(setAmenities).catch(() => setAmenities([]))
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -39,7 +53,8 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
     try {
       const propertyData = {
         ...formData,
-        hostId: user?.id
+        hostId: user?.id,
+        amenityIds: Array.from(selectedAmenityIds)
       }
       const newProperty = await propertyApi.create(propertyData)
       onPropertyAdded(newProperty)
@@ -153,6 +168,15 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
             </div>
           </div>
 
+          {/* F18 — vizualni picker lokacije */}
+          <div className="form-group">
+            <label>Lokacija na mapi <em style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>(klik na mapu)</em>:</label>
+            <LocationPicker
+              value={{ lat: formData.latitude, lng: formData.longitude }}
+              onChange={({ lat, lng }) => setFormData(p => ({ ...p, latitude: lat, longitude: lng }))}
+            />
+          </div>
+
           <div className="form-section-label">Kapacitet</div>
 
           <div className="form-group">
@@ -167,6 +191,33 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
               required
             />
           </div>
+
+          <div className="form-section-label">Sadržaji</div>
+          {amenities.length === 0 ? (
+            <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85em' }}>Učitavanje sadržaja...</p>
+          ) : (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(2, 1fr)',
+              gap: '10px 18px',
+              padding: '6px 0'
+            }}>
+              {amenities.map(a => {
+                const checked = selectedAmenityIds.has(a.id)
+                return (
+                  <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.95em', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={checked}
+                      onChange={(e) => {
+                        const next = new Set(selectedAmenityIds)
+                        if (e.target.checked) next.add(a.id); else next.delete(a.id)
+                        setSelectedAmenityIds(next)
+                      }} />
+                    <span>{a.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+          )}
 
           <div className="form-section-label">Kućna pravila</div>
           <div className="form-row" style={{ flexWrap: 'wrap', gap: '10px' }}>
