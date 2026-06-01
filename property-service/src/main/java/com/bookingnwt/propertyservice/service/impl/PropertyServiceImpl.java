@@ -5,7 +5,9 @@ import com.bookingnwt.propertyservice.dto.PropertyRequest;
 import com.bookingnwt.propertyservice.dto.PropertyResponse;
 import com.bookingnwt.propertyservice.exception.ResourceNotFoundException;
 import com.bookingnwt.propertyservice.mapper.PropertyMapper;
+import com.bookingnwt.propertyservice.model.Amenity;
 import com.bookingnwt.propertyservice.model.Property;
+import com.bookingnwt.propertyservice.repository.AmenityRepository;
 import com.bookingnwt.propertyservice.repository.PropertyRepository;
 import com.bookingnwt.propertyservice.service.PropertyService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class PropertyServiceImpl implements PropertyService {
 
     private final PropertyRepository propertyRepository;
     private final PropertyMapper propertyMapper;
+    private final AmenityRepository amenityRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -73,8 +76,20 @@ public class PropertyServiceImpl implements PropertyService {
     public PropertyResponse createProperty(PropertyRequest request) {
         Property property = propertyMapper.toEntity(request);
         property.setAvailable(true);
+        attachAmenities(property, request.getAmenityIds());
         Property saved = propertyRepository.save(property);
         return propertyMapper.toResponse(saved);
+    }
+
+    // F1 — host izabere amenity ID-eve u modalu; ovdje ih dohvatimo iz repo
+    // i postavimo na entity (ManyToMany sa amenity tabelom)
+    private void attachAmenities(Property property, java.util.Set<Long> amenityIds) {
+        if (amenityIds == null || amenityIds.isEmpty()) {
+            property.setAmenities(new java.util.HashSet<>());
+            return;
+        }
+        java.util.Set<Amenity> amenities = new java.util.HashSet<>(amenityRepository.findAllById(amenityIds));
+        property.setAmenities(amenities);
     }
 
     @Override
@@ -82,6 +97,7 @@ public class PropertyServiceImpl implements PropertyService {
         Property property = propertyRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Nekretnina sa ID " + id + " nije pronađena"));
         propertyMapper.updateEntity(request, property);
+        attachAmenities(property, request.getAmenityIds());
         Property updated = propertyRepository.save(property);
         return propertyMapper.toResponse(updated);
     }

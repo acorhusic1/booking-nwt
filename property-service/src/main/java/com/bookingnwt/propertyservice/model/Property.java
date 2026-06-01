@@ -41,8 +41,12 @@ public class Property {
     @Column(nullable = false)
     private String country;
 
+    // Geo koordinate trebaju 6 decimala (~10cm preciznost). Bez ovog Hibernate
+    // mapira BigDecimal kao DECIMAL(38,2) → 43.8757 → 43.88 (zaokruzi se).
+    @Column(precision = 10, scale = 6)
     private BigDecimal latitude;
 
+    @Column(precision = 10, scale = 6)
     private BigDecimal longitude;
 
     @Column(name = "max_guests")
