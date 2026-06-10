@@ -9,7 +9,7 @@ Distribuirana platforma za rezervaciju smještaja, izgrađena kroz Spring Boot m
 | Benjamin Hadžihasanović | Backend (reservation-service, payment-service), frontend Dashboard |
 | Emir | Backend (property-service), Host Dashboard, kalendar |
 | Kenan | Notification-service, Saga listeneri, Messages |
-| Acor (Husein) | API Gateway, user-service, Auth, Admin Dashboard |
+| Ahmed Ćorhusić | API Gateway, user-service, Auth, Admin Dashboard |
 
 ## Arhitektura
 
