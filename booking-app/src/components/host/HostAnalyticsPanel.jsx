@@ -43,9 +43,15 @@ export default function HostAnalyticsPanel({ properties, reservations, year, sel
   // Stopa popunjenosti — booked nights / available nights u godini
   // Available = 365 (366 za prijestupnu) × broj relevantnih propertya
   const occupancy = useMemo(() => {
+    // Noci se SIJEKU na granice izabrane godine — boravak koji prelazi u
+    // sljedecu godinu ranije je brojan cijeli pa je procenat bio naduvan.
+    const yearStart = new Date(year, 0, 1)
+    const yearEnd = new Date(year + 1, 0, 1)
     const totalNights = relevantReservations.reduce((sum, r) => {
       if (!r.checkIn || !r.checkOut) return sum
-      const nights = Math.max(0, Math.round((new Date(r.checkOut) - new Date(r.checkIn)) / 86400000))
+      const from = new Date(Math.max(new Date(r.checkIn), yearStart))
+      const to = new Date(Math.min(new Date(r.checkOut), yearEnd))
+      const nights = Math.max(0, Math.round((to - from) / 86400000))
       return sum + nights
     }, 0)
     const daysInYear = ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) ? 366 : 365

@@ -7,6 +7,7 @@ import com.bookingnwt.reservationservice.mapper.ProblemReportMapper;
 import com.bookingnwt.reservationservice.model.ProblemReport;
 import com.bookingnwt.reservationservice.model.ProblemReportStatus;
 import com.bookingnwt.reservationservice.model.Reservation;
+import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.ProblemReportRepository;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
 import com.bookingnwt.reservationservice.service.impl.ProblemReportServiceImpl;
@@ -34,6 +35,8 @@ class ProblemReportServiceTest {
     private ReservationRepository reservationRepository;
     @Mock
     private ProblemReportMapper reportMapper;
+    @Mock
+    private ReservationEventPublisher eventPublisher;
 
     @InjectMocks
     private ProblemReportServiceImpl reportService;

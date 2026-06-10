@@ -34,6 +34,19 @@ export const propertyApi = {
     return response.data
   },
 
+  // F18 — smjestaji unutar vidljivog dijela mape (poziva se na moveend/zoomend)
+  getInBounds: async (minLat, maxLat, minLng, maxLng) => {
+    const response = await apiClient.get('/api/properties/in-bounds', {
+      params: { minLat, maxLat, minLng, maxLng }
+    })
+    return response.data
+  },
+
+  // F11 — registruj pregled oglasa (fire-and-forget pri otvaranju detalja)
+  registerView: async (id) => {
+    await apiClient.post(`/api/properties/${id}/view`)
+  },
+
   getByHostId: async (hostId) => {
     const response = await apiClient.get(`/api/properties/host/${hostId}`)
     return response.data

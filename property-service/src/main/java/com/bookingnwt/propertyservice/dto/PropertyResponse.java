@@ -37,4 +37,8 @@ public class PropertyResponse {
     private java.math.BigDecimal basePrice;
     // F1 — sadrzaji (lista imena za frontend filter + display)
     private java.util.List<String> amenities;
+    // F1/F2 — tip smjestaja (APARTMAN, KUCA, HOTEL, HOSTEL, VILA...)
+    private String propertyType;
+    // F11 — broj pregleda oglasa
+    private Long viewCount;
 }

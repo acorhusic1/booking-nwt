@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Modal from '../common/Modal'
 import { propertyApi } from '../../api/propertyApi'
 import { useToast } from '../common/ToastProvider'
+import { todayLocalISO } from '../../utils/dates'
 
 /**
  * F15 — Host upravlja sezonskim pravilima property-a.
@@ -77,7 +78,7 @@ export default function SeasonalRulesModal({ open, onClose, property }) {
     }
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocalISO()
 
   return (
     <Modal open={open} onClose={onClose} title={`Sezonska pravila: ${property?.name || ''}`} size="lg">

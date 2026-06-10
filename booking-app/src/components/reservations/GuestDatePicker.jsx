@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { propertyApi } from '../../api/propertyApi'
 import { reservationApi } from '../../api/reservationApi'
+import { toLocalISO } from '../../utils/dates'
 import '../../styles/Calendar.css'
 
 /**
@@ -51,7 +52,9 @@ export default function GuestDatePicker({ propertyId, hostId, value, onChange })
 
   const days = buildMonthGrid()
   const today = new Date(new Date().toDateString())
-  const isoDate = (d) => d.toISOString().split('T')[0]
+  // BUG fix — toISOString() konvertuje u UTC pa lokalni datum pomjeri za -1 dan:
+  // gost izabere 10–15, forma posalje 9–14 i backend odbije rezervaciju s 400.
+  const isoDate = (d) => toLocalISO(d)
   const isInMonth = (d) => d.getMonth() === viewMonth
   const isPast = (d) => d < today
   const isBlocked = (d) => {

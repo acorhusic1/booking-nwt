@@ -2,6 +2,7 @@ package com.bookingnwt.notificationservice.listener;
 
 import com.bookingnwt.notificationservice.events.PaymentCompletedEvent;
 import com.bookingnwt.notificationservice.events.PaymentFailedEvent;
+import com.bookingnwt.notificationservice.events.ProblemReportedEvent;
 import com.bookingnwt.notificationservice.events.ReservationCancelledEvent;
 import com.bookingnwt.notificationservice.events.ReservationCreatedEvent;
 import com.bookingnwt.notificationservice.events.ReservationReminderEvent;
@@ -44,6 +45,7 @@ public class SagaNotificationListener {
                 case "RESERVATION_CANCELLED" -> handleReservationCancelled(message);
                 case "RESERVATION_REMINDER" -> handleReservationReminder(message, false);
                 case "REVIEW_REQUEST" -> handleReservationReminder(message, true);
+                case "PROBLEM_REPORTED" -> handleProblemReported(message);
                 default -> log.warn("Neprepoznat eventType na notification queue: {}", eventType);
             }
         } catch (Exception e) {
@@ -171,6 +173,34 @@ public class SagaNotificationListener {
         );
         notificationRepository.save(notification);
         log.info("Notifikacija OTKAZANA_REZERVACIJA kreirana za hosta {}", event.getHostId());
+    }
+
+    /**
+     * F17 — gost je prijavio problem tokom boravka → notifikacija hostu
+     * ("Domaćin dobija notifikaciju i ima definisan rok za odgovor").
+     */
+    private void handleProblemReported(String message) throws Exception {
+        ProblemReportedEvent event = objectMapper.readValue(message, ProblemReportedEvent.class);
+        if (event.getHostId() == null) {
+            log.warn("PROBLEM_REPORTED bez hostId — preskačem (report={})", event.getReportId());
+            return;
+        }
+        String excerpt = event.getDescription() != null && event.getDescription().length() > 120
+                ? event.getDescription().substring(0, 120) + "…"
+                : event.getDescription();
+        Notification notification = new Notification(
+                event.getHostId(),
+                "PRIJAVA_PROBLEMA",
+                "Prijavljen problem tokom boravka",
+                String.format("Gost #%d je prijavio problem (%s) za rezervaciju #%d na smještaju #%d: %s " +
+                              "Molimo odgovorite u roku od 24h.",
+                        event.getReporterId(), event.getCategory(),
+                        event.getReservationId(), event.getPropertyId(),
+                        excerpt != null ? excerpt : "(bez opisa)"),
+                event.getReservationId()
+        );
+        notificationRepository.save(notification);
+        log.info("F17 notifikacija PRIJAVA_PROBLEMA kreirana za hosta {}", event.getHostId());
     }
 
     /**

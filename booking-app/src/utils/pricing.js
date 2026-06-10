@@ -12,12 +12,12 @@
  *   - priceModifierPct     — % korekcije cijene (npr. +30 = +30%, -10 = -10%)
  *   - minNights            — minimum boravka u periodu
  *
- * Vraca: { perNightBreakdown, subtotal, longStayDiscount, total, nights, seasonalAdjustment, activeSeasons, minNightsViolation }
+ * Vraca: { perNightBreakdown, subtotal, longStayDiscount, total, nights, seasonalAdjustment, activeSeasons, minNightsViolation, stayViolation }
  */
 export function calculateReservationPrice(pricing, checkIn, checkOut, seasonalRules = []) {
   const empty = {
     perNightBreakdown: [], subtotal: 0, longStayDiscount: 0, total: 0, nights: 0,
-    seasonalAdjustment: 0, activeSeasons: [], minNightsViolation: null
+    seasonalAdjustment: 0, activeSeasons: [], minNightsViolation: null, stayViolation: null
   }
   if (!pricing || !checkIn || !checkOut) return empty
 
@@ -25,6 +25,17 @@ export function calculateReservationPrice(pricing, checkIn, checkOut, seasonalRu
   const end = new Date(checkOut)
   const nights = Math.round((end - start) / (1000 * 60 * 60 * 24))
   if (nights <= 0) return empty
+
+  // F3 — min/max nocenja iz cjenovnika (backend ovo isto provodi pa formu
+  // treba blokirati prije submita s jasnom porukom umjesto sirove 400 greske)
+  let stayViolation = null
+  const minStay = Number(pricing.minStayDays) || 0
+  const maxStay = Number(pricing.maxStayDays) || 0
+  if (minStay > 0 && nights < minStay) {
+    stayViolation = { type: 'min', required: minStay, actual: nights }
+  } else if (maxStay > 0 && nights > maxStay) {
+    stayViolation = { type: 'max', required: maxStay, actual: nights }
+  }
 
   const basePrice = Number(pricing.basePrice) || 0
   const weekendPrice = Number(pricing.weekendPrice) || basePrice
@@ -64,7 +75,9 @@ export function calculateReservationPrice(pricing, checkIn, checkOut, seasonalRu
     nightlyPrice += nightSeasonalDelta
     seasonalAdjustment += nightSeasonalDelta
 
-    perNightBreakdown.push({ date: date.toISOString().split('T')[0], isWeekend, price: nightlyPrice })
+    // lokalni format umjesto toISOString() — UTC konverzija pomjera datum -1 dan
+    const localDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+    perNightBreakdown.push({ date: localDate, isWeekend, price: nightlyPrice })
     subtotal += nightlyPrice
   }
 
@@ -86,6 +99,7 @@ export function calculateReservationPrice(pricing, checkIn, checkOut, seasonalRu
     nights,
     seasonalAdjustment: Math.round(seasonalAdjustment * 100) / 100,
     activeSeasons: Array.from(activeSeasons),
-    minNightsViolation
+    minNightsViolation,
+    stayViolation
   }
 }

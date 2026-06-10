@@ -4,6 +4,7 @@ import { propertyApi } from "../../api/propertyApi";
 import { reviewApi } from "../../api/reviewApi";
 import { messagesApi } from "../../api/messagesApi";
 import { userApi } from "../../api/userApi";
+import { verificationApi } from "../../api/verificationApi";
 import { useAuthStore } from "../../store/authStore";
 import { useToast } from "../common/ToastProvider";
 import Spinner from "../common/Spinner";
@@ -22,6 +23,8 @@ export default function PropertyDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [contacting, setContacting] = useState(false);
+  // F16 — "Verifikovan domaćin" badge (vidljiv gostima)
+  const [hostVerified, setHostVerified] = useState(false);
 
   const startConversation = async () => {
     if (!isAuthenticated) {
@@ -56,6 +59,14 @@ export default function PropertyDetail() {
       ]);
       setProperty(data);
 
+      // F16 — verifikovan status domaćina (tiho preskoci ako endpoint nije dostupan
+      // ili korisnik nije ulogovan — badge se jednostavno ne prikaze)
+      if (data?.hostId) {
+        verificationApi.getVerifiedStatus(data.hostId)
+          .then(s => setHostVerified(!!s?.verified))
+          .catch(() => setHostVerified(false));
+      }
+
       // BUG 3 — guestName: backend ne populiše, dohvati imena gostiju iz user-service
       const list = Array.isArray(reviewList) ? reviewList : [];
       const uniqueGuestIds = [...new Set(list.map(r => r.guestId).filter(Boolean))];
@@ -82,6 +93,11 @@ export default function PropertyDetail() {
   };
 
   useEffect(() => { fetchAll(); }, [id]);
+
+  // F11 — registruj pregled oglasa (fire-and-forget, jednom po otvaranju)
+  useEffect(() => {
+    if (id) propertyApi.registerView(id).catch(() => {});
+  }, [id]);
 
   // F7 — prosjecna ocjena iz svih recenzija
   const avgRating = reviews.length > 0
@@ -118,6 +134,11 @@ export default function PropertyDetail() {
           <p className="location">
             📍 {property.city}, {property.address}
           </p>
+          {hostVerified && (
+            <p className="host-verified-badge" title="Administrator je potvrdio identitet ovog domaćina">
+              🛡️ Verifikovan domaćin
+            </p>
+          )}
 
           <img
             src={finalImageUrl}
@@ -143,6 +164,11 @@ export default function PropertyDetail() {
           <div className="property-features">
             <h3>Karakteristike</h3>
             <ul>
+              {property.propertyType && (
+                <li>
+                  🏷 Tip: {{ APARTMAN: 'Apartman', KUCA: 'Kuća za odmor', VILA: 'Vila', HOTEL: 'Hotel', HOSTEL: 'Hostel' }[property.propertyType] || property.propertyType}
+                </li>
+              )}
               <li>👥 Kapacitet: Do {property.maxGuests} osoba</li>
               <li>🌍 Država: {property.country}</li>
               <li>
@@ -150,6 +176,40 @@ export default function PropertyDetail() {
                 {property.available ? "✅ Dostupno" : "❌ Nije dostupno"}
               </li>
             </ul>
+          </div>
+
+          {/* F1/F2 — sadržaji koje je host oznacio pri kreiranju (do sada se
+              nigdje nisu prikazivali gostu) */}
+          {property.amenities?.length > 0 && (
+            <div className="property-features">
+              <h3>Sadržaji</h3>
+              <div className="amenity-chips">
+                {property.amenities.map((a) => (
+                  <span key={typeof a === 'string' ? a : a.name} className="amenity-chip">
+                    ✓ {typeof a === 'string' ? a : a.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* F2 — kućna pravila, bitna gostu PRIJE rezervacije */}
+          <div className="property-features">
+            <h3>Kućna pravila</h3>
+            <div className="amenity-chips">
+              <span className={`rule-chip ${property.ruleNoSmoking ? 'rule-no' : 'rule-yes'}`}>
+                {property.ruleNoSmoking ? '🚭 Pušenje zabranjeno' : '🚬 Pušenje dozvoljeno'}
+              </span>
+              <span className={`rule-chip ${property.rulePetsAllowed ? 'rule-yes' : 'rule-no'}`}>
+                {property.rulePetsAllowed ? '🐾 Ljubimci dozvoljeni' : '🐾 Ljubimci nisu dozvoljeni'}
+              </span>
+              <span className={`rule-chip ${property.rulePartiesAllowed ? 'rule-yes' : 'rule-no'}`}>
+                {property.rulePartiesAllowed ? '🎉 Žurke dozvoljene' : '🎉 Žurke zabranjene'}
+              </span>
+              <span className={`rule-chip ${property.ruleChildrenAllowed ? 'rule-yes' : 'rule-no'}`}>
+                {property.ruleChildrenAllowed ? '👶 Djeca dobrodošla' : '👶 Nije za djecu'}
+              </span>
+            </div>
           </div>
 
           {/* F7 — Recenzije */}
@@ -184,6 +244,13 @@ export default function PropertyDetail() {
         </div>
 
         <div className="booking-sidebar">
+          {/* F4 — cijena vidljiva odmah, prije ulaska u rezervaciju */}
+          {property.basePrice != null && (
+            <p className="sidebar-price">
+              <span className="sidebar-price-amount">{Number(property.basePrice).toFixed(0)} BAM</span>
+              <span className="sidebar-price-label"> / noć</span>
+            </p>
+          )}
           <button
             className="reserve-btn"
             disabled={!property.available}

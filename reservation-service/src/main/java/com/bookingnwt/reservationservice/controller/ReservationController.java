@@ -28,6 +28,41 @@ public class ReservationController {
 
     private final ReservationService reservationService;
 
+    /* ============================================================
+     * K8 — ownership provjere. JwtAuthenticationFilter postavlja
+     * "authUserId" atribut iz uid claima; ako atribut postoji,
+     * korisnik smije raditi samo sa SVOJIM rezervacijama (osim ADMIN).
+     * Legacy tokeni bez uid claima prolaze (token je potpisan pa se
+     * claim ne moze falsifikovati — po novom loginu uid uvijek postoji).
+     * ============================================================ */
+
+    private Long authUserId(HttpServletRequest request) {
+        Object uid = request.getAttribute("authUserId");
+        return uid instanceof Long l ? l : null;
+    }
+
+    /** Gost, host te rezervacije ili admin. */
+    private void enforceParticipant(Long reservationId, HttpServletRequest request) {
+        if (request.isUserInRole("ADMIN")) return;
+        Long uid = authUserId(request);
+        if (uid == null) return; // legacy token bez uid claima
+        ReservationResponseDTO r = reservationService.getReservationById(reservationId);
+        if (!uid.equals(r.getGuestId()) && !uid.equals(r.getHostId())) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Nemate pravo pristupa ovoj rezervaciji");
+        }
+    }
+
+    /** Path {guestId}/{hostId} mora biti ulogovani korisnik (osim ADMIN). */
+    private void enforceSelf(Long pathUserId, HttpServletRequest request) {
+        if (request.isUserInRole("ADMIN")) return;
+        Long uid = authUserId(request);
+        if (uid != null && !uid.equals(pathUserId)) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Nemate pravo pristupa podacima drugog korisnika");
+        }
+    }
+
     @PostMapping
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
     public ResponseEntity<ReservationResponseDTO> createReservation(@Valid @RequestBody ReservationRequestDTO dto,
@@ -47,7 +82,9 @@ public class ReservationController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
-    public ResponseEntity<ReservationResponseDTO> getReservation(@PathVariable Long id) {
+    public ResponseEntity<ReservationResponseDTO> getReservation(@PathVariable Long id,
+                                                                 HttpServletRequest request) {
+        enforceParticipant(id, request);
         return ResponseEntity.ok(reservationService.getReservationById(id));
     }
 
@@ -59,7 +96,9 @@ public class ReservationController {
 
     @GetMapping("/guest/{guestId}")
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
-    public ResponseEntity<List<ReservationResponseDTO>> getByGuest(@PathVariable Long guestId) {
+    public ResponseEntity<List<ReservationResponseDTO>> getByGuest(@PathVariable Long guestId,
+                                                                   HttpServletRequest request) {
+        enforceSelf(guestId, request);
         return ResponseEntity.ok(reservationService.getReservationsByGuest(guestId));
     }
 
@@ -95,25 +134,33 @@ public class ReservationController {
 
     @GetMapping("/host/{hostId}")
     @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
-    public ResponseEntity<List<ReservationResponseDTO>> getByHost(@PathVariable Long hostId) {
+    public ResponseEntity<List<ReservationResponseDTO>> getByHost(@PathVariable Long hostId,
+                                                                  HttpServletRequest request) {
+        enforceSelf(hostId, request);
         return ResponseEntity.ok(reservationService.getReservationsByHost(hostId));
     }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
     public ResponseEntity<ReservationResponseDTO> updateStatus(@PathVariable Long id,
-                                                                @RequestParam ReservationStatus status) {
+                                                                @RequestParam ReservationStatus status,
+                                                                HttpServletRequest request) {
+        // K8 — host smije mijenjati status samo rezervacija za SVOJ smjestaj
+        enforceParticipant(id, request);
         return ResponseEntity.ok(reservationService.updateStatus(id, status));
     }
 
     @PutMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
-    public ResponseEntity<ReservationResponseDTO> cancelReservation(@PathVariable Long id) {
+    public ResponseEntity<ReservationResponseDTO> cancelReservation(@PathVariable Long id,
+                                                                    HttpServletRequest request) {
+        // K8 — bilo ko ulogovan je mogao otkazati TUDJU rezervaciju po ID-u
+        enforceParticipant(id, request);
         return ResponseEntity.ok(reservationService.cancelReservation(id));
     }
 
     @PatchMapping("/{id}/is-cancelled")
-    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReservationResponseDTO> updateCancelStatus(
             @PathVariable Long id,
             @RequestParam Boolean isCancelled) {
@@ -129,9 +176,11 @@ public class ReservationController {
 
     // === Task 4 — Non-trivial endpoints ===
 
-    /** PATCH (RFC 6902 JSON Patch) — partial update of a reservation. */
+    /** PATCH (RFC 6902 JSON Patch) — partial update of a reservation.
+     *  K8 — samo ADMIN: patch moze mijenjati totalPrice/status pa ne smije
+     *  biti dostupan gostima/hostovima. */
     @PatchMapping(value = "/{id}", consumes = "application/json-patch+json", produces = MediaType.APPLICATION_JSON_VALUE)
-    @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ReservationResponseDTO> patchReservation(@PathVariable Long id,
                                                                     @RequestBody JsonNode patch) {
         return ResponseEntity.ok(reservationService.patchReservation(id, patch));
@@ -141,7 +190,9 @@ public class ReservationController {
     @GetMapping("/guest/{guestId}/paged")
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN')")
     public ResponseEntity<Page<ReservationResponseDTO>> getByGuestPaged(@PathVariable Long guestId,
-                                                                        Pageable pageable) {
+                                                                        Pageable pageable,
+                                                                        HttpServletRequest request) {
+        enforceSelf(guestId, request);
         return ResponseEntity.ok(reservationService.getReservationsByGuestPaged(guestId, pageable));
     }
 
@@ -151,14 +202,18 @@ public class ReservationController {
     public ResponseEntity<List<ReservationResponseDTO>> getByGuestAndDateRange(
             @PathVariable Long guestId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            HttpServletRequest request) {
+        enforceSelf(guestId, request);
         return ResponseEntity.ok(reservationService.getReservationsByGuestAndDateRange(guestId, from, to));
     }
 
     /** Custom @Query — confirmed revenue for a host. */
     @GetMapping("/host/{hostId}/revenue")
     @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
-    public ResponseEntity<BigDecimal> getHostRevenue(@PathVariable Long hostId) {
+    public ResponseEntity<BigDecimal> getHostRevenue(@PathVariable Long hostId,
+                                                     HttpServletRequest request) {
+        enforceSelf(hostId, request);
         return ResponseEntity.ok(reservationService.getHostRevenue(hostId));
     }
 
@@ -173,7 +228,9 @@ public class ReservationController {
     /** EntityGraph fetch — reservation + cancellation policy + promo code + reports in one query. */
     @GetMapping("/{id}/details")
     @PreAuthorize("hasAnyRole('GUEST', 'ADMIN', 'HOST')")
-    public ResponseEntity<ReservationResponseDTO> getReservationWithDetails(@PathVariable Long id) {
+    public ResponseEntity<ReservationResponseDTO> getReservationWithDetails(@PathVariable Long id,
+                                                                            HttpServletRequest request) {
+        enforceParticipant(id, request);
         return ResponseEntity.ok(reservationService.getReservationWithDetails(id));
     }
 }

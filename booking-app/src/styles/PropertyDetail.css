@@ -220,3 +220,58 @@
     font-size: 1.5rem;
   }
 }
+
+/* F16 - verifikovan domacin badge */
+.host-verified-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(46, 160, 67, 0.12);
+  color: #2ea043;
+  border: 1px solid rgba(46, 160, 67, 0.35);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 4px 0 10px;
+}
+
+/* F4 - cijena u sidebar-u */
+.sidebar-price {
+  text-align: center;
+  margin: 0 0 12px;
+}
+.sidebar-price-amount {
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+.sidebar-price-label {
+  color: var(--text-tertiary, #888);
+}
+
+/* F1/F2 - sadrzaji i kucna pravila kao chipovi */
+.amenity-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.amenity-chip,
+.rule-chip {
+  border-radius: 999px;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  border: 1px solid var(--border-color);
+  background: var(--surface-light, rgba(26, 15, 46, 0.6));
+}
+.amenity-chip {
+  color: var(--violet-light, #c77dff);
+  border-color: var(--border-highlight);
+}
+.rule-chip.rule-yes {
+  color: #4ade80;
+  border-color: rgba(74, 222, 128, 0.3);
+}
+.rule-chip.rule-no {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.3);
+}

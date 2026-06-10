@@ -7,6 +7,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../common/ToastProvider'
 import { calculateReservationPrice } from '../../utils/pricing'
+import { todayLocalISO } from '../../utils/dates'
 import GuestDatePicker from './GuestDatePicker'
 import '../../styles/ReservationForm.css'
 
@@ -36,7 +37,8 @@ export default function ReservationForm({ propertyId }) {
   const checkOut = useWatch({ control, name: 'checkOut' })
 
   // BUG-009: minimum date u input-u — sprjecava odabir proslog datuma
-  const today = new Date().toISOString().split('T')[0]
+  // (lokalna zona — toISOString() bi izmedju ponoci i 02:00 vratio jucerasnji dan)
+  const today = todayLocalISO()
   const minCheckOut = checkIn || today
 
   // hostId trebamo backendu — uzimamo ga iz property-a
@@ -70,6 +72,7 @@ export default function ReservationForm({ propertyId }) {
   const seasonalAdjustment = calc.seasonalAdjustment
   const activeSeasons = calc.activeSeasons
   const minNightsViolation = calc.minNightsViolation
+  const stayViolation = calc.stayViolation
 
   // F13 — obracun popusta iz primijenjenog promo koda (na subtotal nakon long-stay)
   const afterLongStay = subtotal - longStayDiscount
@@ -153,6 +156,15 @@ export default function ReservationForm({ propertyId }) {
       showToast({ type: 'warning', title: 'Sezonska ograničenja', message: msg, duration: 7000 })
       return
     }
+    // F3 — min/max boravak iz cjenovnika (backend bi vratio 400, presretni ranije)
+    if (stayViolation) {
+      const msg = stayViolation.type === 'min'
+        ? `Minimalni boravak za ovaj smještaj je ${stayViolation.required} noći (izabrali ste ${stayViolation.actual}).`
+        : `Maksimalni boravak za ovaj smještaj je ${stayViolation.required} noći (izabrali ste ${stayViolation.actual}).`
+      setError(msg)
+      showToast({ type: 'warning', title: 'Ograničenje boravka', message: msg, duration: 7000 })
+      return
+    }
 
     setLoading(true)
     setError(null)
@@ -184,6 +196,22 @@ export default function ReservationForm({ propertyId }) {
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="reservation-form">
       <h3>Rezerviši smještaj</h3>
+
+      {/* Cijena vidljiva ODMAH, prije izbora datuma */}
+      <div className="price-preview">
+        <span className="price-preview-amount">
+          {Number(effectivePricing.basePrice).toFixed(0)} BAM
+        </span>
+        <span className="price-preview-label"> / noć</span>
+        {pricing && Number(pricing.weekendPrice) > 0
+          && Number(pricing.weekendPrice) !== Number(pricing.basePrice) && (
+          <span className="price-preview-weekend"> (vikend {Number(pricing.weekendPrice).toFixed(0)} BAM)</span>
+        )}
+        {pricing?.minStayDays > 1 && (
+          <span className="price-preview-minstay"> · min. {pricing.minStayDays} noći</span>
+        )}
+        {!pricing && <span className="price-preview-weekend"> (standardna cijena)</span>}
+      </div>
 
       {/* BUG 8 — Vizualni kalendar sa zauzetim datumima */}
       {property && (
@@ -285,6 +313,14 @@ export default function ReservationForm({ propertyId }) {
         </div>
       )}
 
+      {stayViolation && (
+        <div className="error-alert">
+          ⚠ {stayViolation.type === 'min'
+            ? `Minimalni boravak za ovaj smještaj je ${stayViolation.required} noći (izabrali ste ${stayViolation.actual}).`
+            : `Maksimalni boravak za ovaj smještaj je ${stayViolation.required} noći (izabrali ste ${stayViolation.actual}).`}
+        </div>
+      )}
+
       <div className="summary summary-breakdown">
         {nights > 0 ? (
           <>
@@ -320,7 +356,7 @@ export default function ReservationForm({ propertyId }) {
           </>
         ) : (
           <div className="summary-line">
-            <span>Odaberi datume</span>
+            <span>Odaberi datume — cijena je {Number(effectivePricing.basePrice).toFixed(0)} BAM/noć</span>
             <span>—</span>
           </div>
         )}
@@ -328,7 +364,7 @@ export default function ReservationForm({ propertyId }) {
 
       {error && <div className="error-alert">{error}</div>}
 
-      <button type="submit" disabled={loading || !property || nights <= 0} className="submit-btn">
+      <button type="submit" disabled={loading || !property || nights <= 0 || !!stayViolation || !!minNightsViolation} className="submit-btn">
         {loading ? 'Rezerviranje...' : 'Potvrdi rezervaciju'}
       </button>
     </form>

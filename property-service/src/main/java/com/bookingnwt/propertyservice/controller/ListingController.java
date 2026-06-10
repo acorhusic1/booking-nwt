@@ -35,8 +35,11 @@ public class ListingController {
         return ResponseEntity.ok(listingService.getListingsByProperty(propertyId));
     }
 
+    // K8 fix — gasenje/paljenje listinga je HOST/ADMIN operacija. GUEST rola je
+    // ovdje bila ostavljena za stari (pogresan) flow gdje je otkazivanje
+    // rezervacije gasilo sve listinge property-ja (K3 — uklonjeno).
     @PatchMapping("/{id}/cancel")
-    @PreAuthorize("hasAnyRole('HOST', 'ADMIN', 'GUEST')")
+    @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
     public ResponseEntity<ListingResponse> toggleCancelStatus(
             @PathVariable Long id,
             @RequestParam Boolean isCancelled) {
@@ -44,7 +47,7 @@ public class ListingController {
     }
 
     @PatchMapping("/property/{propertyId}/cancel")
-    @PreAuthorize("hasAnyRole('HOST', 'ADMIN', 'GUEST')")
+    @PreAuthorize("hasAnyRole('HOST', 'ADMIN')")
     public ResponseEntity<Void> cancelListingsByProperty(
             @PathVariable Long propertyId,
             @RequestParam Boolean isCancelled) {

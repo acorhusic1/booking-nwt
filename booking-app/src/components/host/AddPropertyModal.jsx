@@ -14,6 +14,12 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
     city: '',
     country: '',
     maxGuests: 1,
+    // F1/F2 — tip smjestaja (filter u pretrazi)
+    propertyType: 'APARTMAN',
+    // F4 — cijena se postavlja ODMAH pri kreiranju (bez nje gosti vide
+    // fallback 100 BAM i host zaboravi da je postavi)
+    basePrice: '',
+    weekendPrice: '',
     // F18 — koordinate za prikaz na mapi
     latitude: '',
     longitude: '',
@@ -51,12 +57,26 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
     setError(null)
 
     try {
+      const { basePrice, weekendPrice, ...propertyFields } = formData
       const propertyData = {
-        ...formData,
+        ...propertyFields,
         hostId: user?.id,
         amenityIds: Array.from(selectedAmenityIds)
       }
       const newProperty = await propertyApi.create(propertyData)
+
+      // F4 — odmah postavi cjenovnik (updatePricing kreira pravilo ako ne postoji)
+      try {
+        await propertyApi.updatePricing(newProperty.id, {
+          basePrice: Number(basePrice),
+          weekendPrice: weekendPrice ? Number(weekendPrice) : Number(basePrice),
+          minStayDays: 1
+        })
+      } catch {
+        // Objekat je kreiran — cjenovnik moze postaviti i kasnije kroz "Cijene"
+        console.warn('Cjenovnik nije postavljen — postavite ga kroz dugme Cijene.')
+      }
+
       onPropertyAdded(newProperty)
       onClose()
       setFormData({
@@ -65,7 +85,10 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
         address: '',
         city: '',
         country: '',
-        maxGuests: 1
+        maxGuests: 1,
+        propertyType: 'APARTMAN',
+        basePrice: '',
+        weekendPrice: ''
       })
     } catch (err) {
       console.error('Greška pri dodavanju smještaja:', err)
@@ -116,6 +139,17 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
               required
               placeholder="Npr. Apartman Sunshine"
             />
+          </div>
+
+          <div className="form-group">
+            <label>Tip smještaja</label>
+            <select name="propertyType" value={formData.propertyType} onChange={handleChange}>
+              <option value="APARTMAN">Apartman</option>
+              <option value="KUCA">Kuća za odmor</option>
+              <option value="VILA">Vila</option>
+              <option value="HOTEL">Hotel</option>
+              <option value="HOSTEL">Hostel</option>
+            </select>
           </div>
 
           <div className="form-group">
@@ -177,7 +211,7 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
             />
           </div>
 
-          <div className="form-section-label">Kapacitet</div>
+          <div className="form-section-label">Kapacitet i cijena</div>
 
           <div className="form-group">
             <label>Maksimalan broj gostiju</label>
@@ -190,6 +224,34 @@ export default function AddPropertyModal({ isOpen, onClose, onPropertyAdded }) {
               max="50"
               required
             />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group half">
+              <label>Cijena po noći (BAM)</label>
+              <input
+                type="number"
+                name="basePrice"
+                value={formData.basePrice}
+                onChange={handleChange}
+                min="1"
+                step="0.01"
+                required
+                placeholder="Npr. 85"
+              />
+            </div>
+            <div className="form-group half">
+              <label>Vikend cijena <em style={{ color: 'var(--text-tertiary)', fontWeight: 'normal' }}>(opciono)</em></label>
+              <input
+                type="number"
+                name="weekendPrice"
+                value={formData.weekendPrice}
+                onChange={handleChange}
+                min="0"
+                step="0.01"
+                placeholder="Isto kao bazna"
+              />
+            </div>
           </div>
 
           <div className="form-section-label">Sadržaji</div>

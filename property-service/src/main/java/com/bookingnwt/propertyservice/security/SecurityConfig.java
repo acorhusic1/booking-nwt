@@ -30,6 +30,8 @@ public class SecurityConfig {
                 // Public GET endpoints — javno pretrazivanje smjestaja
                 .requestMatchers(HttpMethod.GET, "/api/properties", "/api/properties/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/reviews/property/**").permitAll()
+                // F11 — broj pregleda: i neulogovani posjetioci se broje
+                .requestMatchers(HttpMethod.POST, "/api/properties/*/view").permitAll()
                 .requestMatchers("/actuator/**", "/v3/api-docs/**", "/swagger-ui/**").permitAll()
                 // POST/PUT/PATCH/DELETE i sve ostalo zahtjeva JWT (rola se provjerava u @PreAuthorize)
                 .anyRequest().authenticated()

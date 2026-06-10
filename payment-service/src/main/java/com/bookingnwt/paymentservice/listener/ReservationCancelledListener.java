@@ -3,9 +3,12 @@ package com.bookingnwt.paymentservice.listener;
 import com.bookingnwt.paymentservice.events.ReservationCancelledEvent;
 import com.bookingnwt.paymentservice.model.Payment;
 import com.bookingnwt.paymentservice.model.PaymentStatus;
+import com.bookingnwt.paymentservice.model.TransactionType;
 import com.bookingnwt.paymentservice.model.Wallet;
+import com.bookingnwt.paymentservice.model.WalletTransaction;
 import com.bookingnwt.paymentservice.repository.PaymentRepository;
 import com.bookingnwt.paymentservice.repository.WalletRepository;
+import com.bookingnwt.paymentservice.repository.WalletTransactionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +39,7 @@ public class ReservationCancelledListener {
 
     private final PaymentRepository paymentRepository;
     private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
     private final ObjectMapper objectMapper;
 
     @RabbitListener(queues = "${app.rabbitmq.queue.payment-cancellations}")
@@ -71,6 +75,10 @@ public class ReservationCancelledListener {
                 wallet.setBalance(wallet.getBalance().add(refundAmount));
                 wallet.setUpdatedAt(LocalDateTime.now());
                 walletRepository.save(wallet);
+                // F19 — refund vidljiv u historiji novcanika
+                walletTransactionRepository.save(new WalletTransaction(
+                        wallet, refundAmount, TransactionType.REFUND,
+                        "Povrat (" + refundPct + "%) za rezervaciju #" + event.getReservationId(), payment));
                 log.info("💰 Refund {} {} ({}% od {}) na wallet korisnika {} (novi balance: {})",
                         refundAmount, payment.getCurrency(), refundPct, payment.getAmount(),
                         payment.getGuestId(), wallet.getBalance());

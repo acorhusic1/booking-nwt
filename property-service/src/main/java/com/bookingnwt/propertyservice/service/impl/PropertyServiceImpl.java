@@ -73,6 +73,24 @@ public class PropertyServiceImpl implements PropertyService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<PropertyResponse> getPropertiesInBounds(java.math.BigDecimal minLat, java.math.BigDecimal maxLat,
+                                                        java.math.BigDecimal minLng, java.math.BigDecimal maxLng) {
+        return propertyRepository.findInBounds(minLat, maxLat, minLng, maxLng)
+                .stream()
+                .map(propertyMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional
+    public void registerView(Long id) {
+        // F11 — namjerno bez existsById provjere: nepostojeci ID samo ne
+        // azurira nijedan red (jeftinije od dodatnog SELECT-a po pregledu)
+        propertyRepository.incrementViewCount(id);
+    }
+
+    @Override
     public PropertyResponse createProperty(PropertyRequest request) {
         Property property = propertyMapper.toEntity(request);
         property.setAvailable(true);
@@ -118,6 +136,7 @@ public class PropertyServiceImpl implements PropertyService {
         if (request.getLatitude() != null) property.setLatitude(request.getLatitude());
         if (request.getLongitude() != null) property.setLongitude(request.getLongitude());
         if (request.getMaxGuests() != null) property.setMaxGuests(request.getMaxGuests());
+        if (request.getPropertyType() != null) property.setPropertyType(request.getPropertyType());
         if (request.getIsActive() != null) property.setIsActive(request.getIsActive());
         if (request.getAvailable() != null) property.setAvailable(request.getAvailable());
 

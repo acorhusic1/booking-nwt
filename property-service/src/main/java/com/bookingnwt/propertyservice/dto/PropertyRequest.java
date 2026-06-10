@@ -38,6 +38,9 @@ public class PropertyRequest {
 
     private Integer maxGuests;
 
+    // F1/F2 — tip smjestaja (APARTMAN, KUCA, HOTEL, HOSTEL, VILA)
+    private String propertyType;
+
     // F2 — kucna pravila (opciono, defaultovi se primjenjuju u entity-ju)
     private Boolean ruleNoSmoking;
     private Boolean rulePetsAllowed;

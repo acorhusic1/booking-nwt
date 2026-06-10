@@ -53,6 +53,7 @@ public class DataLoader {
                     "Ferhadija 15", "Sarajevo", "Bosna i Hercegovina",
                     new BigDecimal("43.8563"), new BigDecimal("18.4131"), 4);
             p1.setModerationStatus("APPROVED");
+            p1.setPropertyType("APARTMAN");
             propertyRepo.save(p1);
             p1.getAmenities().add(wifi); p1.getAmenities().add(klima);
             p1.getAmenities().add(tv); p1.getAmenities().add(detektorDima);
@@ -68,6 +69,7 @@ public class DataLoader {
                     "Rade Bitange 8", "Mostar", "Bosna i Hercegovina",
                     new BigDecimal("43.3372"), new BigDecimal("17.7928"), 8);
             p2.setModerationStatus("APPROVED");
+            p2.setPropertyType("VILA");
             propertyRepo.save(p2);
             p2.getAmenities().add(wifi); p2.getAmenities().add(parking); p2.getAmenities().add(klima);
             p2.getAmenities().add(bazen); p2.getAmenities().add(kuhinja); p2.getAmenities().add(vatrogasniAparat);
@@ -83,6 +85,7 @@ public class DataLoader {
                     "Turalibegova 50", "Tuzla", "Bosna i Hercegovina",
                     new BigDecimal("44.5384"), new BigDecimal("18.6763"), 20);
             p3.setModerationStatus("APPROVED");
+            p3.setPropertyType("HOSTEL");
             propertyRepo.save(p3);
             p3.getAmenities().add(wifi); p3.getAmenities().add(tv); p3.getAmenities().add(detektorDima);
             propertyRepo.save(p3);
@@ -96,6 +99,7 @@ public class DataLoader {
                     "Bana Lazarevića 12", "Banja Luka", "Bosna i Hercegovina",
                     new BigDecimal("44.7722"), new BigDecimal("17.1910"), 3);
             p4.setModerationStatus("APPROVED");
+            p4.setPropertyType("APARTMAN");
             propertyRepo.save(p4);
             p4.getAmenities().add(wifi); p4.getAmenities().add(klima); p4.getAmenities().add(tv);
             p4.getAmenities().add(kuhinja); p4.getAmenities().add(parking);
@@ -110,6 +114,7 @@ public class DataLoader {
                     "Trnovo BB", "Pale", "Bosna i Hercegovina",
                     new BigDecimal("43.7333"), new BigDecimal("18.5667"), 6);
             p5.setModerationStatus("APPROVED");
+            p5.setPropertyType("KUCA");
             propertyRepo.save(p5);
             p5.getAmenities().add(wifi); p5.getAmenities().add(parking); p5.getAmenities().add(kuhinja);
             p5.getAmenities().add(tv); p5.getAmenities().add(vatrogasniAparat);
@@ -123,6 +128,7 @@ public class DataLoader {
                     "Šetalište bačvice 5", "Split", "Hrvatska",
                     new BigDecimal("43.5081"), new BigDecimal("16.4402"), 4);
             p6.setModerationStatus("APPROVED");
+            p6.setPropertyType("APARTMAN");
             propertyRepo.save(p6);
             p6.getAmenities().add(wifi); p6.getAmenities().add(klima); p6.getAmenities().add(kuhinja);
             p6.getAmenities().add(tv);
@@ -137,6 +143,7 @@ public class DataLoader {
                     "Ulica od Puča 14", "Dubrovnik", "Hrvatska",
                     new BigDecimal("42.6507"), new BigDecimal("18.0944"), 10);
             p7.setModerationStatus("APPROVED");
+            p7.setPropertyType("VILA");
             propertyRepo.save(p7);
             p7.getAmenities().add(wifi); p7.getAmenities().add(klima); p7.getAmenities().add(bazen);
             p7.getAmenities().add(parking); p7.getAmenities().add(kuhinja); p7.getAmenities().add(vatrogasniAparat);
@@ -150,6 +157,7 @@ public class DataLoader {
                     "Knez Mihailova 22", "Beograd", "Srbija",
                     new BigDecimal("44.8176"), new BigDecimal("20.4569"), 2);
             p8.setModerationStatus("APPROVED");
+            p8.setPropertyType("APARTMAN");
             propertyRepo.save(p8);
             p8.getAmenities().add(wifi); p8.getAmenities().add(klima); p8.getAmenities().add(tv);
             propertyRepo.save(p8);
@@ -162,6 +170,7 @@ public class DataLoader {
                     "Stari Grad 100", "Kotor", "Crna Gora",
                     new BigDecimal("42.4247"), new BigDecimal("18.7712"), 30);
             p9.setModerationStatus("APPROVED");
+            p9.setPropertyType("HOTEL");
             propertyRepo.save(p9);
             p9.getAmenities().add(wifi); p9.getAmenities().add(klima); p9.getAmenities().add(tv);
             p9.getAmenities().add(parking); p9.getAmenities().add(bazen); p9.getAmenities().add(detektorDima);
@@ -175,6 +184,7 @@ public class DataLoader {
                     "Klokot bb", "Bihać", "Bosna i Hercegovina",
                     new BigDecimal("44.8167"), new BigDecimal("15.8709"), 8);
             p10.setModerationStatus("APPROVED");
+            p10.setPropertyType("VILA");
             propertyRepo.save(p10);
             p10.getAmenities().add(wifi); p10.getAmenities().add(parking); p10.getAmenities().add(kuhinja);
             p10.getAmenities().add(tv);

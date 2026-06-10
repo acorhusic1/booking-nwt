@@ -1,5 +1,6 @@
 package com.bookingnwt.paymentservice.repository;
 
+import com.bookingnwt.paymentservice.model.TransactionType;
 import com.bookingnwt.paymentservice.model.WalletTransaction;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -12,4 +13,6 @@ public interface WalletTransactionRepository extends JpaRepository<WalletTransac
     List<WalletTransaction> findByPaymentId(Long paymentId);
     // Idempotency check za Stripe deposit-e (description = "Stripe deposit: {sessionId}")
     boolean existsByDescription(String description);
+    // F19 — idempotency za host payout (jedan PAYOUT po payment-u)
+    boolean existsByPaymentIdAndType(Long paymentId, TransactionType type);
 }
