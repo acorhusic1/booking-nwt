@@ -24,7 +24,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import com.bookingnwt.propertyservice.client.ReservationClient;
 import com.bookingnwt.propertyservice.client.UserClient;
+import com.bookingnwt.propertyservice.client.dto.ReservationDTO;
 import com.bookingnwt.propertyservice.dto.UserDTO;
 
 @ExtendWith(MockitoExtension.class)
@@ -38,6 +40,9 @@ class ReviewServiceImplTest {
 
     @Mock
     private UserClient userClient;
+
+    @Mock
+    private ReservationClient reservationClient;
 
     @InjectMocks
     private ReviewServiceImpl reviewService;
@@ -121,6 +126,13 @@ class ReviewServiceImplTest {
 
     @Test
     void createReview_shouldCalculateOverallRating() {
+        // F7 — rezervacija mora biti zavrsena i pripadati gostu/property-ju
+        when(reviewRepository.existsByReservationId(100L)).thenReturn(false);
+        when(reservationClient.getReservation(100L)).thenReturn(new ReservationDTO(
+                100L, 1L, 1L, 1L,
+                java.time.LocalDate.now().minusDays(5), java.time.LocalDate.now().minusDays(1),
+                "COMPLETED"));
+
         Review newReview = new Review();
         when(reviewMapper.toEntity(request)).thenReturn(newReview);
         when(reviewRepository.save(any(Review.class))).thenReturn(review);
@@ -130,6 +142,43 @@ class ReviewServiceImplTest {
 
         assertThat(result).isNotNull();
         verify(reviewRepository).save(any(Review.class));
+    }
+
+    @Test
+    void createReview_shouldThrow_whenStayNotFinished() {
+        when(reviewRepository.existsByReservationId(100L)).thenReturn(false);
+        when(reservationClient.getReservation(100L)).thenReturn(new ReservationDTO(
+                100L, 1L, 1L, 1L,
+                java.time.LocalDate.now().plusDays(5), java.time.LocalDate.now().plusDays(9),
+                "CONFIRMED"));
+
+        assertThatThrownBy(() -> reviewService.createReview(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("završenog boravka");
+        verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    void createReview_shouldThrow_whenDuplicateForReservation() {
+        when(reviewRepository.existsByReservationId(100L)).thenReturn(true);
+
+        assertThatThrownBy(() -> reviewService.createReview(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("već postoji");
+        verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    void createReview_shouldThrow_whenGuestMismatch() {
+        when(reviewRepository.existsByReservationId(100L)).thenReturn(false);
+        when(reservationClient.getReservation(100L)).thenReturn(new ReservationDTO(
+                100L, 999L, 1L, 1L,
+                java.time.LocalDate.now().minusDays(5), java.time.LocalDate.now().minusDays(1),
+                "COMPLETED"));
+
+        assertThatThrownBy(() -> reviewService.createReview(request))
+                .isInstanceOf(IllegalArgumentException.class);
+        verify(reviewRepository, never()).save(any(Review.class));
     }
 
     @Test

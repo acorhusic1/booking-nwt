@@ -11,6 +11,7 @@ import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
 import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
+import com.bookingnwt.reservationservice.service.impl.PriceCalculator;
 import com.bookingnwt.reservationservice.service.impl.ReservationServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -52,6 +54,8 @@ class ReservationAdvancedServiceTest {
     private PropertyAvailabilityGateway propertyAvailabilityGateway;
     @Mock
     private ReservationEventPublisher reservationEventPublisher;
+    @Spy
+    private PriceCalculator priceCalculator = new PriceCalculator();
 
     @InjectMocks
     private ReservationServiceImpl service;
@@ -93,7 +97,7 @@ class ReservationAdvancedServiceTest {
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
                 promoCodeRepository, reservationMapper, realMapper,
-                propertyAvailabilityGateway, reservationEventPublisher);
+                propertyAvailabilityGateway, reservationEventPublisher, new PriceCalculator());
 
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(entity));
         when(reservationMapper.toResponseDTO(any(Reservation.class))).thenReturn(dto);
@@ -112,7 +116,7 @@ class ReservationAdvancedServiceTest {
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
                 promoCodeRepository, reservationMapper, realMapper,
-                propertyAvailabilityGateway, reservationEventPublisher);
+                propertyAvailabilityGateway, reservationEventPublisher, new PriceCalculator());
 
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(entity));
 
@@ -127,7 +131,7 @@ class ReservationAdvancedServiceTest {
         ReservationServiceImpl real = new ReservationServiceImpl(
                 reservationRepository, cancellationPolicyRepository,
                 promoCodeRepository, reservationMapper, realMapper,
-                propertyAvailabilityGateway, reservationEventPublisher);
+                propertyAvailabilityGateway, reservationEventPublisher, new PriceCalculator());
 
         when(reservationRepository.findById(99L)).thenReturn(Optional.empty());
         var patch = realMapper.readTree("[{\"op\":\"replace\",\"path\":\"/numGuests\",\"value\":4}]");

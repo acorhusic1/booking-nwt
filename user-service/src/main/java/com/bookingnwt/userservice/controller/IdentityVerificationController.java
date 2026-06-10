@@ -24,6 +24,18 @@ public class IdentityVerificationController {
         return ResponseEntity.ok(verificationService.getVerificationsByUserId(userId));
     }
 
+    /**
+     * F16 — "Verifikovan status domaćina je vidljiv gostima". Lagani javni
+     * odgovor {verified: true/false} BEZ detalja dokumenta (privatnost) —
+     * frontend prikazuje badge na stranici objekta.
+     */
+    @GetMapping("/status")
+    public ResponseEntity<java.util.Map<String, Boolean>> getVerifiedStatus(@PathVariable Long userId) {
+        boolean verified = verificationService.getVerificationsByUserId(userId).stream()
+                .anyMatch(v -> "APPROVED".equalsIgnoreCase(String.valueOf(v.getStatus())));
+        return ResponseEntity.ok(java.util.Map.of("verified", verified));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<IdentityVerificationResponse> getVerification(@PathVariable Long id) {
         return ResponseEntity.ok(verificationService.getVerificationById(id));

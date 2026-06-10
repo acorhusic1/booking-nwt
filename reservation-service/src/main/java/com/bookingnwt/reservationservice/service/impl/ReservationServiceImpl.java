@@ -1,6 +1,8 @@
 package com.bookingnwt.reservationservice.service.impl;
 
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
+import com.bookingnwt.reservationservice.client.dto.PricingRuleDTO;
+import com.bookingnwt.reservationservice.client.dto.SeasonalRuleDTO;
 import com.bookingnwt.reservationservice.dto.ReservationRequestDTO;
 import com.bookingnwt.reservationservice.dto.ReservationResponseDTO;
 import com.bookingnwt.reservationservice.events.ReservationCancelledEvent;
@@ -25,6 +27,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,6 +48,7 @@ public class ReservationServiceImpl implements ReservationService {
     private final ObjectMapper objectMapper;
     private final PropertyAvailabilityGateway propertyAvailabilityGateway;
     private final ReservationEventPublisher reservationEventPublisher;
+    private final PriceCalculator priceCalculator;
 
     @Override
     @Transactional
@@ -77,31 +82,82 @@ public class ReservationServiceImpl implements ReservationService {
         propertyAvailabilityGateway.verifyAvailable(
                 dto.getPropertyId(), dto.getCheckIn(), dto.getCheckOut(), dto.getNumGuests());
 
+        // K1 (F4/F15) — server-side kalkulacija cijene. Backend je autoritativan:
+        // klijentski totalPrice se ne koristi za naplatu, samo se loguje odstupanje.
+        long nights = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
+        PricingRuleDTO pricing = propertyAvailabilityGateway.fetchPricing(dto.getPropertyId());
+        List<SeasonalRuleDTO> seasonalRules = propertyAvailabilityGateway.fetchSeasonalRules(dto.getPropertyId());
+        BigDecimal computedTotal = priceCalculator.calculateTotal(
+                pricing, seasonalRules, dto.getCheckIn(), dto.getCheckOut());
+
         Reservation reservation = reservationMapper.toEntity(dto);
         reservation.setStatus(ReservationStatus.CREATED);
         reservation.setCreatedAt(LocalDateTime.now());
 
+        // K12 (F6) — politika otkazivanja: eksplicitna mora pripadati ovom property-ju,
+        // inace se automatski veze politika koju je host definisao za property.
         if (dto.getCancellationPolicyId() != null) {
             CancellationPolicy policy = cancellationPolicyRepository.findById(dto.getCancellationPolicyId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "CancellationPolicy nije pronađen sa ID: " + dto.getCancellationPolicyId()));
+            if (policy.getPropertyId() != null && !policy.getPropertyId().equals(dto.getPropertyId())) {
+                throw new IllegalArgumentException("Politika otkazivanja ne pripada ovom smještaju");
+            }
             reservation.setCancellationPolicy(policy);
+        } else {
+            cancellationPolicyRepository.findByPropertyId(dto.getPropertyId()).stream()
+                    .findFirst()
+                    .ifPresent(reservation::setCancellationPolicy);
         }
 
+        // K2 (F13) — promo kod se validira server-side (period vazenja, max broj
+        // koristenja, minimalan broj nocenja) i popust se obracunava ovdje.
         if (dto.getPromoCodeId() != null) {
             PromoCode promo = promoCodeRepository.findById(dto.getPromoCodeId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "PromoCode nije pronađen sa ID: " + dto.getPromoCodeId()));
+            priceCalculator.validatePromo(promo, nights);
+            computedTotal = priceCalculator.applyPromo(computedTotal, promo);
             promo.setUsageCount(promo.getUsageCount() + 1);
             promoCodeRepository.save(promo);
             reservation.setPromoCode(promo);
         }
+
+        if (dto.getTotalPrice() != null
+                && dto.getTotalPrice().subtract(computedTotal).abs().compareTo(new BigDecimal("0.05")) > 0) {
+            org.slf4j.LoggerFactory.getLogger(getClass()).warn(
+                    "⚠️ Klijentska cijena {} odstupa od izračunate {} za property {} — koristi se server-side iznos",
+                    dto.getTotalPrice(), computedTotal, dto.getPropertyId());
+        }
+        reservation.setTotalPrice(computedTotal);
 
         Reservation saved = reservationRepository.save(reservation);
 
         // SAGA PATTERN: Emituj ReservationCreatedEvent.
         //   - property-service slusa → blokira termin na kalendaru
         //   - payment-service slusa  → pokrece naplatu (Task 3)
+        //
+        // RACE FIX: event se objavljuje tek NAKON COMMIT-a ove transakcije.
+        // Saga zna zavrsiti za ~20ms — payment-service vrati PAYMENT_COMPLETED
+        // prije nego sto je rezervacija upisana u bazu, listener je ne nadje
+        // i ona ZAUVIJEK ostane CREATED (a wallet je naplacen). Zato su
+        // rezervacije nasumicno "zapinjale" — pobjedjivao je brzi (commit ili saga).
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    publishCreatedEventSafely(saved);
+                }
+            });
+        } else {
+            // npr. unit testovi bez aktivne transakcije
+            publishCreatedEventSafely(saved);
+        }
+
+        return reservationMapper.toResponseDTO(saved);
+    }
+
+    private void publishCreatedEventSafely(Reservation saved) {
         try {
             ReservationCreatedEvent event = new ReservationCreatedEvent(
                     saved.getId(),
@@ -120,10 +176,9 @@ public class ReservationServiceImpl implements ReservationService {
             // Log but don't fail the reservation if event publishing fails
             // In production, use outbox pattern or transactional messaging
             org.slf4j.LoggerFactory.getLogger(getClass())
-                    .warn("⚠️ Event publishing failed for reservation {}: {}", saved.getId(), e.getMessage());
+                    .warn("⚠️ Event publishing failed for reservation {}: {}",
+                            saved.getId(), e.getMessage());
         }
-
-        return reservationMapper.toResponseDTO(saved);
     }
 
     @Override
@@ -266,16 +321,10 @@ public class ReservationServiceImpl implements ReservationService {
                     refundPct
             );
             reservationEventPublisher.publishReservationCancelled(event);
-            
-            // Task: Implementacija otkazivanja listinga od strane klijenta
-            // Slanje PATCH zahtjeva sa izmjenom isCancelled na true
-            try {
-                propertyAvailabilityGateway.cancelListingByProperty(saved.getPropertyId(), true);
-            } catch (Exception e) {
-                org.slf4j.LoggerFactory.getLogger(getClass())
-                        .warn("⚠️ Neuspješno otkazivanje listinga za property {}: {}", saved.getPropertyId(), e.getMessage());
-            }
-
+            // NAPOMENA (K3 fix): ovdje se NE smije dirati Listing.isCancelled —
+            // otkazivanje JEDNE rezervacije ne smije ugasiti listing cijelog
+            // objekta. Kalendar se oslobađa automatski jer se CANCELLED
+            // rezervacije izbacuju iz /occupied-dates liste.
         } catch (Exception e) {
             org.slf4j.LoggerFactory.getLogger(getClass())
                     .warn("⚠️ Cancel event publish nije uspio za rezervaciju {}: {}",
@@ -365,16 +414,35 @@ public class ReservationServiceImpl implements ReservationService {
             Reservation r = reservationMapper.toEntity(dto);
             r.setStatus(ReservationStatus.CREATED);
             r.setCreatedAt(LocalDateTime.now());
+
+            // K1 — ista server-side kalkulacija cijene kao u createReservation
+            long nights = ChronoUnit.DAYS.between(dto.getCheckIn(), dto.getCheckOut());
+            PricingRuleDTO pricing = propertyAvailabilityGateway.fetchPricing(dto.getPropertyId());
+            List<SeasonalRuleDTO> seasonalRules = propertyAvailabilityGateway.fetchSeasonalRules(dto.getPropertyId());
+            BigDecimal total = priceCalculator.calculateTotal(
+                    pricing, seasonalRules, dto.getCheckIn(), dto.getCheckOut());
+
             if (dto.getCancellationPolicyId() != null) {
-                r.setCancellationPolicy(cancellationPolicyRepository.findById(dto.getCancellationPolicyId())
+                CancellationPolicy policy = cancellationPolicyRepository.findById(dto.getCancellationPolicyId())
                         .orElseThrow(() -> new ResourceNotFoundException(
-                                "CancellationPolicy nije pronađen sa ID: " + dto.getCancellationPolicyId())));
+                                "CancellationPolicy nije pronađen sa ID: " + dto.getCancellationPolicyId()));
+                if (policy.getPropertyId() != null && !policy.getPropertyId().equals(dto.getPropertyId())) {
+                    throw new IllegalArgumentException("Politika otkazivanja ne pripada ovom smještaju");
+                }
+                r.setCancellationPolicy(policy);
             }
             if (dto.getPromoCodeId() != null) {
-                r.setPromoCode(promoCodeRepository.findById(dto.getPromoCodeId())
+                PromoCode promo = promoCodeRepository.findById(dto.getPromoCodeId())
                         .orElseThrow(() -> new ResourceNotFoundException(
-                                "PromoCode nije pronađen sa ID: " + dto.getPromoCodeId())));
+                                "PromoCode nije pronađen sa ID: " + dto.getPromoCodeId()));
+                // K2 — ista validacija i evidencija koristenja kao kod pojedinacne rezervacije
+                priceCalculator.validatePromo(promo, nights);
+                total = priceCalculator.applyPromo(total, promo);
+                promo.setUsageCount(promo.getUsageCount() + 1);
+                promoCodeRepository.save(promo);
+                r.setPromoCode(promo);
             }
+            r.setTotalPrice(total);
             return r;
         }).collect(Collectors.toList());
 

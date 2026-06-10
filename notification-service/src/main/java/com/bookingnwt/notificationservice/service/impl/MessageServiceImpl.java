@@ -6,10 +6,13 @@ import com.bookingnwt.notificationservice.exception.ResourceNotFoundException;
 import com.bookingnwt.notificationservice.mapper.MessageMapper;
 import com.bookingnwt.notificationservice.model.Conversation;
 import com.bookingnwt.notificationservice.model.Message;
+import com.bookingnwt.notificationservice.model.Notification;
 import com.bookingnwt.notificationservice.repository.ConversationRepository;
 import com.bookingnwt.notificationservice.repository.MessageRepository;
+import com.bookingnwt.notificationservice.repository.NotificationRepository;
 import com.bookingnwt.notificationservice.service.MessageService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -18,11 +21,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MessageServiceImpl implements MessageService {
 
     private final MessageRepository messageRepository;
     private final ConversationRepository conversationRepository;
     private final MessageMapper messageMapper;
+    private final NotificationRepository notificationRepository;
 
     @Override
     public MessageResponseDTO sendMessage(MessageRequestDTO dto) {
@@ -30,7 +35,32 @@ public class MessageServiceImpl implements MessageService {
                 .orElseThrow(() -> new ResourceNotFoundException("Konverzacija sa ID " + dto.getConversationId() + " nije pronađena"));
 
         Message message = new Message(conversation, dto.getSenderId(), dto.getContent());
-        return messageMapper.toDTO(messageRepository.save(message));
+        MessageResponseDTO saved = messageMapper.toDTO(messageRepository.save(message));
+
+        // F8/F9 — "Korisnik dobija notifikaciju o novoj poruci": primalac je
+        // druga strana konverzacije (gost ili host).
+        try {
+            Long recipientId = dto.getSenderId() != null && dto.getSenderId().equals(conversation.getGuestId())
+                    ? conversation.getHostId()
+                    : conversation.getGuestId();
+            if (recipientId != null) {
+                String excerpt = dto.getContent() != null && dto.getContent().length() > 80
+                        ? dto.getContent().substring(0, 80) + "…"
+                        : dto.getContent();
+                notificationRepository.save(new Notification(
+                        recipientId,
+                        "NOVA_PORUKA",
+                        "Nova poruka",
+                        String.format("Korisnik #%d vam je poslao poruku: %s",
+                                dto.getSenderId(), excerpt != null ? excerpt : ""),
+                        conversation.getReservationId()
+                ));
+            }
+        } catch (Exception e) {
+            log.warn("⚠️ Notifikacija o novoj poruci nije kreirana: {}", e.getMessage());
+        }
+
+        return saved;
     }
 
     @Override

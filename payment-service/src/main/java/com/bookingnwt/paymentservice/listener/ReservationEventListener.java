@@ -5,10 +5,13 @@ import com.bookingnwt.paymentservice.events.PaymentFailedEvent;
 import com.bookingnwt.paymentservice.events.ReservationCreatedEvent;
 import com.bookingnwt.paymentservice.model.Payment;
 import com.bookingnwt.paymentservice.model.PaymentStatus;
+import com.bookingnwt.paymentservice.model.TransactionType;
 import com.bookingnwt.paymentservice.model.Wallet;
+import com.bookingnwt.paymentservice.model.WalletTransaction;
 import com.bookingnwt.paymentservice.publisher.PaymentEventPublisher;
 import com.bookingnwt.paymentservice.repository.PaymentRepository;
 import com.bookingnwt.paymentservice.repository.WalletRepository;
+import com.bookingnwt.paymentservice.repository.WalletTransactionRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +42,18 @@ public class ReservationEventListener {
 
     private final PaymentRepository paymentRepository;
     private final WalletRepository walletRepository;
+    private final WalletTransactionRepository walletTransactionRepository;
     private final PaymentEventPublisher paymentEventPublisher;
     private final ObjectMapper objectMapper;
 
+    /**
+     * K5 fix — @Transactional je OVDJE (na ulaznoj metodi koju poziva Rabbit
+     * container kroz Spring proxy). Ranija anotacija na processPayment() nije
+     * imala efekta jer je self-invocation (this.processPayment) zaobilazila
+     * proxy pa atomicnost nije bila garantovana.
+     */
     @RabbitListener(queues = "${app.rabbitmq.queue.payment}")
+    @Transactional
     public void onMessage(String message) {
         try {
             ReservationCreatedEvent event = objectMapper.readValue(message, ReservationCreatedEvent.class);
@@ -59,8 +70,7 @@ public class ReservationEventListener {
      * Ako wallet ne postoji ili nema dovoljno → FAILED + emit PaymentFailedEvent.
      * Ako prođe → COMPLETED + emit PaymentCompletedEvent.
      */
-    @Transactional
-    public void processPayment(ReservationCreatedEvent event) {
+    void processPayment(ReservationCreatedEvent event) {
         BigDecimal amount = event.getTotalPrice() != null ? event.getTotalPrice() : BigDecimal.ZERO;
         String currency = event.getCurrency() != null ? event.getCurrency() : "BAM";
 
@@ -100,32 +110,22 @@ public class ReservationEventListener {
         walletRepository.save(wallet);
 
         Payment completed = persistPayment(event, amount, currency, PaymentStatus.COMPLETED);
+
+        // F19 — evidencija u historiji novcanika (do sada su saga naplate bile
+        // nevidljive u wallet transakcijama)
+        walletTransactionRepository.save(new WalletTransaction(
+                wallet, amount.negate(), TransactionType.PAYMENT,
+                "Plaćanje rezervacije #" + event.getReservationId(), completed));
+
         paymentEventPublisher.publishPaymentCompleted(new PaymentCompletedEvent(
                 completed.getId(), event.getReservationId(), event.getUserId(),
                 amount, currency, LocalDateTime.now(), "PAYMENT_COMPLETED"
         ));
 
-        // F19 — host payout sa komisijom platforme.
-        // Spec: "Domacin prima isplatu na svoj racun nakon uspjesno zavrsenog
-        // boravka gosta, umanjenu za proviziju platforme." Za demo: kreditiramo
-        // host wallet odmah (komisija = 10%). U produkciji bi cekali COMPLETED status.
-        if (event.getHostId() != null) {
-            BigDecimal commissionPct = BigDecimal.valueOf(10);
-            BigDecimal commission = amount.multiply(commissionPct)
-                    .divide(BigDecimal.valueOf(100), 2, java.math.RoundingMode.HALF_UP);
-            BigDecimal hostPayout = amount.subtract(commission);
-
-            Wallet hostWallet = walletRepository.findByUserId(event.getHostId())
-                    .orElseGet(() -> {
-                        Wallet w = new Wallet(event.getHostId(), BigDecimal.ZERO, currency);
-                        return walletRepository.save(w);
-                    });
-            hostWallet.setBalance(hostWallet.getBalance().add(hostPayout));
-            hostWallet.setUpdatedAt(LocalDateTime.now());
-            walletRepository.save(hostWallet);
-            log.info("💵 Host {} payout: {} {} ({} odvojeno za platformu kao komisija 10%)",
-                    event.getHostId(), hostPayout, currency, commission);
-        }
+        // K4 fix (F19): host payout se NE radi ovdje. Spec: "Domacin prima isplatu
+        // nakon uspjesno zavrsenog boravka gosta" — isplatu radi
+        // ReservationCompletedListener kad rezervacija predje u COMPLETED.
+        // Payout odmah pri naplati je ostavljao rupu: refund gostu + host zadrzi payout.
     }
 
     private Payment persistPayment(ReservationCreatedEvent event,

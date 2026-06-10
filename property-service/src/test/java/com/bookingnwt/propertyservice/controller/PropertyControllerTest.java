@@ -41,6 +41,10 @@ class PropertyControllerTest {
     @MockitoBean
     private PropertyService propertyService;
 
+    // Feign klijent se ne kreira u @WebMvcTest slice-u — bez mocka kontekst pada
+    @MockitoBean
+    private com.bookingnwt.propertyservice.client.UserClient userClient;
+
     private PropertyResponse createPropertyResponse() {
         PropertyResponse r = new PropertyResponse();
         r.setId(1L);
@@ -124,6 +128,9 @@ class PropertyControllerTest {
         request.setCity("Sarajevo");
         request.setCountry("BiH");
 
+        // F16 — host mora imati APPROVED verifikaciju da bi objavio objekat
+        when(userClient.getVerifications(1L))
+                .thenReturn(List.of(java.util.Map.of("status", "APPROVED")));
         when(propertyService.createProperty(any())).thenReturn(createPropertyResponse());
 
         mockMvc.perform(post("/api/properties")

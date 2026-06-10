@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { userApi } from '../../api/userApi'
-import { analyticsApi } from '../../api/analyticsApi'
+import { reservationApi } from '../../api/reservationApi'
+import { propertyApi } from '../../api/propertyApi'
+import { verificationApi } from '../../api/verificationApi'
+import { problemReportApi } from '../../api/problemReportApi'
 import { useAuthStore } from '../../store/authStore'
 import { useNavigate } from 'react-router-dom'
 import { useToast } from '../common/ToastProvider'
@@ -27,11 +30,11 @@ export default function AdminDashboard() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [searchRole, setSearchRole] = useState('')
 
-  // Analytics State
-  const [stats, setStats] = useState([])
+  // Pregled platforme — STVARNI podaci izracunati iz zivih servisa
+  // (raniji tab je prikazivao rucno seedovane redove iz analytics-service-a
+  // pa su brojke poput "popunjenost 50%" izgledale izmisljeno — i bile su)
+  const [overview, setOverview] = useState(null)
   const [loadingStats, setLoadingStats] = useState(false)
-  const [statsPage, setStatsPage] = useState(0)
-  const [statsTotalPages, setStatsTotalPages] = useState(0)
 
   useEffect(() => {
     if (user?.role !== 'ADMIN') {
@@ -44,9 +47,9 @@ export default function AdminDashboard() {
     if (activeTab === 'users') {
       fetchUsers()
     } else if (activeTab === 'analytics') {
-      fetchStats()
+      fetchOverview()
     }
-  }, [page, searchRole, activeTab, statsPage])
+  }, [page, searchRole, activeTab])
 
   const fetchUsers = async () => {
     setLoadingUsers(true)
@@ -67,14 +70,73 @@ export default function AdminDashboard() {
     }
   }
 
-  const fetchStats = async () => {
+  const fetchOverview = async () => {
     setLoadingStats(true)
     try {
-      const data = await analyticsApi.getAllStatisticsPaginated(statsPage, 10)
-      setStats(data.content || [])
-      setStatsTotalPages(data.totalPages || 1)
+      const [resR, propR, pendR, verifR, repR, usersR] = await Promise.allSettled([
+        reservationApi.getAll(),                  // ADMIN — sve rezervacije
+        propertyApi.getAll(0, 1000, ''),          // javni (APPROVED) objekti
+        propertyApi.getPendingModeration(),       // ADMIN — na cekanju moderacije
+        verificationApi.getAll(),                 // ADMIN — verifikacije
+        problemReportApi.getAll(),                // ADMIN — prijave problema
+        userApi.getAll(0, 1)                      // samo radi totalElements
+      ])
+      const val = (r, fb) => (r.status === 'fulfilled' ? r.value : fb)
+      const reservations = (() => {
+        const v = val(resR, [])
+        return Array.isArray(v) ? v : (v.content || [])
+      })()
+      const properties = val(propR, { content: [] }).content || []
+      const pendingProps = val(pendR, [])
+      const verifications = val(verifR, [])
+      const reports = val(repR, [])
+      const totalUsersCount = val(usersR, {}).totalElements || 0
+
+      // Rezervacije po statusu
+      const byStatus = {}
+      reservations.forEach(r => {
+        const s = (r.status || 'CREATED').toUpperCase()
+        byStatus[s] = (byStatus[s] || 0) + 1
+      })
+
+      // Promet = naplacene rezervacije; provizija platforme 10%
+      const paidStatuses = ['CONFIRMED', 'ACTIVE', 'COMPLETED']
+      const revenue = reservations
+        .filter(r => paidStatuses.includes((r.status || '').toUpperCase()))
+        .reduce((s, r) => s + Number(r.totalPrice || 0), 0)
+
+      // Popunjenost TEKUCE godine — bukirane noci se SIJEKU na granice godine
+      // (puna duzina boravka van godine je ranije naduvavala procenat)
+      const year = new Date().getFullYear()
+      const yearStart = new Date(year, 0, 1)
+      const yearEnd = new Date(year + 1, 0, 1)
+      const bookedNights = reservations
+        .filter(r => paidStatuses.includes((r.status || '').toUpperCase()) && r.checkIn && r.checkOut)
+        .reduce((sum, r) => {
+          const from = new Date(Math.max(new Date(r.checkIn), yearStart))
+          const to = new Date(Math.min(new Date(r.checkOut), yearEnd))
+          return sum + Math.max(0, Math.round((to - from) / 86400000))
+        }, 0)
+      const daysInYear = ((year % 4 === 0 && year % 100 !== 0) || year % 400 === 0) ? 366 : 365
+      const occupancy = properties.length > 0
+        ? Math.min(100, (bookedNights / (daysInYear * properties.length)) * 100)
+        : 0
+
+      setOverview({
+        totalUsersCount,
+        propertiesCount: properties.length,
+        pendingModeration: pendingProps.length,
+        reservationsCount: reservations.length,
+        byStatus,
+        revenue,
+        commission: revenue * 0.10,
+        occupancy,
+        bookedNights,
+        pendingVerifications: verifications.filter(v => (v.status || '').toUpperCase() === 'PENDING').length,
+        openReports: reports.filter(r => ['REPORTED', 'IN_PROGRESS'].includes((r.status || '').toUpperCase())).length
+      })
     } catch {
-      showToast({ type: 'error', title: 'Greška', message: 'Greška pri učitavanju sistemske analitike' })
+      showToast({ type: 'error', title: 'Greška', message: 'Greška pri učitavanju pregleda platforme' })
     } finally {
       setLoadingStats(false)
     }
@@ -118,7 +180,7 @@ export default function AdminDashboard() {
           onClick={() => setActiveTab('analytics')}
           className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
         >
-          📊 Sistemska Analitika
+          📊 Pregled platforme
         </button>
         <button
           onClick={() => setActiveTab('verifications')}
@@ -250,49 +312,98 @@ export default function AdminDashboard() {
 
       {activeTab === 'analytics' && (
         <div className="analytics-table-container glass-panel">
-          <h2>Platformska Statistika</h2>
-          {loadingStats ? (
-            <Spinner label="Učitavanje analitike..." />
-          ) : (
+          <h2>Pregled platforme</h2>
+          <p style={{ color: 'var(--text-tertiary)', fontSize: '0.85rem', marginBottom: '16px' }}>
+            Podaci izračunati uživo iz rezervacija, smještaja, verifikacija i prijava.
+          </p>
+          {loadingStats && <Spinner label="Učitavanje pregleda..." />}
+          {!loadingStats && overview && (
             <>
+              <div className="admin-stats" style={{ marginBottom: '20px' }}>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">👥</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.totalUsersCount}</span>
+                    <span className="stat-label">Korisnika</span>
+                  </div>
+                </div>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">🏠</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.propertiesCount}</span>
+                    <span className="stat-label">Objavljenih smještaja</span>
+                  </div>
+                </div>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">📅</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.reservationsCount}</span>
+                    <span className="stat-label">Ukupno rezervacija</span>
+                  </div>
+                </div>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">💰</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.revenue.toFixed(0)} BAM</span>
+                    <span className="stat-label">Promet (provizija {overview.commission.toFixed(0)} BAM)</span>
+                  </div>
+                </div>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">📊</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.occupancy.toFixed(1)}%</span>
+                    <span className="stat-label">Popunjenost {new Date().getFullYear()} ({overview.bookedNights} noći)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="admin-stats" style={{ marginBottom: '20px' }}>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">🛡</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.pendingModeration}</span>
+                    <span className="stat-label">Čeka moderaciju</span>
+                  </div>
+                </div>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">🪪</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.pendingVerifications}</span>
+                    <span className="stat-label">Verifikacije na čekanju</span>
+                  </div>
+                </div>
+                <div className="stat-card glass-panel">
+                  <span className="stat-icon">⚠</span>
+                  <div className="stat-info">
+                    <span className="stat-value">{overview.openReports}</span>
+                    <span className="stat-label">Otvorene prijave problema</span>
+                  </div>
+                </div>
+              </div>
+
+              <h3 style={{ marginBottom: '10px' }}>Rezervacije po statusu</h3>
               <table className="users-table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Smještaj ID</th>
-                    <th>Period (G/M)</th>
-                    <th>Zarada</th>
-                    <th>Broj rezervacija</th>
-                    <th>Stopa popunjenosti</th>
+                    <th>Status</th>
+                    <th>Broj</th>
+                    <th>Udio</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {stats.length === 0 ? (
-                    <tr><td colSpan="6" style={{textAlign: 'center'}}>Nema podataka</td></tr>
-                  ) : (
-                    stats.map((s) => (
-                      <tr key={s.id}>
-                        <td>#{s.id}</td>
-                        <td>{s.propertyId}</td>
-                        <td>{s.year}/{s.month}</td>
-                        <td>${(s.totalRevenue || 0).toFixed(2)}</td>
-                        <td>{s.totalReservations || 0}</td>
-                        <td>{(s.occupancyRate || 0).toFixed(1)}%</td>
-                      </tr>
-                    ))
-                  )}
+                  {['CREATED', 'CONFIRMED', 'ACTIVE', 'COMPLETED', 'CANCELLED'].map(s => (
+                    <tr key={s}>
+                      <td>{s}</td>
+                      <td>{overview.byStatus[s] || 0}</td>
+                      <td>
+                        {overview.reservationsCount > 0
+                          ? (((overview.byStatus[s] || 0) / overview.reservationsCount) * 100).toFixed(0)
+                          : 0}%
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-
-              <div className="pagination">
-                <button onClick={() => setStatsPage(Math.max(0, statsPage - 1))} disabled={statsPage === 0}>
-                  Prethodna
-                </button>
-                <span>Stranica {statsPage + 1} od {statsTotalPages || 1}</span>
-                <button onClick={() => setStatsPage(Math.min(statsTotalPages - 1, statsPage + 1))} disabled={statsPage >= statsTotalPages - 1}>
-                  Sljedeća
-                </button>
-              </div>
             </>
           )}
         </div>

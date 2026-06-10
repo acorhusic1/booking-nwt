@@ -48,9 +48,19 @@ public class ReviewController {
     }
 
     @PutMapping("/{id}/reply")
-    @org.springframework.security.access.prepost.PreAuthorize("hasRole('HOST')")
+    @org.springframework.security.access.prepost.PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<ReviewResponse> addHostReply(@PathVariable Long id,
-                                                       @RequestBody Map<String, String> body) {
+                                                       @RequestBody Map<String, String> body,
+                                                       jakarta.servlet.http.HttpServletRequest request) {
+        // K8 — host smije odgovoriti samo na recenzije SVOG objekta
+        if (!request.isUserInRole("ADMIN")
+                && request.getAttribute("authUserId") instanceof Long uid) {
+            ReviewResponse review = reviewService.getReviewById(id);
+            if (review.getHostId() != null && !uid.equals(review.getHostId())) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Nemate pravo odgovoriti na recenziju tuđeg objekta");
+            }
+        }
         String reply = body.get("reply");
         return ResponseEntity.ok(reviewService.addHostReply(id, reply));
     }

@@ -4,6 +4,7 @@ import { propertyApi } from '../../api/propertyApi'
 import { reservationApi } from '../../api/reservationApi'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../common/ToastProvider'
+import { toLocalISO } from '../../utils/dates'
 import '../../styles/Calendar.css'
 
 /**
@@ -64,7 +65,8 @@ export default function CalendarModal({ open, onClose, property }) {
   const days = buildMonthGrid()
   const today = new Date(new Date().toDateString())
 
-  const isoDate = (d) => d.toISOString().split('T')[0]
+  // BUG fix — toISOString() pomjera lokalni datum -1 dan (UTC konverzija)
+  const isoDate = (d) => toLocalISO(d)
   const isInMonth = (d) => d.getMonth() === viewMonth
   const isPast = (d) => d < today
   const isBlocked = (d) => {

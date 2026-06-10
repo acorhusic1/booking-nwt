@@ -24,6 +24,7 @@ public class PropertyPatchRequest {
     private BigDecimal latitude;
     private BigDecimal longitude;
     private Integer maxGuests;
+    private String propertyType;
     private Boolean isActive;
     private Boolean available;
 }

@@ -49,9 +49,20 @@ export default function PropertyCard({ property, showWishlist = false, wishliste
             {property.description && property.description.length > 100 ? "…" : ""}
           </p>
           <div className="property-details">
+            {property.propertyType && (
+              <span className="type-chip">
+                {{ APARTMAN: '🏢 Apartman', KUCA: '🏡 Kuća', VILA: '🏛 Vila', HOTEL: '🏨 Hotel', HOSTEL: '🛏 Hostel' }[property.propertyType] || property.propertyType}
+              </span>
+            )}
             <span>👥 Do {property.maxGuests} osoba</span>
           </div>
           <div className="property-footer">
+            {/* F4 — cijena vidljiva vec na kartici */}
+            {property.basePrice != null && (
+              <span className="card-price">
+                <strong>{Number(property.basePrice).toFixed(0)} BAM</strong> / noć
+              </span>
+            )}
             {property.available ? (
               <span className="available">Dostupno</span>
             ) : (

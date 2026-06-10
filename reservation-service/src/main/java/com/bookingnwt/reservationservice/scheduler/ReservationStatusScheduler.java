@@ -1,7 +1,9 @@
 package com.bookingnwt.reservationservice.scheduler;
 
+import com.bookingnwt.reservationservice.events.ReservationCompletedEvent;
 import com.bookingnwt.reservationservice.model.Reservation;
 import com.bookingnwt.reservationservice.model.ReservationStatus;
+import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -27,6 +30,7 @@ import java.util.List;
 public class ReservationStatusScheduler {
 
     private final ReservationRepository reservationRepository;
+    private final ReservationEventPublisher eventPublisher;
 
     @Scheduled(fixedDelay = 60_000, initialDelay = 30_000) // svake minute, prvi run 30s nakon start-a
     @Transactional
@@ -54,6 +58,19 @@ public class ReservationStatusScheduler {
                 r.setStatus(ReservationStatus.COMPLETED);
                 reservationRepository.save(r);
                 completed++;
+
+                // F19 — tek SADA payment-service isplacuje hosta ("Domacin prima
+                // isplatu nakon uspjesno zavrsenog boravka gosta"). Listener u
+                // payment-service-u je idempotentan pa eventualni dupli event
+                // (restart schedulera) ne pravi duplu isplatu.
+                try {
+                    eventPublisher.publishReservationCompleted(new ReservationCompletedEvent(
+                            r.getId(), r.getPropertyId(), r.getGuestId(), r.getHostId(),
+                            r.getTotalPrice(), "BAM", LocalDateTime.now(), "RESERVATION_COMPLETED"));
+                } catch (Exception e) {
+                    log.warn("⚠️ ReservationCompletedEvent publish nije uspio za rezervaciju {}: {}",
+                            r.getId(), e.getMessage());
+                }
             }
         }
 

@@ -11,14 +11,18 @@ import com.bookingnwt.reservationservice.publisher.ReservationEventPublisher;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
 import com.bookingnwt.reservationservice.client.PropertyAvailabilityGateway;
+import com.bookingnwt.reservationservice.events.ReservationCancelledEvent;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
+import com.bookingnwt.reservationservice.service.impl.PriceCalculator;
 import com.bookingnwt.reservationservice.service.impl.ReservationServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -48,6 +52,9 @@ class ReservationServiceTest {
     private PropertyAvailabilityGateway propertyAvailabilityGateway;
     @Mock
     private ReservationEventPublisher reservationEventPublisher;
+    // Realan kalkulator (ne mock) — server-side cijena se zaista racuna u testu
+    @Spy
+    private PriceCalculator priceCalculator = new PriceCalculator();
 
     @InjectMocks
     private ReservationServiceImpl reservationService;
@@ -242,16 +249,23 @@ class ReservationServiceTest {
     }
 
     @Test
-    void cancelReservation_BlockedWhenConfirmedAndLessThanFreeCancelDaysAway() {
-        // CONFIRMED + 3 dana do check-in (manje od defaultne politike 7)
+    void cancelReservation_NoRefundWhenConfirmedAndLessThanFreeCancelDaysAway() {
+        // F6 — gost MOŽE otkazati u bilo kojem trenutku (dokumentacija), ali
+        // unutar free-cancel prozora (3 dana < default 7) refund je 0%.
         reservation.setCheckIn(LocalDate.now().plusDays(3));
         reservation.setStatus(ReservationStatus.CONFIRMED);
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
+        responseDTO.setStatus(ReservationStatus.CANCELLED);
+        when(reservationMapper.toResponseDTO(reservation)).thenReturn(responseDTO);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> reservationService.cancelReservation(1L));
-        assertTrue(ex.getMessage().toLowerCase().contains("kontaktirajte"));
-        verify(reservationRepository, never()).save(any());
+        ReservationResponseDTO result = reservationService.cancelReservation(1L);
+
+        assertEquals(ReservationStatus.CANCELLED, result.getStatus());
+        ArgumentCaptor<ReservationCancelledEvent> captor =
+                ArgumentCaptor.forClass(ReservationCancelledEvent.class);
+        verify(reservationEventPublisher).publishReservationCancelled(captor.capture());
+        assertEquals(0, captor.getValue().getRefundPercentage());
     }
 
     @Test
@@ -272,17 +286,25 @@ class ReservationServiceTest {
 
     @Test
     void cancelReservation_HonorsPerPropertyCancellationPolicy() {
-        // Property ima policy sa freeCancelDays=14 — cancel 10 dana prije
-        // mora pasti iako default (7) bi prošao.
-        CancellationPolicy policy = new CancellationPolicy(30L, "Strict", 14, 0, false);
+        // Property ima policy sa freeCancelDays=14, partialRefundPct=40 —
+        // cancel 10 dana prije check-ina je UNUTAR strict prozora pa se
+        // primjenjuje djelimican refund umjesto punog (default 7 bi dao 100%).
+        CancellationPolicy policy = new CancellationPolicy(30L, "Strict", 14, 40, false);
         reservation.setCancellationPolicy(policy);
         reservation.setCheckIn(LocalDate.now().plusDays(10));
         reservation.setStatus(ReservationStatus.CONFIRMED);
         when(reservationRepository.findById(1L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.save(any(Reservation.class))).thenReturn(reservation);
+        responseDTO.setStatus(ReservationStatus.CANCELLED);
+        when(reservationMapper.toResponseDTO(reservation)).thenReturn(responseDTO);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class,
-                () -> reservationService.cancelReservation(1L));
-        assertTrue(ex.getMessage().contains("14"));
+        ReservationResponseDTO result = reservationService.cancelReservation(1L);
+
+        assertEquals(ReservationStatus.CANCELLED, result.getStatus());
+        ArgumentCaptor<ReservationCancelledEvent> captor =
+                ArgumentCaptor.forClass(ReservationCancelledEvent.class);
+        verify(reservationEventPublisher).publishReservationCancelled(captor.capture());
+        assertEquals(40, captor.getValue().getRefundPercentage());
     }
 
     @Test

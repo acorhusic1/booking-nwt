@@ -1,8 +1,11 @@
 package com.bookingnwt.reservationservice.client;
 
 import com.bookingnwt.reservationservice.client.dto.CalendarBlockDTO;
+import com.bookingnwt.reservationservice.client.dto.PricingRuleDTO;
 import com.bookingnwt.reservationservice.client.dto.PropertyDTO;
+import com.bookingnwt.reservationservice.client.dto.SeasonalRuleDTO;
 import com.bookingnwt.reservationservice.exception.PropertyUnavailableException;
+import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -68,9 +71,43 @@ public class PropertyAvailabilityGateway {
         }
     }
 
-    @CircuitBreaker(name = "property-service")
-    public void cancelListingByProperty(Long propertyId, Boolean isCancelled) {
-        propertyClient.cancelListingByProperty(propertyId, isCancelled);
+    /**
+     * F4 — cjenovnik za server-side kalkulaciju. 404 (host nije postavio pravilo)
+     * nije greska: vraca null i caller koristi fallback cijenu. Ostale greske su
+     * fail-closed — bez pouzdane cijene ne smijemo kreirati rezervaciju.
+     */
+    @CircuitBreaker(name = "property-service", fallbackMethod = "pricingFallback")
+    public PricingRuleDTO fetchPricing(Long propertyId) {
+        try {
+            return propertyClient.getPricing(propertyId);
+        } catch (FeignException.NotFound e) {
+            return null;
+        }
+    }
+
+    /** F15 — sezonska pravila. Fail-closed iz istog razloga kao fetchPricing. */
+    @CircuitBreaker(name = "property-service", fallbackMethod = "seasonalRulesFallback")
+    public List<SeasonalRuleDTO> fetchSeasonalRules(Long propertyId) {
+        List<SeasonalRuleDTO> rules = propertyClient.getSeasonalRules(propertyId);
+        return rules != null ? rules : List.of();
+    }
+
+    @SuppressWarnings("unused")
+    private PricingRuleDTO pricingFallback(Long propertyId, Throwable t) {
+        log.warn("[CircuitBreaker] property-service nedostupan ({}) — ne mogu dohvatiti cjenovnik za smještaj {}.",
+                t.getClass().getSimpleName(), propertyId);
+        throw new PropertyUnavailableException(
+                "Trenutno ne možemo izračunati cijenu za smještaj " + propertyId
+                        + ". Pokušajte ponovo za nekoliko minuta.");
+    }
+
+    @SuppressWarnings("unused")
+    private List<SeasonalRuleDTO> seasonalRulesFallback(Long propertyId, Throwable t) {
+        log.warn("[CircuitBreaker] property-service nedostupan ({}) — ne mogu dohvatiti sezonska pravila za smještaj {}.",
+                t.getClass().getSimpleName(), propertyId);
+        throw new PropertyUnavailableException(
+                "Trenutno ne možemo izračunati cijenu za smještaj " + propertyId
+                        + ". Pokušajte ponovo za nekoliko minuta.");
     }
 
     private boolean overlaps(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {

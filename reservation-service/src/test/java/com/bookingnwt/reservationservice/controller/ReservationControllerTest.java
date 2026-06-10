@@ -69,7 +69,9 @@ class ReservationControllerTest {
     }
 
     @Test
-    void createReservation_Returns201() throws Exception {
+    void createReservation_Returns202Accepted() throws Exception {
+        // 202 Accepted — rezervacija je kreirana (CREATED), ali Saga
+        // (naplata + property potvrda) je još u toku.
         when(reservationService.createReservation(any(ReservationRequestDTO.class))).thenReturn(responseDTO);
 
         ReservationRequestDTO request = new ReservationRequestDTO();
@@ -84,7 +86,7 @@ class ReservationControllerTest {
         mockMvc.perform(post("/api/reservations")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
+                .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.id").value(1))
                 .andExpect(jsonPath("$.guestId").value(10));
     }
