@@ -52,6 +52,15 @@ public class Property {
     @Column(name = "max_guests")
     private Integer maxGuests;
 
+    // F1/F2 — tip smjestaja (APARTMAN, KUCA, HOTEL, HOSTEL, VILA...) za
+    // filtriranje u pretrazi po dokumentaciji. String radi jednostavnosti.
+    @Column(name = "property_type", length = 30)
+    private String propertyType;
+
+    // F11 — broj pregleda oglasa (statistika za domacina)
+    @Column(name = "view_count")
+    private Long viewCount = 0L;
+
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;
 

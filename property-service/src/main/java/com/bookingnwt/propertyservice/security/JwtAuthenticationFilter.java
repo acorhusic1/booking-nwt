@@ -66,6 +66,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                         username, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(auth);
+
+                // K8 — uid claim kao request atribut: controlleri provjeravaju
+                // vlasnistvo resursa umjesto da vjeruju ID-evima iz request body-a
+                Object uidRaw = claims.get("uid");
+                if (uidRaw != null) {
+                    request.setAttribute("authUserId", Long.valueOf(uidRaw.toString()));
+                }
             }
         } catch (Exception e) {
             SecurityContextHolder.clearContext();

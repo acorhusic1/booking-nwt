@@ -1,6 +1,8 @@
 package com.bookingnwt.reservationservice.publisher;
 
+import com.bookingnwt.reservationservice.events.ProblemReportedEvent;
 import com.bookingnwt.reservationservice.events.ReservationCancelledEvent;
+import com.bookingnwt.reservationservice.events.ReservationCompletedEvent;
 import com.bookingnwt.reservationservice.events.ReservationCreatedEvent;
 import com.bookingnwt.reservationservice.events.ReservationReminderEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +39,14 @@ public class ReservationEventPublisher {
     @Value("${app.rabbitmq.routing-key.reservation-reminder:booking.reservation.reminder}")
     private String reservationReminderRoutingKey;
 
+    // F19 — boravak zavrsen → payment-service isplacuje hosta
+    @Value("${app.rabbitmq.routing-key.reservation-completed:booking.reservation.completed}")
+    private String reservationCompletedRoutingKey;
+
+    // F17 — prijava problema → notifikacija hostu
+    @Value("${app.rabbitmq.routing-key.problem-reported:booking.problem.reported}")
+    private String problemReportedRoutingKey;
+
     /**
      * Emituje ReservationCreatedEvent u RabbitMQ.
      * Property Service sluša i markira nekretninu kao nedostupnu.
@@ -65,6 +75,33 @@ public class ReservationEventPublisher {
                     event.getEventType(), event.getReservationId(), event.getGuestId());
         } catch (Exception e) {
             log.error("❌ Greška pri objavljivanju ReservationReminderEvent", e);
+        }
+    }
+
+    /**
+     * F19 — emituje se kad scheduler prebaci rezervaciju u COMPLETED.
+     * payment-service slusa i isplacuje hosta (minus provizija platforme).
+     */
+    public void publishReservationCompleted(ReservationCompletedEvent event) {
+        try {
+            String message = objectMapper.writeValueAsString(event);
+            rabbitTemplate.convertAndSend(exchange, reservationCompletedRoutingKey, message);
+            log.info("📤 🏁 ReservationCompletedEvent objavljen: Reservation={}, host payout {} {}",
+                    event.getReservationId(), event.getTotalPrice(), event.getCurrency());
+        } catch (Exception e) {
+            log.error("❌ Greška pri objavljivanju ReservationCompletedEvent", e);
+        }
+    }
+
+    /** F17 — prijava problema tokom boravka → notifikacija hostu. */
+    public void publishProblemReported(ProblemReportedEvent event) {
+        try {
+            String message = objectMapper.writeValueAsString(event);
+            rabbitTemplate.convertAndSend(exchange, problemReportedRoutingKey, message);
+            log.info("📤 🛠 ProblemReportedEvent objavljen: Report={}, Reservation={}, Host={}",
+                    event.getReportId(), event.getReservationId(), event.getHostId());
+        } catch (Exception e) {
+            log.error("❌ Greška pri objavljivanju ProblemReportedEvent", e);
         }
     }
 

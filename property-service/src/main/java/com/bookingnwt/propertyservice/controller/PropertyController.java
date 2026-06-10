@@ -73,6 +73,29 @@ public class PropertyController {
         return ResponseEntity.ok(propertyService.getAvailableProperties(city, startDate, endDate));
     }
 
+    /**
+     * F18 — dinamicko ucitavanje za mapu: vraca smjestaje unutar vidljivog
+     * bounding box-a. Frontend poziva na svako pomicanje/zoom mape.
+     */
+    @GetMapping("/in-bounds")
+    public ResponseEntity<List<PropertyResponse>> getPropertiesInBounds(
+            @RequestParam java.math.BigDecimal minLat,
+            @RequestParam java.math.BigDecimal maxLat,
+            @RequestParam java.math.BigDecimal minLng,
+            @RequestParam java.math.BigDecimal maxLng) {
+        return ResponseEntity.ok(propertyService.getPropertiesInBounds(minLat, maxLat, minLng, maxLng));
+    }
+
+    /**
+     * F11 — registruje pregled oglasa (frontend zove pri otvaranju stranice
+     * detalja). Public — i neulogovani posjetioci se broje.
+     */
+    @PostMapping("/{id}/view")
+    public ResponseEntity<Void> registerView(@PathVariable Long id) {
+        propertyService.registerView(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/test")
     public ResponseEntity<String> testLoadBalancing() {
         try {
@@ -105,40 +128,66 @@ public class PropertyController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createProperty(@Valid @RequestBody PropertyRequest request) {
+    @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
+    public ResponseEntity<?> createProperty(@Valid @RequestBody PropertyRequest request,
+                                            jakarta.servlet.http.HttpServletRequest httpRequest) {
+        // K8 — HOST objavljuje u SVOJE ime: uid iz tokena pregazi hostId iz body-a
+        // (sprjecava objavu "u ime" tudjeg/verifikovanog hosta). ADMIN smije
+        // postaviti proizvoljan hostId (npr. seed/migracija).
+        Object uidAttr = httpRequest.getAttribute("authUserId");
+        if (uidAttr instanceof Long uid && !httpRequest.isUserInRole("ADMIN")) {
+            request.setHostId(uid);
+        }
+        if (request.getHostId() == null) {
+            return ResponseEntity.badRequest().body(java.util.Map.of(
+                    "error", "HostIdRequired", "message", "hostId je obavezan"));
+        }
         // F16 enforce — host MORA imati APPROVED verifikaciju prije nego sto
         // objavi novi objekat. JWT se propagira kroz FeignAuthInterceptor pa
         // user-service moze odgovoriti.
-        if (request.getHostId() != null) {
-            boolean approved = false;
-            try {
-                List<java.util.Map<String, Object>> verifs = userClient.getVerifications(request.getHostId());
-                approved = verifs != null && verifs.stream()
-                        .anyMatch(v -> "APPROVED".equalsIgnoreCase(String.valueOf(v.get("status"))));
-            } catch (Exception e) {
-                log.error("Verification check failed for hostId={}: {}", request.getHostId(), e.getMessage());
-                // Fail-closed — bolje blokirati nego dozvoliti neverifikovan
-                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
-                        java.util.Map.of("error", "VerificationCheckFailed",
-                                "message", "Nije moguće provjeriti status verifikacije. Pokušajte ponovo za nekoliko trenutaka."));
-            }
-            if (!approved) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
-                        java.util.Map.of(
-                                "error", "VerificationRequired",
-                                "message", "Vaš identitet nije verifikovan. Pošaljite zahtjev za verifikaciju i sačekajte odobrenje administratora prije nego što objavite smještaj."
-                        )
-                );
-            }
+        boolean approved = false;
+        try {
+            List<java.util.Map<String, Object>> verifs = userClient.getVerifications(request.getHostId());
+            approved = verifs != null && verifs.stream()
+                    .anyMatch(v -> "APPROVED".equalsIgnoreCase(String.valueOf(v.get("status"))));
+        } catch (Exception e) {
+            log.error("Verification check failed for hostId={}: {}", request.getHostId(), e.getMessage());
+            // Fail-closed — bolje blokirati nego dozvoliti neverifikovan
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(
+                    java.util.Map.of("error", "VerificationCheckFailed",
+                            "message", "Nije moguće provjeriti status verifikacije. Pokušajte ponovo za nekoliko trenutaka."));
+        }
+        if (!approved) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
+                    java.util.Map.of(
+                            "error", "VerificationRequired",
+                            "message", "Vaš identitet nije verifikovan. Pošaljite zahtjev za verifikaciju i sačekajte odobrenje administratora prije nego što objavite smještaj."
+                    )
+            );
         }
         PropertyResponse created = propertyService.createProperty(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
+    // K8 — HOST smije mijenjati/brisati samo SVOJE objekte (ADMIN sve)
+    private void enforceOwnership(Long propertyId, jakarta.servlet.http.HttpServletRequest httpRequest) {
+        if (httpRequest.isUserInRole("ADMIN")) return;
+        Object uidAttr = httpRequest.getAttribute("authUserId");
+        if (uidAttr instanceof Long uid) {
+            PropertyResponse property = propertyService.getPropertyById(propertyId);
+            if (!uid.equals(property.getHostId())) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Nemate pravo mijenjati tuđi smještaj");
+            }
+        }
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<PropertyResponse> updateProperty(@PathVariable Long id,
-                                                           @Valid @RequestBody PropertyRequest request) {
+                                                           @Valid @RequestBody PropertyRequest request,
+                                                           jakarta.servlet.http.HttpServletRequest httpRequest) {
+        enforceOwnership(id, httpRequest);
         return ResponseEntity.ok(propertyService.updateProperty(id, request));
     }
 
@@ -148,7 +197,9 @@ public class PropertyController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
     public ResponseEntity<PropertyResponse> patchProperty(@PathVariable Long id,
-                                                          @RequestBody PropertyPatchRequest request) {
+                                                          @RequestBody PropertyPatchRequest request,
+                                                          jakarta.servlet.http.HttpServletRequest httpRequest) {
+        enforceOwnership(id, httpRequest);
         return ResponseEntity.ok(propertyService.patchProperty(id, request));
     }
 
@@ -165,7 +216,9 @@ public class PropertyController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('HOST') or hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteProperty(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteProperty(@PathVariable Long id,
+                                               jakarta.servlet.http.HttpServletRequest httpRequest) {
+        enforceOwnership(id, httpRequest);
         propertyService.deleteProperty(id);
         return ResponseEntity.noContent().build();
     }

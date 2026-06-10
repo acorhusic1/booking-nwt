@@ -339,3 +339,22 @@
     font-size: 1rem;
   }
 }
+
+/* Cijena vidljiva odmah, prije izbora datuma */
+.price-preview {
+  background: var(--bg-secondary, rgba(255,255,255,0.05));
+  border: 1px solid var(--border-color, rgba(255,255,255,0.1));
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+}
+.price-preview-amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+.price-preview-label,
+.price-preview-weekend,
+.price-preview-minstay {
+  color: var(--text-tertiary, #888);
+  font-size: 0.9rem;
+}

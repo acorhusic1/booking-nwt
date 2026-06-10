@@ -13,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -37,8 +36,10 @@ public class PropertyEventListener {
     private final ReservationRepository reservationRepository;
     private final ObjectMapper objectMapper;
 
+    // NAPOMENA: namjerno BEZ @Transactional — pod REPEATABLE_READ bi prvi
+    // (prazan) findById fiksirao snapshot pa retry ne bi vidio rezervaciju
+    // commitovanu u medjuvremenu. Svaki repo poziv ima vlastitu transakciju.
     @RabbitListener(queues = "${app.rabbitmq.queue.reservation}")
-    @Transactional
     public void handleMessage(String message) {
         try {
             JsonNode node = objectMapper.readTree(message);
@@ -100,11 +101,18 @@ public class PropertyEventListener {
             log.info("📨 PropertyReservedEvent: Reservation={}, Status={}",
                     event.getReservationId(), event.getStatus());
 
-            ReservationStatus newStatus = "CONFIRMED".equals(event.getStatus())
-                    ? ReservationStatus.CONFIRMED : ReservationStatus.CANCELLED;
-            updateReservationStatus(event.getReservationId(), newStatus,
-                    "Property listener — rezervacija {} → {}",
-                    event.getReservationId(), newStatus);
+            // K6 fix (F19): PROPERTY_RESERVED je samo saga-link od property-service-a.
+            // CONFIRMED smije postaviti ISKLJUČIVO PAYMENT_COMPLETED — dokumentacija
+            // kaze "uspjesna naplata je uslov za konacnu potvrdu rezervacije".
+            // Negativan ishod (property ne postoji) i dalje otkazuje rezervaciju.
+            if (!"CONFIRMED".equals(event.getStatus())) {
+                updateReservationStatus(event.getReservationId(), ReservationStatus.CANCELLED,
+                        "Property listener — rezervacija {} → CANCELLED (property odbio)",
+                        event.getReservationId());
+            } else {
+                log.info("ℹ️ Property {} potvrdio dostupnost za rezervaciju {} — čekam ishod naplate",
+                        event.getPropertyId(), event.getReservationId());
+            }
         } catch (Exception e) {
             log.error("❌ Greška u handlePropertyReserved: {}", e.getMessage(), e);
         }
@@ -137,9 +145,24 @@ public class PropertyEventListener {
      */
     private void updateReservationStatus(Long reservationId, ReservationStatus status,
                                           String logFormat, Object... logArgs) {
-        Optional<Reservation> opt = reservationRepository.findById(reservationId);
+        // RACE osigurac: saga moze odgovoriti prije nego sto je transakcija koja
+        // kreira rezervaciju commitovana (event se sad salje after-commit, ali
+        // za svaki slucaj pokusaj nekoliko puta umjesto da se update tiho izgubi
+        // i rezervacija zauvijek ostane CREATED).
+        Optional<Reservation> opt = Optional.empty();
+        for (int attempt = 1; attempt <= 5 && opt.isEmpty(); attempt++) {
+            opt = reservationRepository.findById(reservationId);
+            if (opt.isEmpty() && attempt < 5) {
+                try {
+                    Thread.sleep(300L * attempt);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
         if (opt.isEmpty()) {
-            log.warn("⚠️ Rezervacija {} nije pronađena", reservationId);
+            log.warn("⚠️ Rezervacija {} nije pronađena ni nakon 5 pokušaja — status update izgubljen", reservationId);
             return;
         }
         Reservation reservation = opt.get();

@@ -446,3 +446,26 @@ label {
     padding: 32px 24px;
   }
 }
+
+/* ===== Globalno uskladjivanje form kontrola s violet temom ===== */
+
+/* Checkboxi i radio dugmad prate temu umjesto default plave */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--violet-primary);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+/* Native spinner strelice na number inputima se ne uklapaju u dark temu -
+   sakrij ih (vrijednost se i dalje unosi tastaturom) */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

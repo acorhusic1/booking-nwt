@@ -3,6 +3,7 @@ import { propertyApi } from '../../api/propertyApi'
 import { reservationApi } from '../../api/reservationApi'
 import { reviewApi } from '../../api/reviewApi'
 import { wishlistApi } from '../../api/wishlistApi'
+import { todayLocalISO } from '../../utils/dates'
 import { useAuthStore } from '../../store/authStore'
 import { useToast } from '../common/ToastProvider'
 import PropertyCard from './PropertyCard'
@@ -26,7 +27,6 @@ export default function PropertyList({ filters }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [page, setPage] = useState(0)
-  const [totalPages, setTotalPages] = useState(0)
   const [search, setSearch] = useState(filters?.city || '')
   const [onlyAvailable, setOnlyAvailable] = useState(true)
   // F1 — prosireni filteri
@@ -34,10 +34,12 @@ export default function PropertyList({ filters }) {
   const [minGuests, setMinGuests] = useState(1)
   const [sortBy, setSortBy] = useState('default')
   const [showFilters, setShowFilters] = useState(false)
+  // F1 — tip smjestaja (apartman/kuca/vila/hotel/hostel)
+  const [typeFilter, setTypeFilter] = useState('')
+  // F1 — sortiranje po udaljenosti: pozicija korisnika (geolokacija browsera)
+  const [userPos, setUserPos] = useState(null)
   // F18 — grid ili mapa view
   const [viewMode, setViewMode] = useState('grid') // 'grid' | 'map'
-  // F18 — kad je map mode, dohvati SVE smjestaje odjednom (ne samo trenutnu stranicu)
-  const [allForMap, setAllForMap] = useState([])
   // F10 — koji property je otvoren u WishlistPicker modalu
   const [pickerForProperty, setPickerForProperty] = useState(null)
   // F1 — period boravka (koristi backend /search endpoint kad su oba datuma data)
@@ -57,39 +59,21 @@ export default function PropertyList({ filters }) {
   const [wishlistItems, setWishlistItems] = useState({}) // { propertyId: itemId }
   const [defaultListId, setDefaultListId] = useState(null)
 
+  // BUG fix — rezultati pretrage po periodu su ODVOJEN state, ne pregaze
+  // glavnu listu. Ranije je date-search zamijenio `properties` pa je dropdown
+  // država ostajao "zaglavljen" (samo izabrana država) do refresha stranice.
+  const [searchResults, setSearchResults] = useState(null) // null = neaktivno
+
   const fetchProperties = async () => {
     setLoading(true)
     try {
-      // F1 — ako su check-in/check-out unijeti, koristi backend /search za "dostupno u periodu"
-      if (checkIn && checkOut && (search.trim() || country.trim())) {
-        const cityForSearch = search.trim() || country.trim()
-        const data = await propertyApi.search(cityForSearch, checkIn, checkOut)
-        const raw = Array.isArray(data) ? data : []
-        // BUG D — property-service /search proverava samo CalendarBlock (host blokovi),
-        // NE i stvarne rezervacije. Zato za svaki rezultat dohvatimo occupied-dates
-        // i izbacimo property ako mu se neka rezervacija preklapa s [checkIn, checkOut).
-        const reqStart = new Date(checkIn)
-        const reqEnd = new Date(checkOut)
-        const checked = await Promise.all(raw.map(async (p) => {
-          try {
-            const occ = await reservationApi.getOccupiedDates(p.id)
-            const clash = (occ || []).some(o => {
-              const s = new Date(o.checkIn)
-              const e = new Date(o.checkOut)
-              return s < reqEnd && e > reqStart
-            })
-            return clash ? null : p
-          } catch {
-            return p
-          }
-        }))
-        setProperties(checked.filter(Boolean))
-        setTotalPages(1)
-      } else {
-        const data = await propertyApi.getAll(page, 10, '')
-        setProperties(data.content || [])
-        setTotalPages(Math.ceil((data.totalElements || 0) / 10))
-      }
+      // K11 fix — dohvati SVE smjestaje odjednom pa filtriraj/sortiraj/paginiraj
+      // klijentski. Ranije se filtriralo samo unutar trenutne stranice od 10,
+      // pa je korisnik mogao vidjeti "nema rezultata" iako pogoci postoje
+      // na drugim stranicama.
+      const data = await propertyApi.getAll(0, 1000, '')
+      setProperties(data.content || [])
+      setPage(0)
       setError(null)
     } catch {
       setError('Greška pri učitavanju smještaja')
@@ -98,30 +82,57 @@ export default function PropertyList({ filters }) {
     }
   }
 
-  useEffect(() => { fetchProperties() }, [page])
+  // F1 — pretraga "dostupno u periodu" preko backend /search endpointa
+  const fetchDateSearch = async () => {
+    if (!(checkIn && checkOut && (search.trim() || country.trim()))) return
+    setLoading(true)
+    try {
+      const cityForSearch = search.trim() || country.trim()
+      const data = await propertyApi.search(cityForSearch, checkIn, checkOut)
+      const raw = Array.isArray(data) ? data : []
+      // BUG D — property-service /search proverava samo CalendarBlock (host blokovi),
+      // NE i stvarne rezervacije. Zato za svaki rezultat dohvatimo occupied-dates
+      // i izbacimo property ako mu se neka rezervacija preklapa s [checkIn, checkOut).
+      const reqStart = new Date(checkIn)
+      const reqEnd = new Date(checkOut)
+      const checked = await Promise.all(raw.map(async (p) => {
+        try {
+          const occ = await reservationApi.getOccupiedDates(p.id)
+          const clash = (occ || []).some(o => {
+            const s = new Date(o.checkIn)
+            const e = new Date(o.checkOut)
+            return s < reqEnd && e > reqStart
+          })
+          return clash ? null : p
+        } catch {
+          return p
+        }
+      }))
+      setSearchResults(checked.filter(Boolean))
+      setPage(0)
+      setError(null)
+    } catch {
+      setError('Greška pri pretrazi smještaja')
+    } finally {
+      setLoading(false)
+    }
+  }
 
-  // F18 — kad korisnik prebaci na mapu, dohvati SVE smjestaje (size=1000) da
-  // mapa pokaze sve markere, ne samo onih sa trenutne stranice.
-  useEffect(() => {
-    if (viewMode !== 'map') return
-    propertyApi.getAll(0, 1000, '')
-      .then(data => setAllForMap(data.content || []))
-      .catch(() => setAllForMap([]))
-  }, [viewMode])
+  useEffect(() => { fetchProperties() }, [])
 
-  // F1 — dropdown drzava izveden iz ucitanih property-a.
-  // Ukljucujemo i trenutno odabranu zemlju cak i ako trenutni rezultati
-  // ne sadrze nista iz nje — inace dropdown "izgubi" tu opciju nakon search-a
-  // i select izgleda prazan iako je state postavljen.
+  // F1 — dropdown drzava UVIJEK izveden iz pune liste (ne iz rezultata
+  // pretrage) — tako se nakon izbora jedne drzave mogu birati i ostale.
   const availableCountries = useMemo(() => {
     const set = new Set(properties.map(p => p.country).filter(Boolean))
     if (country) set.add(country)
     return Array.from(set).sort()
   }, [properties, country])
 
-  // F1 — dohvati prosjecne ocjene za vidljive propertije (za rating filter + sort)
+  // F1 — dohvati prosjecne ocjene (za rating filter + sort). Dohvata se samo
+  // kad je rating filter/sort aktivan da ne radimo N poziva bez potrebe.
+  const ratingsNeeded = minRating > 0 || sortBy === 'rating-desc'
   useEffect(() => {
-    if (properties.length === 0) return
+    if (properties.length === 0 || !ratingsNeeded) return
     let cancelled = false
     Promise.all(
       properties.map(p =>
@@ -141,7 +152,7 @@ export default function PropertyList({ filters }) {
       setRatingByProp(m)
     })
     return () => { cancelled = true }
-  }, [properties.map(p => p.id).join(',')])
+  }, [properties.map(p => p.id).join(','), ratingsNeeded])
 
   // F10 — dohvati stavke iz SVIH gostovih wishlist lista (ne samo prve).
   // Heart na property kartici je popunjen ako se property nalazi u BAR JEDNOJ listi.
@@ -205,9 +216,12 @@ export default function PropertyList({ filters }) {
     }
   }
 
-  // F1 — kombinovano filtriranje + sortiranje u memoriji
+  // F1 — kombinovano filtriranje + sortiranje u memoriji.
+  // Kad je aktivna pretraga po periodu, filtrira se NAD njenim rezultatima;
+  // inace nad punom listom.
+  const dateSearchActive = searchResults !== null
   const visible = useMemo(() => {
-    let list = [...properties]
+    let list = [...(searchResults ?? properties)]
 
     if (search.trim()) {
       const q = search.trim().toLowerCase()
@@ -223,13 +237,17 @@ export default function PropertyList({ filters }) {
     // po city ILI country sa istim terminom. Dodatni strict === filter na
     // frontendu je suvisak i moze izbaciti validne stavke (npr. backend match
     // bio po city dok je country drugog tipa).
-    const dateSearchActive = !!(checkIn && checkOut && (search.trim() || country.trim()))
     if (country && !dateSearchActive) {
       list = list.filter(p => p.country === country)
     }
 
     if (minGuests > 1) {
       list = list.filter(p => (p.maxGuests || 0) >= minGuests)
+    }
+
+    // F1 — tip smjestaja
+    if (typeFilter) {
+      list = list.filter(p => (p.propertyType || '').toUpperCase() === typeFilter)
     }
 
     if (onlyAvailable) {
@@ -281,14 +299,32 @@ export default function PropertyList({ filters }) {
         list.sort((a, b) => (a.city || '').localeCompare(b.city || ''))
         break
       case 'price-asc':
-        list.sort((a, b) => (Number(a.pricePerNight) || 0) - (Number(b.pricePerNight) || 0))
+        // K10 fix — PropertyResponse nema pricePerNight; cijena je basePrice
+        list.sort((a, b) => (Number(a.basePrice) || 0) - (Number(b.basePrice) || 0))
         break
       case 'price-desc':
-        list.sort((a, b) => (Number(b.pricePerNight) || 0) - (Number(a.pricePerNight) || 0))
+        list.sort((a, b) => (Number(b.basePrice) || 0) - (Number(a.basePrice) || 0))
         break
       case 'rating-desc':
         list.sort((a, b) => (ratingByProp[b.id] || 0) - (ratingByProp[a.id] || 0))
         break
+      case 'distance': {
+        // F1 — sortiranje po udaljenosti od korisnikove lokacije (haversine);
+        // objekti bez koordinata idu na kraj
+        if (userPos) {
+          const toRad = (d) => d * Math.PI / 180
+          const distKm = (p) => {
+            if (p.latitude == null || p.longitude == null) return Infinity
+            const dLat = toRad(Number(p.latitude) - userPos.lat)
+            const dLon = toRad(Number(p.longitude) - userPos.lng)
+            const a = Math.sin(dLat / 2) ** 2
+              + Math.cos(toRad(userPos.lat)) * Math.cos(toRad(Number(p.latitude))) * Math.sin(dLon / 2) ** 2
+            return 2 * 6371 * Math.asin(Math.sqrt(a))
+          }
+          list.sort((a, b) => distKm(a) - distKm(b))
+        }
+        break
+      }
       default: // dostupni prvo, pa po imenu
         list.sort((a, b) => {
           if (a.available !== b.available) return a.available ? -1 : 1
@@ -297,22 +333,47 @@ export default function PropertyList({ filters }) {
     }
 
     return list
-  }, [properties, search, country, minGuests, onlyAvailable, sortBy, minPrice, maxPrice, minRating, amenityFilters, ratingByProp])
+  }, [properties, searchResults, dateSearchActive, search, country, minGuests, onlyAvailable, sortBy, minPrice, maxPrice, minRating, amenityFilters, ratingByProp, typeFilter, userPos])
+
+  // F1 — kad korisnik izabere sort po udaljenosti, zatrazimo geolokaciju
+  const handleSortChange = (value) => {
+    setSortBy(value)
+    if (value === 'distance' && !userPos && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => setUserPos({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+        () => showToast({ type: 'warning', title: 'Lokacija nedostupna',
+          message: 'Dozvolite pristup lokaciji u browseru za sortiranje po udaljenosti.' })
+      )
+    }
+  }
+
+  // K11 — klijentska paginacija NAKON filtriranja (filteri rade nad svim
+  // smjestajima, ne samo nad trenutnom stranicom). 12 po stranici — djeljivo
+  // sa 2/3/4 kolone pa zadnji red nikad nije "prelomljen" s jednom karticom.
+  const PAGE_SIZE = 12
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE))
+  const safePage = Math.min(page, totalPages - 1)
+  const paged = visible.slice(safePage * PAGE_SIZE, (safePage + 1) * PAGE_SIZE)
+
+  // Promjena filtera vraca na prvu stranicu
+  useEffect(() => { setPage(0) },
+    [search, country, minGuests, onlyAvailable, sortBy, minPrice, maxPrice, minRating, amenityFilters, typeFilter])
 
   const resetFilters = () => {
     setSearch(''); setCountry(''); setMinGuests(1)
-    setOnlyAvailable(true); setSortBy('default')
+    setOnlyAvailable(true); setSortBy('default'); setTypeFilter('')
     setCheckIn(''); setCheckOut('')
     setMinPrice(''); setMaxPrice(''); setMinRating(0)
     setAmenityFilters({ WIFI: false, PARKING: false, AC: false, POOL: false })
+    setSearchResults(null) // izadji iz date-search moda — puna lista nazad
   }
 
   const handleDateSearch = (e) => {
     e.preventDefault()
-    fetchProperties()
+    fetchDateSearch()
   }
 
-  const today = new Date().toISOString().split('T')[0]
+  const today = todayLocalISO()
 
   return (
     <div className="property-list-container">
@@ -370,8 +431,20 @@ export default function PropertyList({ filters }) {
               />
             </label>
 
+            {/* F1 — tip smjestaja */}
+            <label>Tip:
+              <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <option value="">Svi tipovi</option>
+                <option value="APARTMAN">🏢 Apartman</option>
+                <option value="KUCA">🏡 Kuća za odmor</option>
+                <option value="VILA">🏛 Vila</option>
+                <option value="HOTEL">🏨 Hotel</option>
+                <option value="HOSTEL">🛏 Hostel</option>
+              </select>
+            </label>
+
             <label>Sortiraj po:
-              <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+              <select value={sortBy} onChange={(e) => handleSortChange(e.target.value)}>
                 <option value="default">Dostupni prvo</option>
                 <option value="name">Imenu (A-Z)</option>
                 <option value="capacity">Kapacitetu (najveci prvi)</option>
@@ -379,6 +452,7 @@ export default function PropertyList({ filters }) {
                 <option value="price-asc">Cijeni ↑ (jeftiniji prvi)</option>
                 <option value="price-desc">Cijeni ↓ (skuplji prvi)</option>
                 <option value="rating-desc">Ocjeni ↓ (najbolji prvi)</option>
+                <option value="distance">📍 Udaljenosti (najblizi prvi)</option>
               </select>
             </label>
           </div>
@@ -440,13 +514,23 @@ export default function PropertyList({ filters }) {
       {loading && <Spinner label="Učitavanje smještaja..." />}
       <ErrorState message={error} onRetry={fetchProperties} />
 
+      {!loading && !error && dateSearchActive && (
+        <div className="date-search-banner">
+          📅 Prikazani su smještaji dostupni u periodu {checkIn} → {checkOut} ({visible.length})
+          <button type="button" onClick={() => { setSearchResults(null); setCheckIn(''); setCheckOut('') }}>
+            ✕ Prikaži sve
+          </button>
+        </div>
+      )}
+
       {!loading && !error && (
         <>
           {viewMode === 'map' ? (
-            <PropertyMap properties={allForMap.length ? allForMap : visible} />
+            // F18 — mapa prikazuje SVE filtrirane smjestaje (svi su vec ucitani)
+            <PropertyMap properties={visible} />
           ) : (
           <div className="properties-grid">
-            {visible.map((property) => (
+            {paged.map((property) => (
               <PropertyCard
                 key={property.id}
                 property={property}
@@ -466,21 +550,23 @@ export default function PropertyList({ filters }) {
             </div>
           )}
 
-          <div className="pagination">
-            <button
-              onClick={() => setPage(Math.max(0, page - 1))}
-              disabled={page === 0}
-            >
-              ← Prethodna
-            </button>
-            <span>Stranica {page + 1} od {totalPages || 1}</span>
-            <button
-              onClick={() => setPage(Math.min(totalPages - 1, page + 1))}
-              disabled={page >= totalPages - 1}
-            >
-              Sljedeća →
-            </button>
-          </div>
+          {viewMode === 'grid' && (
+            <div className="pagination">
+              <button
+                onClick={() => setPage(Math.max(0, safePage - 1))}
+                disabled={safePage === 0}
+              >
+                ← Prethodna
+              </button>
+              <span>Stranica {safePage + 1} od {totalPages}</span>
+              <button
+                onClick={() => setPage(Math.min(totalPages - 1, safePage + 1))}
+                disabled={safePage >= totalPages - 1}
+              >
+                Sljedeća →
+              </button>
+            </div>
+          )}
         </>
       )}
 

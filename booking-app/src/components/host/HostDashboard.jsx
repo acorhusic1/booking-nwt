@@ -37,6 +37,9 @@ export default function HostDashboard() {
 
   const { showToast } = useToast()
   const [loading, setLoading] = useState(true)
+  // UX — smjestaji i analitika su odvojeni tabovi: host odmah vidi
+  // "+ Dodaj smjestaj" i svoje objekte bez skrolanja kroz grafikone
+  const [activeTab, setActiveTab] = useState('properties') // 'properties' | 'analytics'
 
   const mjeseci = ['Januar', 'Februar', 'Mart', 'April', 'Maj', 'Juni', 'Juli', 'August', 'Septembar', 'Oktobar', 'Novembar', 'Decembar']
 
@@ -148,37 +151,56 @@ export default function HostDashboard() {
         </div>
       </div>
 
-      <div className="analytics-controls glass-panel" style={{ padding: '15px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <h3 style={{ margin: 0 }}>📊 Analitika</h3>
-        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
-          Godina:
-          <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="admin-select">
-            {[2024, 2025, 2026, 2027].map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
-        </label>
+      {/* Tabovi — Smještaji (default, odmah dostupno dodavanje) | Analitika */}
+      <div className="dashboard-tabs" style={{ marginBottom: '20px' }}>
+        <button
+          className={`tab-btn ${activeTab === 'properties' ? 'active' : ''}`}
+          onClick={() => setActiveTab('properties')}
+        >
+          🏘️ Smještaji i rezervacije
+        </button>
+        <button
+          className={`tab-btn ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          📊 Analitika i prihodi
+        </button>
       </div>
 
-      {/* F11 — Stopa popunjenosti, prosjecna ocjena, rank po popularnosti, filter po objektu */}
-      <HostAnalyticsPanel
-        properties={properties}
-        reservations={reservations}
-        year={selectedYear}
-        selectedPropertyId={selectedPropertyId}
-        onSelectProperty={setSelectedPropertyId}
-      />
+      {activeTab === 'analytics' && (
+        <>
+          <div className="analytics-controls glass-panel" style={{ padding: '15px', marginBottom: '20px', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+            <h3 style={{ margin: 0 }}>📊 Analitika</h3>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
+              Godina:
+              <select value={selectedYear} onChange={e => setSelectedYear(Number(e.target.value))} className="admin-select">
+                {[2024, 2025, 2026, 2027].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </label>
+          </div>
 
-      {/* Bar chart zarade po mjesecu — postuje filter po objektu iz analytics panel-a */}
-      <RevenueChart
-        reservations={selectedPropertyId
-          ? reservations.filter(r => r.propertyId === selectedPropertyId)
-          : reservations}
-        year={selectedYear}
-      />
+          {/* F11 — Stopa popunjenosti, prosjecna ocjena, rank po popularnosti, filter po objektu */}
+          <HostAnalyticsPanel
+            properties={properties}
+            reservations={reservations}
+            year={selectedYear}
+            selectedPropertyId={selectedPropertyId}
+            onSelectProperty={setSelectedPropertyId}
+          />
 
-      <div style={{ height: '20px' }} />
+          {/* Bar chart zarade po mjesecu — postuje filter po objektu iz analytics panel-a */}
+          <RevenueChart
+            reservations={selectedPropertyId
+              ? reservations.filter(r => r.propertyId === selectedPropertyId)
+              : reservations}
+            year={selectedYear}
+          />
+        </>
+      )}
 
+      {activeTab === 'properties' && (
       <div className="host-sections">
         <section className="host-section glass-panel">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
@@ -198,8 +220,11 @@ export default function HostDashboard() {
                   </div>
                   <h3>{prop.name}</h3>
                   <p>📍 {prop.city}</p>
-                  <p>💰 ${prop.pricePerNight}/noć</p>
+                  {/* fix — pricePerNight ne postoji u PropertyResponse; cijena je basePrice */}
+                  <p>💰 {prop.basePrice != null ? `${Number(prop.basePrice).toFixed(0)} BAM/noć` : 'Cijena nije postavljena'}</p>
                   <p>👥 Max {prop.maxGuests} osoba</p>
+                  {/* F11 — broj pregleda oglasa */}
+                  <p>👁 {Number(prop.viewCount || 0)} pregleda</p>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '15px', flexWrap: 'wrap' }}>
                     <Link to={`/properties/${prop.id}`} className="view-btn" style={{ flex: '1 1 80px', textAlign: 'center', margin: 0, padding: '8px' }}>Pogledaj</Link>
                     <button className="btn-secondary" onClick={() => setSelectedPropertyForImages(prop)} style={{ flex: '1 1 80px', padding: '8px' }}>Slike</button>
@@ -242,7 +267,7 @@ export default function HostDashboard() {
                         {res.status || 'CREATED'}
                       </span>
                     </td>
-                    <td>${res.totalPrice || 0}</td>
+                    <td>{Number(res.totalPrice || 0).toFixed(2)} BAM</td>
                   </tr>
                 ))}
               </tbody>
@@ -252,6 +277,7 @@ export default function HostDashboard() {
 
         <HostProblemReports />
       </div>
+      )}
 
       <AddPropertyModal
         isOpen={isAddModalOpen}

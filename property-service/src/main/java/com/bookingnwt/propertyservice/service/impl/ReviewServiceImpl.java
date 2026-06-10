@@ -1,6 +1,8 @@
 package com.bookingnwt.propertyservice.service.impl;
 
+import com.bookingnwt.propertyservice.client.ReservationClient;
 import com.bookingnwt.propertyservice.client.UserClient;
+import com.bookingnwt.propertyservice.client.dto.ReservationDTO;
 import com.bookingnwt.propertyservice.dto.UserDTO;
 import com.bookingnwt.propertyservice.dto.ReviewRequest;
 import com.bookingnwt.propertyservice.dto.ReviewResponse;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -26,6 +29,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewMapper reviewMapper;
     private final UserClient userClient;
+    private final ReservationClient reservationClient;
 
     @Override
     @Transactional(readOnly = true)
@@ -68,6 +72,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     public ReviewResponse createReview(ReviewRequest request) {
+        validateReviewEligibility(request);
         Review review = reviewMapper.toEntity(request);
         calculateOverallRating(review, request);
         Review saved = reviewRepository.save(review);
@@ -78,6 +83,7 @@ public class ReviewServiceImpl implements ReviewService {
     public List<ReviewResponse> createReviews(List<ReviewRequest> requests) {
         List<Review> reviews = requests.stream()
                 .map(request -> {
+                    validateReviewEligibility(request);
                     Review review = reviewMapper.toEntity(request);
                     calculateOverallRating(review, request);
                     return review;
@@ -87,6 +93,50 @@ public class ReviewServiceImpl implements ReviewService {
         return saved.stream()
                 .map(reviewMapper::toResponse)
                 .toList();
+    }
+
+    /**
+     * K9 (F7) — server-side validacija: "samo gosti sa završenom rezervacijom
+     * mogu ocjenjivati". Do sada je gating bio samo u UI-ju pa je svaki GUEST
+     * mogao POST-ati recenziju za bilo koji objekat, više puta.
+     *
+     * Provjere: rezervacija postoji + pripada gostu i property-ju iz request-a
+     * + boravak je završen (COMPLETED, ili checkout prošao za CONFIRMED/ACTIVE
+     * ako scheduler još nije odradio tranziciju) + nema duple recenzije.
+     * Fail-closed: ako reservation-service nije dostupan, recenzija se odbija.
+     */
+    private void validateReviewEligibility(ReviewRequest request) {
+        if (reviewRepository.existsByReservationId(request.getReservationId())) {
+            throw new IllegalArgumentException(
+                    "Recenzija za rezervaciju " + request.getReservationId() + " već postoji");
+        }
+
+        ReservationDTO reservation;
+        try {
+            reservation = reservationClient.getReservation(request.getReservationId());
+        } catch (Exception e) {
+            throw new IllegalStateException(
+                    "Trenutno ne možemo provjeriti rezervaciju — pokušajte ponovo za nekoliko minuta");
+        }
+        if (reservation == null) {
+            throw new ResourceNotFoundException(
+                    "Rezervacija " + request.getReservationId() + " nije pronađena");
+        }
+        if (!request.getGuestId().equals(reservation.getGuestId())
+                || !request.getPropertyId().equals(reservation.getPropertyId())) {
+            throw new IllegalArgumentException(
+                    "Recenzija se ne poklapa sa rezervacijom (gost/smještaj)");
+        }
+
+        String status = reservation.getStatus() != null ? reservation.getStatus().toUpperCase() : "";
+        boolean checkoutPassed = reservation.getCheckOut() != null
+                && reservation.getCheckOut().isBefore(LocalDate.now().plusDays(1));
+        boolean stayFinished = "COMPLETED".equals(status)
+                || (checkoutPassed && ("CONFIRMED".equals(status) || "ACTIVE".equals(status)));
+        if (!stayFinished) {
+            throw new IllegalArgumentException(
+                    "Recenziju možete ostaviti tek nakon završenog boravka");
+        }
     }
 
     private void calculateOverallRating(Review review, ReviewRequest request) {

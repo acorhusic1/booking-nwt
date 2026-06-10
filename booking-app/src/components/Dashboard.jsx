@@ -4,6 +4,7 @@ import { reservationApi } from '../api/reservationApi'
 import { walletApi } from '../api/walletApi'
 import { useAuthStore } from '../store/authStore'
 import ReservationCard from './reservations/ReservationCard'
+import RecommendedProperties from './properties/RecommendedProperties'
 import WalletTopUpModal from './WalletTopUpModal'
 import NotificationsList from './notifications/NotificationsList'
 import { useToast } from './common/ToastProvider'
@@ -331,6 +332,9 @@ export default function Dashboard() {
               />
             ))}
           </div>
+
+          {/* F12 — personalizirane preporuke na osnovu historije rezervacija */}
+          {!loading && <RecommendedProperties reservations={reservations} />}
         </section>
       )}
 

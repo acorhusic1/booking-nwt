@@ -40,6 +40,31 @@ export default function ReservationCard({ reservation, onChanged }) {
 
   const canCancel = !['CANCELLED', 'COMPLETED'].includes((reservation.status || '').toUpperCase())
 
+  // F6 — ocekivani refund po ISTOM pravilu kao backend (default politika:
+  // >= 7 dana prije dolaska → 100%, inace 0%; CREATED → uvijek pun povrat).
+  // Tacna politika objekta moze odstupati — backend je autoritativan.
+  const refundInfo = (() => {
+    // Ako su placanja vec ucitana (cancel dugme je u expanded prikazu) i NEMA
+    // uspjesne naplate, nema ni povrata — npr. rezervacija potvrdjena na starom
+    // buildu iako je naplata pala. Bez ovoga poruka lazno obecava refund.
+    if (payments !== null && !payments.some(p => (p.status || '').toUpperCase() === 'COMPLETED')) {
+      return { pct: 0, text: 'Za ovu rezervaciju nije evidentirana uspješna naplata — nema iznosa za povrat.' }
+    }
+    const s = (reservation.status || '').toUpperCase()
+    if (s === 'CREATED') {
+      return { pct: 100, text: 'Plaćanje još nije potvrđeno — iznos se vraća u potpunosti (ako je naplaćen).' }
+    }
+    if (s !== 'CONFIRMED') return { pct: null, text: '' }
+    const daysUntil = reservation.checkIn
+      ? Math.ceil((new Date(reservation.checkIn) - new Date(new Date().toDateString())) / 86400000)
+      : null
+    if (daysUntil == null) return { pct: 100, text: 'Iznos će biti vraćen na novčanik.' }
+    if (daysUntil >= 7) {
+      return { pct: 100, text: `Besplatno otkazivanje (${daysUntil} dana do dolaska) — puni iznos od ${Number(reservation.totalPrice).toFixed(2)} BAM se vraća na novčanik za par sekundi.` }
+    }
+    return { pct: 0, text: `Otkazujete ${daysUntil} ${daysUntil === 1 ? 'dan' : 'dana'} prije dolaska (besplatno je do 7 dana) — prema politici otkazivanja POVRAT JE 0%.` }
+  })()
+
   // BUG 7 — gost moze otvoriti konverzaciju sa hostom direktno iz kartice
   const messageHost = async (e) => {
     e.stopPropagation()
@@ -91,9 +116,16 @@ export default function ReservationCard({ reservation, onChanged }) {
     try {
       await reservationApi.cancel(reservation.id)
       setConfirmOpen(false)
-      showToast({ type: 'success', title: 'Rezervacija otkazana',
-        message: `Rezervacija #${reservation.id} je otkazana. Iznos će biti refundiran u nekoliko sekundi.` })
+      showToast({
+        type: refundInfo.pct === 0 ? 'warning' : 'success',
+        title: 'Rezervacija otkazana',
+        message: `Rezervacija #${reservation.id} je otkazana. ${refundInfo.text}`,
+        duration: 8000
+      })
       onChanged?.()
+      // Refund ide asinhrono (RabbitMQ) — osvjezi wallet/listu jos jednom
+      // kad kompenzacija sjedne, da korisnik vidi novi balans bez F5.
+      setTimeout(() => onChanged?.(), 3000)
     } catch (err) {
       const msg = err.response?.data?.message
       const text = typeof msg === 'string'
@@ -169,7 +201,7 @@ export default function ReservationCard({ reservation, onChanged }) {
         onConfirm={performCancel}
         title="Otkazivanje rezervacije"
         message={`Otkazati rezervaciju #${reservation.id}?`}
-        detail="Iznos će biti refundiran na wallet (ako je rezervacija već plaćena)."
+        detail={refundInfo.text || 'Iznos će biti refundiran na wallet (ako je rezervacija već plaćena).'}
         confirmText="Da, otkaži"
         cancelText="Odustani"
         danger

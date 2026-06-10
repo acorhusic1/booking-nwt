@@ -69,7 +69,8 @@ class PropertyServiceImplTest {
     @Test
     void getAllProperties_shouldReturnPage() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(propertyRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of(property)));
+        // F2 — javna lista koristi findApprovedForPublic (samo APPROVED objekti)
+        when(propertyRepository.findApprovedForPublic(pageable)).thenReturn(new PageImpl<>(List.of(property)));
         when(propertyMapper.toResponse(property)).thenReturn(response);
 
         Page<PropertyResponse> result = propertyService.getAllProperties(pageable);

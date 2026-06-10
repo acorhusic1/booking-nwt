@@ -20,6 +20,13 @@ export const verificationApi = {
     return response.data
   },
 
+  // F16 — javni status {verified: true/false} bez detalja dokumenta;
+  // koristi se za "Verifikovan domaćin" badge na stranici objekta
+  getVerifiedStatus: async (userId) => {
+    const response = await apiClient.get(`/api/users/${userId}/verifications/status`)
+    return response.data
+  },
+
   // Admin
   getAll: async () => {
     const response = await apiClient.get('/api/verifications')

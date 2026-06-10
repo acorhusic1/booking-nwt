@@ -8,6 +8,7 @@ import com.bookingnwt.notificationservice.model.Conversation;
 import com.bookingnwt.notificationservice.model.Message;
 import com.bookingnwt.notificationservice.repository.ConversationRepository;
 import com.bookingnwt.notificationservice.repository.MessageRepository;
+import com.bookingnwt.notificationservice.repository.NotificationRepository;
 import com.bookingnwt.notificationservice.service.impl.MessageServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class MessageServiceTest {
 
     @Mock
     private MessageMapper messageMapper;
+
+    @Mock
+    private NotificationRepository notificationRepository;
 
     @InjectMocks
     private MessageServiceImpl messageService;

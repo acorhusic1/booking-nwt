@@ -9,6 +9,7 @@ import com.bookingnwt.reservationservice.model.Reservation;
 import com.bookingnwt.reservationservice.repository.CancellationPolicyRepository;
 import com.bookingnwt.reservationservice.repository.PromoCodeRepository;
 import com.bookingnwt.reservationservice.repository.ReservationRepository;
+import com.bookingnwt.reservationservice.service.impl.PriceCalculator;
 import com.bookingnwt.reservationservice.service.impl.ReservationServiceImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
@@ -48,6 +50,7 @@ class ReservationAvailabilityIntegrationTest {
     @Mock private ReservationMapper reservationMapper;
     @Mock private ObjectMapper objectMapper;
     @Mock private PropertyAvailabilityGateway propertyAvailabilityGateway;
+    @Spy private PriceCalculator priceCalculator = new PriceCalculator();
 
     @InjectMocks private ReservationServiceImpl service;
 

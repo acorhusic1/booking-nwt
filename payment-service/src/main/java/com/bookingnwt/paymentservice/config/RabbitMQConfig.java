@@ -32,11 +32,17 @@ public class RabbitMQConfig {
     @Value("${app.rabbitmq.queue.payment-cancellations}")
     private String paymentCancellationsQueue;
 
+    @Value("${app.rabbitmq.queue.payment-completions:payment.completions.queue}")
+    private String paymentCompletionsQueue;
+
     @Value("${app.rabbitmq.routing-key.reservation-created}")
     private String reservationCreatedRoutingKey;
 
     @Value("${app.rabbitmq.routing-key.reservation-cancelled}")
     private String reservationCancelledRoutingKey;
+
+    @Value("${app.rabbitmq.routing-key.reservation-completed:booking.reservation.completed}")
+    private String reservationCompletedRoutingKey;
 
     // ============ EXCHANGE ============
     @Bean
@@ -59,6 +65,15 @@ public class RabbitMQConfig {
         return new Queue(paymentCancellationsQueue, true, false, false);
     }
 
+    /**
+     * F19 — odvojeni queue za "boravak zavrsen" evente: tek tada se host
+     * isplacuje (umanjeno za proviziju platforme).
+     */
+    @Bean
+    public Queue paymentCompletionsQueue() {
+        return new Queue(paymentCompletionsQueue, true, false, false);
+    }
+
     // ============ BINDINGS ============
     /** Sluša ReservationCreated event — naplati rezervaciju. */
     @Bean
@@ -66,6 +81,14 @@ public class RabbitMQConfig {
         return BindingBuilder.bind(paymentServiceQueue)
                 .to(bookingExchange)
                 .with(reservationCreatedRoutingKey);
+    }
+
+    /** Sluša ReservationCompleted event — isplati hosta (F19). */
+    @Bean
+    public Binding bindingReservationCompleted(Queue paymentCompletionsQueue, TopicExchange bookingExchange) {
+        return BindingBuilder.bind(paymentCompletionsQueue)
+                .to(bookingExchange)
+                .with(reservationCompletedRoutingKey);
     }
 
     /** Sluša ReservationCancelled event — refundira wallet (kompenzacija). */
