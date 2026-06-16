@@ -242,3 +242,5 @@ Ključni detalji ispravnosti:
 - `ReservationCreatedEvent` se objavljuje **after-commit** — eliminisan race gdje Saga završi prije nego što je rezervacija vidljiva u bazi
 - `CANCELLED` je terminalan u saga state-machine-u — zakašnjeli "success" event ne može pregaziti kompenzaciju
 - Refund i payout listeneri su idempotentni (dupli eventi ne dupliraju novac)
+  
+Video demo - https://drive.google.com/file/d/1KoCaP5RUQi_DSXsOfX08GOcKbzFIplR2/view
