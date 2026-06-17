@@ -184,8 +184,19 @@ export default function ReservationForm({ propertyId }) {
       // nazad na rezervacionu formu (pa da je submit-uje ponovo)
       navigate(`/dashboard?tab=reservations&pendingId=${created.id}&pending=1`, { replace: true })
     } catch (err) {
-      const msg = err.response?.data?.message
-      const text = typeof msg === 'string' ? msg : 'Greška pri kreiranju rezervacije'
+      // Backend vraca dva oblika 400: {message: "..."} za poslovna pravila
+      // (min noćenja, redoslijed datuma...) i {errors: {polje: "..."}} za
+      // bean-validaciju (npr. datum u prošlosti). Prikaži OBA — ranije se
+      // errors mapa ignorisala pa je korisnik vidio generičko "Greška...".
+      const data = err.response?.data
+      let text
+      if (typeof data?.message === 'string') {
+        text = data.message
+      } else if (data?.errors && typeof data.errors === 'object') {
+        text = Object.values(data.errors).join(' · ')
+      } else {
+        text = 'Greška pri kreiranju rezervacije'
+      }
       setError(text)
       showToast({ type: 'error', title: 'Rezervacija nije kreirana', message: text, duration: 7000 })
     } finally {

@@ -2,7 +2,7 @@ package com.bookingnwt.reservationservice.dto;
 
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -28,12 +28,16 @@ public class ReservationRequestDTO {
     @NotNull(message = "Property ID je obavezan")
     private Long propertyId;
 
+    // BUG fix — @Future je odbijao DANASNJI check-in iako frontend datum-picker
+    // dozvoljava danas (min=danas). To je davalo zbunjujuci 400 "mora biti u
+    // buducnosti". @FutureOrPresent dozvoljava check-in danas; ispravan
+    // redoslijed (checkOut > checkIn) provjerava se u servisu sa jasnom porukom.
     @NotNull(message = "Datum check-in je obavezan")
-    @Future(message = "Datum check-in mora biti u budućnosti")
+    @FutureOrPresent(message = "Datum dolaska ne može biti u prošlosti")
     private LocalDate checkIn;
 
     @NotNull(message = "Datum check-out je obavezan")
-    @Future(message = "Datum check-out mora biti u budućnosti")
+    @FutureOrPresent(message = "Datum odlaska ne može biti u prošlosti")
     private LocalDate checkOut;
 
     @NotNull(message = "Broj gostiju je obavezan")
